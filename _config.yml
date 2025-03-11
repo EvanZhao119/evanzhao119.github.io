@@ -1,6 +1,6 @@
 title: "EvanZhao's Tech Blog"
 description: "Sharing knowledge about backend development, AI, and system design."
-baseurl: "/EvanZhao.github.io"  # GitHub Pages 需留空
+baseurl: ""  # GitHub Pages 需留空
 url: "https://evanzhao119.github.io"  # 你的 GitHub Pages 网址
 # url: "http://127.0.0.1:4000" # 你的 GitHub Pages 网址
 
