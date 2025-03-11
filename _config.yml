@@ -12,6 +12,8 @@ plugins:
 
 sass:
   style: compressed
+  load_paths:
+    - _sass
 
 defaults:
   - scope:
