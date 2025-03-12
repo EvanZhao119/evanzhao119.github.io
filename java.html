@@ -1,0 +1,51 @@
+---
+layout: default
+title: "Java"
+permalink: /java/
+---
+
+<h1 class="page-title">📌 Java Articles</h1>
+
+<div class="post-list">
+  {% for post in site.categories.java %}
+    <div class="post-item">
+      {% if post.image %}
+        <img src="{{ post.image }}" alt="{{ post.title }}" class="post-thumbnail">
+      {% endif %}
+      <div class="post-content">
+        <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
+        <p class="post-meta">🗓 {{ post.date | date: "%Y-%m-%d" }}</p>
+        <p>{{ post.excerpt | strip_html | truncatewords: 30 }}</p>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<style>
+  .post-list {
+    display: flex;
+    flex-direction: column;
+    margin-top: 20px;
+  }
+  .post-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+  }
+  .post-thumbnail {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    margin-right: 15px;
+    border-radius: 8px;
+  }
+  .post-content h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+  .post-meta {
+    color: #888;
+    font-size: 14px;
+  }
+</style>

@@ -1,9 +1,11 @@
 # main links
 main:
-  #- title: "Quick-Start Guide"
-  #  url: https://mmistakes.github.io/minimal-mistakes/docs/quick-start-guide/
-  # - title: "Home"
-    # url: /
+  - title: "Home"
+    url: /
+  - title: "Java"
+    url: /java/
+  - title: "Java Spring"
+    url: /spring/
   # - title: "Blog"
     # url: /_posts/
   #- title: "About"
