@@ -1,0 +1,121 @@
+/* 文章主体样式 */
+.post-content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.8;
+    color: #333;
+}
+
+/* 标题样式 */
+.post-content h1 {
+    font-size: 2.5em;
+    margin-bottom: 1em;
+    color: #2c3e50;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.3em;
+}
+
+.post-content h2 {
+    font-size: 2em;
+    margin: 1.5em 0 1em;
+    color: #34495e;
+}
+
+.post-content h3 {
+    font-size: 1.5em;
+    margin: 1.2em 0 0.8em;
+    color: #455a64;
+}
+
+/* 段落样式 */
+.post-content p {
+    margin-bottom: 1.5em;
+    text-align: justify;
+}
+
+/* 链接样式 */
+.post-content a {
+    color: #3498db;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.post-content a:hover {
+    border-bottom-color: #3498db;
+}
+
+/* 代码块样式 */
+.post-content pre {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 1em;
+    overflow-x: auto;
+    margin: 1.5em 0;
+}
+
+.post-content code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    font-size: 0.9em;
+    padding: 0.2em 0.4em;
+    background-color: #f8f9fa;
+    border-radius: 3px;
+}
+
+/* 引用样式 */
+.post-content blockquote {
+    border-left: 4px solid #42b983;
+    margin: 1.5em 0;
+    padding: 0.5em 1em;
+    background-color: #f8f9fa;
+    color: #666;
+}
+
+/* 列表样式 */
+.post-content ul, 
+.post-content ol {
+    padding-left: 2em;
+    margin-bottom: 1.5em;
+}
+
+.post-content li {
+    margin-bottom: 0.5em;
+}
+
+/* 图片样式 */
+.post-content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 2em auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 表格样式 */
+.post-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5em 0;
+}
+
+.post-content th,
+.post-content td {
+    padding: 0.75em;
+    border: 1px solid #ddd;
+}
+
+.post-content th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+/* 水平分割线样式 */
+.post-content hr {
+    border: none;
+    border-top: 2px solid #eee;
+    margin: 2em 0;
+} 
