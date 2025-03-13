@@ -21,3 +21,10 @@ author:
 
 exclude:
   - CHANGELOG.md
+
+# Analytics
+analytics:
+  provider: "google-gtag"
+  google:
+    tracking_id: "G-D5FXLGMCXD"
+    anonymize_ip: false # true/false
