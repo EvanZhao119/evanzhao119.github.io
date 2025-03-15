@@ -30,18 +30,8 @@ analytics:
     anonymize_ip: false # true/false
 
 # 主页分页配置
-paginate: 3  # 每页显示的文章数量
+paginate: 5  # 每页显示的文章数量
 paginate_path: "/page/:num/"  # 主页的分页路径
-
-# 分页配置
-pagination:
-  enabled: true
-  per_page: 3
-  permalink: '/page/:num/'
-  title: ':title - 第 :num 页'
-  limit: 0
-  sort_field: 'date'
-  sort_reverse: true
 
 # 分类页面配置
 category_archive:
