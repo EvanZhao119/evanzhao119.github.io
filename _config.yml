@@ -1,8 +1,7 @@
 title: "EvanZhao's Tech Blog"
 description: "Sharing knowledge about backend development, AI, and system design."
-baseurl: ""  # GitHub Pages 需留空
-# url: "https://evanzhao119.github.io"  # 你的 GitHub Pages 网址
-url: "http://127.0.0.1:4000" # 你的 GitHub Pages 网址
+baseurl: ""  # 保持为空
+url: "https://evanzhao119.github.io"  # GitHub Pages 的 URL
 
 # 主题设置
 remote_theme: "mmistakes/minimal-mistakes"
@@ -30,9 +29,9 @@ analytics:
     tracking_id: "G-D5FXLGMCXD"
     anonymize_ip: false # true/false
 
-# 添加分页配置
+# 主页分页配置
 paginate: 3  # 每页显示的文章数量
-paginate_path: "/java/page/:num/"  # 修改这里，设置Java分类的分页路径
+paginate_path: "/page/:num/"  # 主页的分页路径
 
 # 分页配置
 pagination:
