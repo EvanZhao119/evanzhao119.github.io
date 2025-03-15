@@ -1,6 +1,6 @@
 title: "EvanZhao's Tech Blog"
 description: "Sharing knowledge about backend development, AI, and system design."
-baseurl: ""  # 保持为空
+baseurl: ""  # Keep Empty
 url: "https://evanzhao119.github.io"  # GitHub Pages 的 URL
 
 # 主题设置
@@ -11,8 +11,8 @@ plugins:
 
 author:
   name: "Evan Zhao"
-  avatar: "/assets/images/avatar.png" # 头像
-  bio     : "I am a software engineer."
+  avatar: "/assets/images/avatar.png" 
+  bio: "Technical Manager / Senior Software Engineer / Java, Python, Architecture, Big Data / Scalable System Design"
   location: "Canada"
   email: "evanzhao119@gmail.com"
   github: "EvanZhao119"
