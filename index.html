@@ -16,7 +16,7 @@ author_profile: true
       <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%Y-%m-%d" }}</time>
       {% if post.categories.size > 0 %}
       <span class="post-categories">
-        分类：
+        Categories:
         {% for category in post.categories %}
         <a href="/{{ category | downcase }}/">{{ category }}</a>
         {% unless forloop.last %}, {% endunless %}
@@ -29,7 +29,9 @@ author_profile: true
       {{ post.excerpt | strip_html | truncatewords: 50 }}
     </div>
 
-    <a href="{{ post.url | relative_url }}" class="read-more">阅读全文 &raquo;</a>
+    <a href="{{ post.url | relative_url }}" class="read-more">
+      Read More <i class="fas fa-arrow-right"></i>
+    </a>
   </article>
   {% endfor %}
 </div>

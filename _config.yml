@@ -32,7 +32,7 @@ analytics:
 
 # 添加分页配置
 paginate: 3  # 每页显示的文章数量
-paginate_path: "/page/:num/"
+paginate_path: "/java/page/:num/"  # 修改这里，设置Java分类的分页路径
 
 # 分页配置
 pagination:
@@ -43,3 +43,8 @@ pagination:
   limit: 0
   sort_field: 'date'
   sort_reverse: true
+
+# 分类页面配置
+category_archive:
+  type: liquid
+  path: /

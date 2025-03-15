@@ -10,14 +10,7 @@ layout: archive
 
 <div class="posts">
   {% assign category_posts = site.categories[page.category] %}
-  {% assign total_posts = category_posts.size %}
-  {% assign posts_per_page = 10 %}
-  {% assign total_pages = total_posts | divided_by: posts_per_page | plus: 1 %}
-  
-  {% assign offset = paginator.page | minus: 1 | times: posts_per_page %}
-  {% assign end_offset = offset | plus: posts_per_page %}
-  
-  {% for post in category_posts limit: posts_per_page offset: offset %}
+  {% for post in category_posts %}
   <article class="post">
     <h2 class="post-title">
       <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
@@ -44,30 +37,3 @@ layout: archive
   </article>
   {% endfor %}
 </div>
-
-{% if total_pages > 1 %}
-<div class="pagination">
-  {% if paginator.previous_page %}
-    <a href="{{ paginator.previous_page_path | relative_url }}">&laquo; 上一页</a>
-  {% else %}
-    <span>&laquo; 上一页</span>
-  {% endif %}
-
-  {% for page in (1..total_pages) %}
-    {% assign page_path = page | prepend: '/java/page/' | append: '/' %}
-    {% if page == paginator.page %}
-      <em>{{ page }}</em>
-    {% elsif page == 1 %}
-      <a href="/java/">{{ page }}</a>
-    {% else %}
-      <a href="{{ page_path }}">{{ page }}</a>
-    {% endif %}
-  {% endfor %}
-
-  {% if paginator.next_page %}
-    <a href="{{ paginator.next_page_path | relative_url }}">下一页 &raquo;</a>
-  {% else %}
-    <span>下一页 &raquo;</span>
-  {% endif %}
-</div>
-{% endif %}
