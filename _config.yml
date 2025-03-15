@@ -8,6 +8,7 @@ url: "http://127.0.0.1:4000" # 你的 GitHub Pages 网址
 remote_theme: "mmistakes/minimal-mistakes"
 plugins:
   - jekyll-include-cache
+  - jekyll-paginate
 
 author:
   name: "Evan Zhao"
@@ -28,3 +29,17 @@ analytics:
   google:
     tracking_id: "G-D5FXLGMCXD"
     anonymize_ip: false # true/false
+
+# 添加分页配置
+paginate: 3  # 每页显示的文章数量
+paginate_path: "/page/:num/"
+
+# 分页配置
+pagination:
+  enabled: true
+  per_page: 3
+  permalink: '/page/:num/'
+  title: ':title - 第 :num 页'
+  limit: 0
+  sort_field: 'date'
+  sort_reverse: true
