@@ -36,29 +36,67 @@ author_profile: true
   {% endfor %}
 </div>
 
-<!-- 分页导航 -->
 {% if paginator.total_pages > 1 %}
 <div class="pagination">
+  {% assign total = paginator.total_pages %}
+  {% assign current = paginator.page %}
+  
+  <!-- Previous link -->
   {% if paginator.previous_page %}
     <a href="{{ paginator.previous_page_path | relative_url }}">&laquo; Previous</a>
   {% else %}
-    <span>&laquo; Previous</span>
+    <span class="disabled">&laquo; Previous</span>
   {% endif %}
-
-  {% for page in (1..paginator.total_pages) %}
-    {% if page == paginator.page %}
-      <em>{{ page }}</em>
-    {% elsif page == 1 %}
-      <a href="{{ '/' | relative_url }}">{{ page }}</a>
-    {% else %}
-      <a href="{{ site.paginate_path | relative_url | replace: ':num', page }}">{{ page }}</a>
+  
+  <!-- First page is always visible -->
+  {% if current == 1 %}
+    <em>1</em>
+  {% else %}
+    <a href="{{ '/' | relative_url }}">1</a>
+  {% endif %}
+  
+  <!-- Left ellipsis (only show if there's a gap of at least 2 pages) -->
+  {% if current > 3 %}
+    <span class="ellipsis">...</span>
+  {% endif %}
+  
+  <!-- Page before current (if it's not page 1 and not right after page 1) -->
+  {% if current > 2 %}
+    {% assign prev_page = current | minus: 1 %}
+    <a href="{{ site.paginate_path | relative_url | replace: ':num', prev_page }}">{{ prev_page }}</a>
+  {% endif %}
+  
+  <!-- Current page (if not page 1) -->
+  {% if current > 1 and current < total %}
+    <em>{{ current }}</em>
+  {% endif %}
+  
+  <!-- Page after current (if it's not the last page or right before the last page) -->
+  {% if current < total %}
+    {% assign next_page = current | plus: 1 %}
+    {% if next_page < total %}
+      <a href="{{ site.paginate_path | relative_url | replace: ':num', next_page }}">{{ next_page }}</a>
     {% endif %}
-  {% endfor %}
-
+  {% endif %}
+  
+  <!-- Right ellipsis (only show if there's a gap of at least 2 pages) -->
+  {% assign distance_to_end = total | minus: current | minus: 1 %}
+  {% if distance_to_end > 1 %}
+    <span class="ellipsis">...</span>
+  {% endif %}
+  
+  <!-- Last page is always visible (unless it's the current page) -->
+  {% if current == total %}
+    <em>{{ total }}</em>
+  {% else %}
+    <a href="{{ site.paginate_path | relative_url | replace: ':num', total }}">{{ total }}</a>
+  {% endif %}
+  
+  <!-- Next link -->
   {% if paginator.next_page %}
     <a href="{{ paginator.next_page_path | relative_url }}">Next &raquo;</a>
   {% else %}
-    <span>Next &raquo;</span>
+    <span class="disabled">Next &raquo;</span>
   {% endif %}
 </div>
 {% endif %}
