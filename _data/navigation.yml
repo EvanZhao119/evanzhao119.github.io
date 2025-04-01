@@ -6,7 +6,7 @@ main:
     url: /java/
   - title: "JVM"
     url: /jvm/
+  - title: "Java Concurrency"
+    url: /concurrency/
   - title: "Java Spring"
     url: /spring/
-  #- title: "About"
-  #  url: /about/
