@@ -73,12 +73,14 @@ Here’s how Spring processes XML-based bean definitions:
 1. `obtainFreshBeanFactory()` is invoked, which internally calls `loadBeanDefinitions(beanFactory)`
 2. This triggers a series of function calls leading to the parsing of the XML document.
 #### Call Chain
+
 | Class | Method |
 |-------|--------|
 | `AbstractXmlApplicationContext` | `loadBeanDefinitions(DefaultListableBeanFactory)` |
 | `AbstractXmlApplicationContext` | `loadBeanDefinitions(XmlBeanDefinitionReader)` |
 | `AbstractBeanDefinitionReader` | `loadBeanDefinitions(String... locations)` |
 | `XmlBeanDefinitionReader` | `doLoadBeanDefinitions(InputSource, Resource)` |
+
 #### Key Implementation
 ```java
 protected int doLoadBeanDefinitions(InputSource inputSource, Resource resource) {
