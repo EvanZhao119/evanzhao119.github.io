@@ -96,6 +96,7 @@ The `initializeBean()` method is the final step in the Spring bean lifecycle bef
 1. **Invokes Aware interfaces** (e.g., `BeanNameAware`, `ApplicationContextAware`)
 2. **Calls initialization methods** (like `@PostConstruct` or `afterPropertiesSet()`)
 3. **Applies `BeanPostProcessors` after initialization, where AOP proxy creation happens**
+
 ### AOP Integration Happens Here
 The crucial step for AOP is:
 ```java
