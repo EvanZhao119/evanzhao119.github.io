@@ -10,3 +10,5 @@ main:
     url: /concurrency/
   - title: "Java Spring"
     url: /spring/
+  - title: "AI Engineering"
+    url: /ai/
