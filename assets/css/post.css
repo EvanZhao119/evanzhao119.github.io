@@ -52,17 +52,25 @@
 .post-content pre {
     background-color: #f8f9fa;
     border-radius: 4px;
-    padding: 1em;
+    padding: 0.6em 1em 1em 0.8em; /* 修正第一行偏移 */
     overflow-x: auto;
     margin: 1.5em 0;
 }
 
 .post-content code {
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-    font-size: 0.9em;
-    padding: 0.2em 0.4em;
+    font-size: 0.95em;
+    padding: 0.15em 0.3em;
     background-color: #f8f9fa;
     border-radius: 3px;
+}
+
+/* pre 内部的 code 元素：强制对齐块状显示，避免缩进 */
+.post-content pre code {
+  display: block;
+  padding: 0;
+  margin: 0;
+  background: none; /* 避免双背景 */
 }
 
 /* 引用样式 */
