@@ -188,3 +188,8 @@ output = net(input_tensor)
 _, predicted = torch.max(output, 1)
 print("Prediction:", classes[predicted.item()])
 ```
+
+### 3. Sample Output from `Colab`
+The following figure shows the actual output after successfully uploading an image in Google `Colab` and running the model inference code.
+
+![Sample Prediction Output](/assets/images/2025_07_31_cifar10_batch_output.jpg)
