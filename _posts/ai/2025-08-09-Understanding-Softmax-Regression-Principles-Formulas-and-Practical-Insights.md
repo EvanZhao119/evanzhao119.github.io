@@ -104,3 +104,4 @@ This simple gradient formulation makes Softmax regression efficient and stable f
 
 ## 7. Conclusion
 Softmax regression is a go-to model for multi-class problems. It extends the idea of linear regression into probability space, uses Softmax to obtain a probability distribution, applies cross-entropy to measure the prediction error, and updates parameters with a simple gradient formula. Whether in image classification, text classification, or recommendation systems, Softmax regression is a fundamental and highly effective choice.
+
