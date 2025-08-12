@@ -253,4 +253,4 @@ Answer: It’s handled internally by `CrossEntropyLoss` during training. Only ap
 Answer: It leverages the `log-sum-exp` trick to prevent numerical overflow.
 
 3. **For real-world images**
-Answer: Preprocess them to resemble `FMNIST` samples. For better accuracy, consider replacing the model with a small CNN — even two convolutional layers can push accuracy above 90%. Here, we’re only using it as a `Softmax` demo.
+Answer: Preprocess them to resemble `FMNIST` samples. For better accuracy, consider replacing the model with a small CNN — even two convolutional layers can push accuracy above 90%. Here, we’re only using it as a `Softmax` demo. 
