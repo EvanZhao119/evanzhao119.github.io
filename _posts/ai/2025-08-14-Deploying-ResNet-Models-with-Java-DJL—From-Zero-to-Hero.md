@@ -121,7 +121,7 @@ try (ZooModel<Image, Classifications> model = ModelZoo.loadModel(criteria);
 ```
 
 Result Examples:
-![Sample Prediction Output](/assets/images/2025_08_14_djl_result_example.png)
+![Result Examples](/assets/images/2025_08_14_djl_result_example.png)
 
 ---
 
