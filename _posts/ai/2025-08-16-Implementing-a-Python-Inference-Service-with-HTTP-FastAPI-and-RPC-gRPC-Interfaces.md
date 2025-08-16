@@ -209,4 +209,4 @@ print(resp)
 
 Using local weights avoids external dependencies, improves startup time, and makes deployments more stable.
 
-In production, the choice depends on the trade-off between **ease of integration** and **performance requirements**.
+In production, the choice depends on the trade-off between **ease of integration** and **performance requirements**. 
