@@ -1,13 +1,18 @@
 ---
 layout: post
-title: "djl-resnet + JNI: a Practical Guide to Faster Image Preprocessing"
+title: "DJL ResNet with JNI: Accelerating Image Preprocessing in Java"
 date: 2025-08-21
 categories: ai
 published: true
+description: "Learn how to speed up ResNet inference in Java by offloading image preprocessing (decode, resize, crop, normalize) to C/C++ with JNI and DJL. Includes step-by-step tutorial, project layout, and benchmarks."
+keywords: ["DJL", "JNI image preprocessing", "ResNet Java", "Java AI inference", "Deep Java Library", "Java performance optimization"]
 ---
 
-# djl-resnet + JNI: a Practical Guide to Faster Image Preprocessing
-Try to move image preprocessing (**decode → resize (short side 256) → center crop 224 → CHW/float32 + normalize**) from [Java](https://evanzhao119.github.io/ai/2025/08/14/Deploying-ResNet-Models-with-Java-DJL-From-Zero-to-Hero.html) into **C/C++** via **JNI**, return a `DirectByteBuffer`, and feed it straight into DJL (Deep Java Library). 
+# DJL ResNet with JNI: Accelerating Image Preprocessing in Java
+When deploying deep learning models in production, **image preprocessing** often becomes the hidden bottleneck. In this guide, we’ll explore how to move preprocessing from **Java** to **C/C++** via **JNI**, then feed the results directly into [DJL (Deep Java Library)](https://djl.ai/).
+
+By the end, you’ll have a ResNet classifier running with **native preprocessing**, delivering lower latency and CPU overhead — without sacrificing accuracy.
+
 We need to download **3rd‑party files** in advance - `stb_image.h` and `stb_image_resize2.h`.
 ```bash
 curl -fL --retry 3 -o native/third_party/stb_image.h https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
@@ -17,7 +22,12 @@ curl -fL --retry 3 -o native/third_party/stb_image_resize2.h https://raw.githubu
 ---
 
 ## What We’ll Build
-We’ll push the image preprocessing pipeline down to C/C++. Java will just call a **JNI** function and receive a `DirectByteBuffer` of `float32` in **CHW** layout. DJL will wrap it as an NDArray and run the model as usual. It keeps accuracy the same but can reduce end‑to‑end latency and CPU overhead.
+- Move the image preprocessing pipeline (**decode → resize → center crop → normalize**) into **C/C++**  
+- Wrap the result in a `DirectByteBuffer`  
+- Feed it directly into DJL’s `NDArray`  
+- Compare **latency and accuracy** with stock Java preprocessing  
+
+**Reference**: [Deploying ResNet Models with Java DJL – From Zero to Hero](/ai/2025/08/14/deploy-resnet-java-djl-tutorial.html)
 
 ---
 
@@ -41,13 +51,13 @@ djl-resnet/
 └─ pom.xml
 ```
 Final project layout:
-![Project Layout](/assets/images/2025_08_21_project_layout.png)
+![Project layout for DJL ResNet JNI preprocessing pipeline in Java](/assets/images/2025_08_21_project_layout.png)
 
 ---
 
 ## Step‑by‑Step Build
 
-### 1) JNI shell (Java)
+### 1) Java JNI Shell
 `src/main/java/org/estech/NativeImageOps.java`
 ```java
 package org.estech;
@@ -64,7 +74,7 @@ public final class NativeImageOps {
 }
 ```
 
-### 2) Generate the JNI header
+### 2) Generate JNI Header
 ```bash
 mvn -q -DskipTests package
 # create header in native/ and keep .class in target/classes
@@ -72,15 +82,15 @@ javac -h native -cp target/classes -d target/classes src/main/java/org/estech/Na
 # output: native/org_estech_NativeImageOps.h
 ```
 
-### 3) Native implementation (C++)
-`native/imageops.cpp` (key points):
+### 3) Native Implementation with JNI (C++ Preprocessing)
+`native/imageops.cpp`(key points of **JNI image preprocessing**):
 - `#define STB_IMAGE_IMPLEMENTATION` + `#include "third_party/stb_image.h"`
 - `#define STB_IMAGE_RESIZE2_IMPLEMENTATION` + `#include "third_party/stb_image_resize2.h"`  
 - Implement `Java_org_estech_NativeImageOps_preprocessToCHW`
-    1. read encoded image pointer from a direct `ByteBuffer` 
-    2. `stbi_load_from_memory` → RGB (HWC/uint8) 
-    3. **`stbir_resize_uint8_linear`** to resize the **short side** to 256 (stride = width * channels) 
-    4. Center-crop to 224×224
+    1. Read encoded image pointer from a direct `ByteBuffer` 
+    2. Decode using [`stbi_load_from_memory`](https://github.com/nothings/stb) → RGB (HWC/uint8) 
+    3. **Resize** the short side to 256 using [`stbir_resize_uint8_linear`](https://github.com/nothings/stb) (stride = width * channels)
+    4. Center-crop to `224×224` (ResNet standard input size)
     5. HWC (u8) → CHW (float32) + normalize (ImageNet mean/std) 
     6. `NewDirectByteBuffer(chw, bytes)` to return it to Java
 - Implement `Java_org_estech_NativeImageOps_freeBuffer` to free the native allocation.
@@ -156,7 +166,7 @@ JNIEXPORT jobject JNICALL Java_org_estech_NativeImageOps_preprocessToCHW
 }
 ```
 
-### 4) Build the dynamic library (macOS Intel)
+### 4) Build the JNI Dynamic Library (macOS Intel Example)
 `CMakeLists.txt` is the build recipe: where headers live, which sources to compile, that we want a **shared** library, and that we depend on JNI. CMake then creates Makefiles/Xcode projects and builds `libimageops.dylib`.
 
 `native/CMakeLists.txt`:
@@ -174,14 +184,21 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 add_library(imageops SHARED imageops.cpp)
 ```
 
-Build:
+Build command:
 ```bash
 cmake -S native -B native/build   -DJAVA_HOME="$JAVA_HOME"   -DCMAKE_OSX_ARCHITECTURES=x86_64   -DCMAKE_BUILD_TYPE=Release
 cmake --build native/build --config Release
-# result: native/build/libimageops.dylib
+# Output: native/build/libimageops.dylib
 ```
 
-### 5) The JNI translator (no batch dim)
+### 5) JNI Translator in Java (ResNetJniTranslator.java)
+The translator integrates the JNI preprocessing pipeline with DJL model inference.
+Key points:
+- Accepts raw image bytes (`byte[]`)
+- Calls `NativeImageOps.preprocessToCHW` → returns DirectByteBuffer
+- Converts buffer into `NDArray` with shape `(3,224,224)`
+- Applies ImageNet normalization and forwards into ResNet18 model
+
 `src/main/java/org/estech/ResNetJniTranslator.java`:
 ```java
 public class ResNetJniTranslator implements Translator<byte[], Classifications> {
@@ -266,7 +283,7 @@ public class ResNetJniTranslator implements Translator<byte[], Classifications> 
 }
 ```
 
-### 6) Switch between JNI and stock DJL in `App`
+### 6) Switch Between JNI and Stock DJL Translators
 - In IntelliJ VM options:
 ```
 -Djava.library.path=$PROJECT_DIR$/native/build -DuseJni=true
@@ -350,24 +367,23 @@ if (useJni) {
 
 ---
 
-## How the Pieces Fit Together (Java ↔ C++)
+## How Java and C++ Fit Together with JNI
 **Build time**
 1. Java declares `native` methods in `NativeImageOps`.
-2. `javac -h` generates `org_estech_NativeImageOps.h` with the exact JNI prototypes.
-3. C++ includes that header and implements the functions.
-4. CMake compiles `imageops.cpp` into `libimageops.dylib`.
+2. `javac -h` generates JNI headers (e.g.,`org_estech_NativeImageOps.h`).
+3. C++ implements the JNI functions.
+4. CMake builds `libimageops.dylib`.
 
 **Runtime**
-1. `System.loadLibrary("imageops")` maps to `libimageops.dylib` on macOS (Linux: `.so`, Windows: `.dll`).  
-2. The JVM searches `-Djava.library.path` to load the library. 
-3. The JVM looks up JNI symbols like `Java_org_estech_NativeImageOps_preprocessToCHW` and binds them to your `native` methods.  
-4. The translator calls `NativeImageOps.preprocessToCHW(...)` → C++ preprocesses and returns a `DirectByteBuffer`.
-5. Java wraps the buffer as an NDArray with shape `(3,224,224)`; `Batchifier.STACK` makes it `[N,3,224,224]` for inference.
+1. `System.loadLibrary("imageops")` loads the shared JNI library.
+2. JVM binds `Java_org_estech_NativeImageOps_preprocessToCHW` to Java.
+3. JNI pipeline preprocesses images in **C++**, returning a direct buffer.
+4. DJL wraps this buffer as an `NDArray` and performs **ResNet inference**.
 
 ---
 
-## Experimental Results
-### Stock DJL (Java‑side preprocessing)
+## Experimental Results: JNI vs Stock DJL Preprocessing
+### Stock DJL (Java Preprocessing)
 ```
 # Image 1
 Predict total (DJL): 356.75 ms
@@ -405,6 +421,8 @@ Top-1: tiger (0.84426)
 - **Latency**: Overall **JNI ≤ DJL**. Images 2 and 3 are ~41 ms and ~26 ms faster end‑to‑end; image 1 is roughly the same.  
 - **JNI preprocess time**: 30–65 ms per image (varies by image size/content; image 3 is heavier). For better efficiency, try batching multiple images in one JNI call.
 
+JNI image preprocessing in Java with DJL significantly reduces preprocessing latency compared to pure Java pipelines.
+
 ---
 
 ## Appendix: Quick Q&A
@@ -419,3 +437,11 @@ Answers: The JVM calls `System.mapLibraryName("imageops")`: macOS → `libimageo
 
 - **What exactly does `CMakeLists.txt` do?**  
 Answers: It’s the build recipe. It declares a **shared** library target, points to sources and headers, pulls in JNI include paths, and produces `libimageops.dylib`.
+
+---
+
+## Related Resources
+- Related post: [Implementing a Python Inference Service with FastAPI & gRPC](/ai/2025/08/16/python-inference-service-fastapi-grpc.html)  
+- Related post: [Deploying ResNet Models with Java DJL – From Zero to Hero](/ai/2025/08/14/deploy-resnet-java-djl-tutorial.html)  
+- [gRPC Java Documentation](https://grpc.io/docs/languages/java/)  
+- [JNI Official Guide](https://docs.oracle.com/javase/8/docs/technotes/guides/jni/)  
