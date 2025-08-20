@@ -1,19 +1,26 @@
 ---
 layout: post
-title: "Getting Started with PyTorch Image Classification on Google Colab"
+title: "PyTorch Image Classification Tutorial on Google Colab (CIFAR-10 Example)"
 date: 2025-07-31
 categories: ai
 published: true
+description: "Step-by-step tutorial to build and train a PyTorch image classifier on Google Colab using CIFAR-10 dataset. Includes GPU setup, training code, and custom image testing."
+keywords: ["pytorch image classification", "google colab tutorial", "cifar10 example", "deep learning beginner", "pytorch colab gpu"]
 ---
 
 # Getting Started with PyTorch Image Classification on Google Colab
-This article walks you through the complete pipeline to run an image classification task using `PyTorch` on `Google Colab`, from environment setup to uploading your own image and testing predictions with a trained model.
+This beginner-friendly **PyTorch image classification tutorial** shows how to train and test a model on **Google Colab** using the **CIFAR-10 dataset**.  
+You will learn step-by-step how to:  
+- Set up **Google Colab with GPU** for deep learning  
+- Train a **ResNet18 model** on CIFAR-10  
+- Upload and test your own images with the trained model  
+
+By the end, you’ll have a working **PyTorch image classifier in Colab**, complete with code examples.
 
 ## Part 1: How to Use Google Colab from Scratch
 
-### What is Google Colab?
-
-`Google Colab` is a free, cloud-based `Jupyter` notebook environment that supports GPU and TPU acceleration. It’s perfect for deep learning experiments.
+### What is Google Colab? (Beginner Introduction)
+Google Colab is a **free cloud-based Jupyter notebook** with GPU/TPU support. It’s widely used for machine learning because it eliminates the need to install PyTorch locally and provides free GPU acceleration.
 
 ### Steps to Get Started:
 
@@ -30,9 +37,8 @@ torch.cuda.is_available()  # Should return True if GPU is enabled
 
 ---
 
-## Part 2: Complete Code for CIFAR-10 Classification in One Block
-
-Run the following code block in `Colab` cells separately.(Of course, if you prefer, you can also paste them into a single cell and run all at once.)
+## Part 2: PyTorch CIFAR-10 Image Classification Code on Google Colab
+Below is the **end-to-end PyTorch pipeline** for CIFAR-10 classification: dataset loading, model training, evaluation, and predictions.
 
 ### 1. Import required libraries
 ```python
@@ -74,7 +80,8 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog',
 ```
 
 #### Where is the training dataset from?
-The dataset used in this tutorial is **CIFAR-10**, a benchmark dataset included in PyTorch’s `torchvision.datasets`. It is automatically downloaded and cached on `Colab`.
+The dataset used in this tutorial is **CIFAR-10**, one of the most popular **image classification benchmarks** in deep learning. It comes pre-integrated with PyTorch’s `torchvision.datasets`, and when running on **Google Colab**, it will be automatically downloaded and cached.
+
 ```python
 torchvision.datasets.CIFAR10(root='./data', train=True, 
 	download=True, transform=transform)
@@ -166,7 +173,9 @@ print('Predicted: ', ' '.join(f'{classes[predicted[j]]}' for j in range(4)))
 
 ## Part 3: Upload and Classify Your Own Image
 
-### 1. Upload Image to `Colab`
+### 1. Upload Your Own Image to Google Colab
+This step demonstrates how to **test the trained PyTorch model with your own images**. Uploading custom data ensures the classifier works beyond CIFAR-10 test images.
+
 ```python
 from google.colab import files
 uploaded = files.upload()
@@ -192,4 +201,24 @@ print("Prediction:", classes[predicted.item()])
 ### 3. Sample Output from `Colab`
 The following figure shows the actual output after successfully uploading an image in Google `Colab` and running the model inference code.
 
-![Sample Prediction Output](/assets/images/2025_07_31_cifar10_batch_output.jpg)
+![PyTorch CIFAR-10 image classification results on Google Colab](/assets/images/2025_07_31_cifar10_batch_output.jpg "PyTorch CIFAR-10 Image Classification Results")
+
+--- 
+
+## FAQ 
+
+**Q: Why use Google Colab for PyTorch?**  
+A: Google Colab provides free GPU acceleration, collaborative notebooks, and zero installation. It’s perfect for beginners learning PyTorch.  
+
+**Q: What dataset is used in this tutorial?**  
+A: We use CIFAR-10, a standard benchmark with 60,000 images across 10 categories (e.g., airplane, car, cat, dog).  
+
+**Q: Can I replace ResNet18 with another model?**  
+A: Yes. You can replace `models.resnet18` with other models such as ResNet50, VGG16, or MobileNet, depending on your accuracy vs performance needs.  
+
+---
+
+## References
+- [PyTorch Official Documentation](https://pytorch.org/docs/stable/index.html)  
+- [Google Colab Guide](https://colab.research.google.com/) 
+- Related post: [Linear Regression with PyTorch: Theory and Practice](/ai/2025/08/05/linear-regression-pytorch-tutorial.html)
