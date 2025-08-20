@@ -1,9 +1,11 @@
 ---
 layout: post
-title: "Learn Softmax Regression with PyTorch: A Colab-Based Demo"
+title: "Learn Softmax Regression with PyTorch: A Google Colab Demo"
 date: 2025-08-11
 categories: ai
 published: true
+description: "Step-by-step PyTorch tutorial to implement softmax regression on Fashion-MNIST in Google Colab. Includes CPU training, loss function explanation, inference, and image upload testing."
+keywords: ["pytorch softmax regression", "google colab tutorial", "fashion mnist", "cross entropy loss", "multiclass classification"]
 ---
 
 # Learn Softmax Regression with PyTorch: A Colab-Based Demo
@@ -14,7 +16,7 @@ published: true
 
 ---
 
-## 1. Environment & Dependencies (Fixed CPU)
+## 1. Environment Setup & Dependencies for PyTorch (CPU Mode)
 Import PyTorch/TorchVision and fix execution to CPU.
 ```python
 import torch
@@ -28,7 +30,7 @@ device = torch.device('cpu')
 
 ---
 
-## 2. Data Loading & Preprocessing
+## 2. Data Loading & Preprocessing for Fashion-MNIST in PyTorch
 Download the Fashion-MNIST dataset, normalize pixel values to the range [0, 1], and create batched data loaders for efficient iteration.
 
 *Note:* In notebook environments, use `num_workers=0` to prevent multiprocessing shutdown warnings.
@@ -57,11 +59,11 @@ Use the dataset’s built‑in `classes` to avoid mismatches from manual orderin
 classes = train_ds.classes
 classes
 ```
-![Sample Prediction Output](/assets/images/2025_08_11_softmax_demo_class_names.png)
+![Fashion-MNIST class names visualization](/assets/images/2025_08_11_softmax_demo_class_names.png)
 
 ---
 
-## 4. Model Definition (Softmax Regression: Flatten + Linear)
+## 4. PyTorch Softmax Regression Model Definition (Flatten + Linear Layer)
 `Flatten + Linear(784→10)`, outputs raw logits only (Softmax will be applied later by the loss function).
 
 ```python
@@ -113,7 +115,7 @@ def evaluate(model, data_iter):
 
 ---
 
-## 7. Training Loop
+## 7. Training Loop in PyTorch with CrossEntropyLoss
 
 ```python
 from tqdm.auto import tqdm
@@ -145,7 +147,7 @@ for epoch in range(1, num_epochs + 1):
 
 ---
 
-## 8. Inference & Visualization (Softmax only for showing probabilities)
+## 8. Inference & Visualization: Softmax Probabilities in PyTorch
 Take a random batch and show `predictions` / `true labels` / `confidence`.
 
 ```python
@@ -172,7 +174,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-![Sample Prediction Output](/assets/images/2025_08_11_softmax_demo_inference_and_visualization.png)
+![PyTorch softmax regression inference visualization](/assets/images/2025_08_11_softmax_demo_inference_and_visualization.png)
 
 ---
 
@@ -240,7 +242,7 @@ for i in range(3):
 print("\nPredicted:", classes[top3.indices[0].item()])
 ```
 
-![Sample Prediction Output](/assets/images/2025_08_11_softmax_demo_test_result.png)
+![Softmax regression test result on custom uploaded image](/assets/images/2025_08_11_softmax_demo_test_result.png)
 
 ---
 
@@ -254,3 +256,9 @@ Answer: It leverages the `log-sum-exp` trick to prevent numerical overflow.
 
 3. **For real-world images**
 Answer: Preprocess them to resemble `FMNIST` samples. For better accuracy, consider replacing the model with a small CNN — even two convolutional layers can push accuracy above 90%. Here, we’re only using it as a `Softmax` demo. 
+
+---
+
+### Related posts
+- [Understanding Softmax Regression: Principles, Formulas, and Practical Insights](/ai/2025/08/09/softmax-regression-tutorial.html)
+- [Linear Regression with PyTorch: Theory and Practice](/ai/2025/08/05/linear-regression-pytorch-tutorial.html)

@@ -1,17 +1,19 @@
 ---
 layout: post
-title: "Deploying ResNet Models with Java + DJL — From Zero to Hero"
+title: "Deploying ResNet Models with Java and DJL (Deep Java Library)"
 date: 2025-08-14
 categories: ai
 published: true
+description: "Step-by-step guide to deploy ResNet models using Java and DJL. Learn environment setup, model loading, image preprocessing, and inference in a pure Java environment without Python."
+keywords: ["java djl tutorial", "deploy resnet java", "deep java library", "image classification java", "pytorch resnet java"]
 ---
 
-# Deploying ResNet Models with Java + DJL — From Zero to Hero
+# Deploying ResNet Models with Java and DJL (Deep Java Library)
 In the Java world, deep learning often sounds like something you must do with Python. In reality, **DJL (Deep Java Library)** allows you to run deep learning models such as `ResNet` and `BERT` directly in a pure Java environment(no extra Python service required). This reduces deployment costs and eliminates network latency. 
 
 ---
 
-## 1. Why DJL?
+## 1. Why Use DJL for Deep Learning in Java?
 Compared to cross-language calls (gRPC/HTTP API), DJL offers:
 - **No extra service**: Run models directly in the Java process
 - **Low latency**: No network transfer overhead
@@ -21,7 +23,7 @@ Compared to cross-language calls (gRPC/HTTP API), DJL offers:
 
 ---
 
-## 2. Environment Setup
+## 2. Environment Setup for Java + DJL
 Let's start from environment setup.
 1. **Install JDK 17+** 
 2. **Create a Maven project** (or Gradle)
@@ -60,7 +62,7 @@ Let's start from environment setup.
 
 ---
 
-## 3. Loading and Deploying ResNet
+## 3. Loading and Deploying a ResNet Model in Java
 The code below shows how to load a local ResNet-18 model (TorchScript format) with DJL and classify an image.
 ```java
 // The translator defines preprocessing steps for input images, postprocessing steps for model outputs,
@@ -103,7 +105,7 @@ Criteria<Image, Classifications> criteria = Criteria.builder()
 
 ---
 
-## 4. Inference and Output
+## 4. Running Inference and Printing Output
 Once the model and `Predictor` are ready, you can run inference on an image and print the top-5 predictions.
 ```java
 try (ZooModel<Image, Classifications> model = ModelZoo.loadModel(criteria);
@@ -121,11 +123,18 @@ try (ZooModel<Image, Classifications> model = ModelZoo.loadModel(criteria);
 ```
 
 Result Examples:
-![Result Examples](/assets/images/2025_08_14_djl_result_example.png)
+![DJL ResNet result example on image classification](/assets/images/2025_08_14_djl_result_example.png)
 
 ---
 
-## 5. Overall Workflow and Summary
+## 5. Workflow and Summary
 > Java Application -> ImageFactory loads the image -> Translator applies preprocessing -> DJL (PyTorch engine) runs inference -> Translator applies postprocessing -> Output classification results
 
 With DJL, we can efficiently run deep learning models in Java without relying on Python services, making it ideal for low-latency, Java-based environments. However, if models change frequently or require support for multiple programming languages, gRPC or HTTP may be a better choice.
+
+---
+
+## Related posts
+- [Learn Softmax Regression with PyTorch: A Google Colab Demo](/ai/2025/08/11/pytorch-softmax-regression-colab-demo.html)
+- [Understanding Softmax Regression: Principles, Formulas, and Practical Insights](/ai/2025/08/09/softmax-regression-tutorial.html)
+- [Implementing a Python Inference Service with HTTP (FastAPI) and RPC (gRPC)](/ai/2025/08/16/python-inference-service-fastapi-grpc.html)

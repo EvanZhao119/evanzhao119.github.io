@@ -1,28 +1,40 @@
 ---
 layout: post
-title: "Implementing a Python Inference Service with HTTP (FastAPI) and RPC (gRPC) Interfaces"
+title: "Python Inference Service with FastAPI and gRPC – REST vs RPC Deployment Guide"
 date: 2025-08-16
 categories: ai
 published: true
+description: "Step-by-step tutorial on building a Python inference service using FastAPI (HTTP) and gRPC, comparing REST vs RPC performance."
+keywords: ["Python inference service", "FastAPI tutorial", "gRPC tutorial", "REST vs gRPC", "AI model deployment", "machine learning API"]
 ---
 
 # Implementing a Python Inference Service with HTTP (FastAPI) and RPC (gRPC) Interfaces
+
+## Introduction
+When deploying AI models in production, we often face a choice:
+
+**Should we expose the service via HTTP (REST/JSON) or RPC (gRPC)?**
+
+This tutorial walks through building a **Python inference service** with both **FastAPI (HTTP)** and **gRPC**, then compares their performance and usability.
+
 In modern AI applications, it’s common to deploy machine learning models as services so that different systems and programming languages can use them easily. For example, a Java backend system might need to use a PyTorch-trained model. Deploying the model in a Python service and exposing an API allows the Java system to send input data and receive predictions.
 
 In this project, we built a **Python inference service** that supports **two interface types**:
 1. **HTTP Interface** using FastAPI (supports JSON and multipart/form-data requests)
 2. **gRPC Interface** using Protocol Buffers (efficient binary RPC calls)
 
+Finally it provides a hands-on guide for machine learning API deployment using Python, showing how to serve AI models with both REST (FastAPI) and gRPC for production-grade inference services.
+
 ---
 
-## Here We Go
+## Project Setup: Loading ResNet18 and API Interfaces
 - **Load the ResNet18 model from local weights** (avoiding online download and SSL issues). 
 - Accept an image from the client, perform preprocessing, run inference, and return the top-K classification results.
 - Implement both **HTTP (FastAPI)** and **gRPC** interfaces.
 
 ---
 
-## Technology Stack and Project Structure
+## Technology Stack for Python Inference Service (FastAPI + gRPC)
 
 | Technology | Purpose | Why Chosen |
 |------------|---------|------------|
@@ -34,11 +46,11 @@ In this project, we built a **Python inference service** that supports **two int
 | **NumPy (<2)** | Tensor operations compatibility | Ensures compatibility with PyTorch 2.x, which is compiled against NumPy 1.x. |
 
 Project Structure Below:
-![Project Structure](/assets/images/2025_08_16_project_structure.png)
+![Project Structure for Python Inference Service with FastAPI and gRPC](/assets/images/2025_08_16_project_structure.png)
 
 ---
 
-## HTTP Implementation (FastAPI)
+## Building the HTTP Inference API with FastAPI
 
 ### API Design
 
@@ -121,7 +133,7 @@ curl -X POST "http://127.0.0.1:8000/predict/file?topk=5"
 
 ---
 
-## RPC Implementation (gRPC)
+## Implementing the gRPC Inference API with Protocol Buffers
 
 ### Protocol Buffers Definition (`grpc_app/protos/classify.proto`)
 
@@ -194,7 +206,7 @@ print(resp)
 
 ---
 
-## Performance and Conclusion
+## HTTP vs gRPC Performance Comparison and Deployment Takeaways
 
 | Feature | HTTP (FastAPI) | gRPC |
 |---------|----------------|------|
@@ -210,3 +222,19 @@ print(resp)
 Using local weights avoids external dependencies, improves startup time, and makes deployments more stable.
 
 In production, the choice depends on the trade-off between **ease of integration** and **performance requirements**. 
+
+---
+
+## Related Resources
+
+- Related post: [Deploying ResNet Models with Java DJL – From Zero to Hero](/ai/2025/08/14/deploy-resnet-java-djl-tutorial.html)
+  Learn how to integrate and deploy deep learning models in **Java** using DJL.
+
+- Related post: [PyTorch Housing Price Prediction Demo (Multi-feature)](/ai/2025/08/07/pytorch-housing-price-prediction-multi-feature.html)
+  Hands-on guide to applying linear regression in PyTorch with multiple features.
+
+- [FastAPI Official Documentation](https://fastapi.tiangolo.com/)  
+  Comprehensive docs for building high-performance Python APIs.
+
+- [gRPC Documentation](https://grpc.io/docs/)
+  Learn more about gRPC core concepts, Protocol Buffers, and API design best practices.
