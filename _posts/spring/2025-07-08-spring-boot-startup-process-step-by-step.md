@@ -1,15 +1,17 @@
 ---
 layout: post
-title: "How a Spring Boot Web App Starts: Step-by-Step Explained"
-date: 2025-04-10
+title: "Spring Boot Startup Process: Step-by-Step Guide (From main() to refresh())" 
+date: 2025-07-08
 categories: spring
 published: true
+description: "A complete walkthrough of the Spring Boot startup process — from main() and SpringApplication initialization to ApplicationContext refresh, bean creation, and updates in Spring Boot 3.x." 
+keywords: ["spring boot startup process", "spring boot applicationcontext", "spring boot refresh method", "spring boot bean lifecycle", "spring boot 3.x changes", "spring boot initialization"] 
 ---
 
 # How a Spring Boot Web App Starts: Step-by-Step Explained
 This article explains the full startup process of a Spring Boot Web application, from the `main()` method to the application being fully initialized. **I chose the older version(Spring Boot 1.5.7.RELEASE) because it is more understandable and fundational.** And I will provide some updates in Spring Boot 3.x.
 
-## Step 0: App Entry Point
+## Step 0: App Entry Point (main method)
 Everything starts from this `main()` method.
 ```java
 @SpringBootApplication

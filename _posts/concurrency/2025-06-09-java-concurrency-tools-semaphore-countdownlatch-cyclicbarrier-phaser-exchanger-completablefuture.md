@@ -1,9 +1,11 @@
 ---
 layout: post
-title: "Java Concurrency Tools: What I Use and Why"
-date: 2025-04-05
+title: "Java Concurrency Tools Explained: Semaphore, CountDownLatch, CyclicBarrier, Phaser, Exchanger, and CompletableFuture"
+date: 2025-06-09
 categories: concurrency
 published: true
+description: "Learn how to use Java concurrency utilities including Semaphore, CountDownLatch, CyclicBarrier, Phaser, Exchanger, and CompletableFuture with examples, code, and best practices."
+keywords: ["Java concurrency tools", "Semaphore", "CountDownLatch", "CyclicBarrier", "Phaser", "Exchanger", "CompletableFuture", "Java multithreading", "asynchronous programming"]
 ---
 
 # Java Concurrency Tools: What I Use and Why

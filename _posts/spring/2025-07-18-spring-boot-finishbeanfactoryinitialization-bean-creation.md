@@ -1,15 +1,17 @@
 ---
 layout: post
-title: "How Spring Boot Actually Creates Beans — A Step-by-Step Walkthrough via `finishBeanFactoryInitialization`"
-date: 2025-04-11
+title: "Spring Boot Bean Creation Deep Dive: finishBeanFactoryInitialization, preInstantiateSingletons, and doCreateBean Explained"
+date: 2025-07-18
 categories: spring
 published: true
+description: "Step-by-step guide to Spring Boot bean creation inside finishBeanFactoryInitialization(), covering preInstantiateSingletons(), getBean(), doCreateBean(), createBeanInstance(), and Spring Boot 3.x AOT optimizations."
+keywords: ["spring boot bean creation", "finishBeanFactoryInitialization explained", "spring preinstantiatesingletons", "spring doCreateBean method", "spring getbean lifecycle", "spring boot 3 aot optimizations"]
 ---
 
 # How Spring Boot Actually Creates Beans — A Step-by-Step Walkthrough via `finishBeanFactoryInitialization`
 After a series of initialization steps in Spring Boot, the real process of **bean creation** begins in the `finishBeanFactoryInitialization()` method. This is the core of the Spring IoC container, where control over bean instantiation shifts from the user to the Spring framework.
 
-## Starting Point: `refresh()` Method
+## Starting Point: refresh() Method in Spring Boot Bean Lifecycle
 Let’s take **a common example** where a bean is annotated with `@Component`. The process starts with the `refresh()` method in the `AbstractApplicationContext` class, which then calls:
 ```java
 // Instantiate all remaining (non-lazy-init) singletons.
@@ -17,7 +19,7 @@ finishBeanFactoryInitialization(beanFactory);
 ```
 This method marks the beginning of actual bean creation.
 
-## Inside `finishBeanFactoryInitialization()`
+## finishBeanFactoryInitialization: Preparing for Bean Creation 
 In the `finishBeanFactoryInitialization()` method, we focus on:
 ```java
 // Instantiate all remaining (non-lazy-init) singletons.
@@ -25,7 +27,7 @@ beanFactory.preInstantiateSingletons();
 ```
 This line triggers the instantiation of all remaining singleton beans that are not marked for lazy initialization. The method `preInstantiateSingletons()` belongs to the `DefaultListableBeanFactory` class.
 
-## `preInstantiateSingletons()`: Eager Singleton Instantiation
+## preInstantiateSingletons(): Eager Singleton Bean Instantiation in Spring Boot 
 Here, for each non-abstract, non-lazy singleton bean, the framework ensures they are fully instantiated.
 ```java
 @Override

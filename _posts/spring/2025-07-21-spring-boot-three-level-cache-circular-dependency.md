@@ -1,9 +1,11 @@
 ---
 layout: post
-title: "How Spring Boot Uses Three-Level Caching to Solve Circular Dependencies"
-date: 2025-04-11
+title: "Spring Boot Circular Dependency Resolution: Three-Level Caching Explained"
+date: 2025-07-21
 categories: spring
 published: true
+description: "Learn how Spring Boot resolves circular dependencies using three-level caching (singletonObjects, earlySingletonObjects, singletonFactories), with AOP proxy handling."
+keywords: ["spring boot circular dependency", "spring three level cache", "spring bean lifecycle", "spring boot aop proxy", "spring dependency injection"]
 ---
 
 # How Spring Boot Uses Three-Level Caching to Solve Circular Dependencies

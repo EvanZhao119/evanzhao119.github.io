@@ -1,9 +1,11 @@
 ---
 layout: post
-title: "Understand ReentrantLock: How It Works and How It Differs from `synchronized`"
-date: 2025-04-06
+title: "Java ReentrantLock vs synchronized: Deep Dive, Performance, and Source Code Analysis"
+date: 2025-06-19
 categories: concurrency
 published: true
+description: "Comprehensive comparison of Java's ReentrantLock and synchronized: performance, features, use cases, and source code analysis with JDK 21 updates." 
+keywords: ["Java ReentrantLock vs synchronized", "Java concurrency locks", "ReentrantLock tutorial", "synchronized vs ReentrantLock performance", "Java multithreading", "AQS in Java"]
 ---
 
 # Understand ReentrantLock: How It Works and How It Differs from `synchronized`

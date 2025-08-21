@@ -1,9 +1,11 @@
 ---
 layout: post
-title: "`ConcurrentHashMap` Evolution in Java"
-date: 2025-04-09
+title: "ConcurrentHashMap Evolution in Java: From Segmented Locks to CAS and Node-based Design"
+date: 2025-06-30
 categories: concurrency
 published: true
+description: "Learn the evolution of ConcurrentHashMap in Java, from segmented locks in Java 7 to CAS-based design in Java 8+, with performance insights." 
+keywords: ["Java ConcurrentHashMap", "concurrent hashmap java 8", "segmented locks java", "CAS concurrency java", "java thread safe map"]
 ---
 
 # `ConcurrentHashMap` Evolution in Java

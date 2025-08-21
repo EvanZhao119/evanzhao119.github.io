@@ -1,9 +1,11 @@
 ---
 layout: post
-title: "In-Depth Analysis of Java's ReentrantReadWriteLock with Modern Enhancements"
-date: 2025-04-07
+title: "Java ReentrantReadWriteLock Deep Dive: Source Code, Usage, and Modern Enhancements"
+date: 2025-06-21
 categories: concurrency
 published: true
+description: "Comprehensive guide to Java's ReentrantReadWriteLock with code examples, internal implementation, and modern enhancements like StampedLock and Virtual Threads."
+keywords: ["Java ReentrantReadWriteLock", "Java concurrency", "ReadWriteLock tutorial", "StampedLock", "Virtual Threads", "Java multithreading"]
 ---
 
 # In-Depth Analysis of Java's ReentrantReadWriteLock with Modern Enhancements

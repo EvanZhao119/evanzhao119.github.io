@@ -1,20 +1,22 @@
 ---
 layout: post
-title: "Understanding `ThreadLocal` in Java: How It Really Works"
-date: 2025-04-09
+title: "Java ThreadLocal Explained: How ThreadLocal Works Internally"
+date: 2025-07-06
 categories: concurrency
 published: true
+description: "Learn how Java ThreadLocal works internally, with examples of thread-local storage, memory usage, and best practices to prevent memory leaks."
+keywords: ["Java ThreadLocal", "thread-local storage", "concurrency in Java", "ThreadLocal memory leaks", "ThreadLocal examples"] 
 ---
 
-# Understanding `ThreadLocal` in Java: How It Really Works
+# Java ThreadLocal Explained: How ThreadLocal Works Internally
 `ThreadLocal` provides thread-local variables. Each thread accessing a `ThreadLocal` variable maintains an independent copy of the variable, preventing issues caused by shared mutable state across threads.
 
-### From the official definition:
+### What is ThreadLocal in Java?
 > ThreadLocal provides get and set accessor methods that maintain a separate copy of the value for each thread that uses it, so a get returns the most recent value passed to set from the currently executing thread.
 
 This design helps isolate state per thread, commonly used in scenarios such as database connection handling.
 
-## 1. How ThreadLocal Works
+## 1. How ThreadLocal Works Internally
 ### 1.1 `set()` Method
 ```java
 public void set(T value) {
@@ -100,7 +102,7 @@ private void set(ThreadLocal<?> key, Object value) {
 - When the number of entries exceeds the threshold, the table is resized.
 
 ## 3. WeakReference in `ThreadLocalMap.Entry`
-The `Entry` class is a static inner class within `ThreadLocalMap`, and it **extends `WeakReference<ThreadLocal<?>>`**. In the constructor, the `ThreadLocal` key is stored as a weak reference.
+The `Entry` class **extends `WeakReference<ThreadLocal<?>>`** and is a static inner class within `ThreadLocalMap`. In the constructor, the `ThreadLocal` key is stored as a weak reference.
 
 ```java
 static class ThreadLocalMap {

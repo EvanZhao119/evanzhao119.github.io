@@ -1,9 +1,12 @@
 ---
 layout: post
 title: "AQS Made Simple: How Java’s Locking Framework Works"
-date: 2025-04-08
+title: "Java AQS Explained: How AbstractQueuedSynchronizer Powers Locks and Synchronizers"
+date: 2025-06-23
 categories: concurrency
 published: true
+description: "Learn how Java AbstractQueuedSynchronizer (AQS) works internally, powering ReentrantLock, CountDownLatch, Semaphore, and other synchronizers."
+keywords: ["java aqs", "abstractqueuedsynchronizer", "reentrantlock aqs", "countdownlatch aqs", "java concurrency"]
 ---
 
 # AQS Made Simple: How Java’s Locking Framework Works

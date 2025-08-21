@@ -1,9 +1,11 @@
 ---
 layout: post
-title: "Inside Spring: A Friendly Walkthrough of the Startup Process"
-date: 2025-04-10
+title: "Spring Framework Startup Process Explained: refresh() and IoC Container Deep Dive" 
+date: 2025-07-10
 categories: spring
 published: true
+description: "A complete guide to the Spring Framework startup process: from main() and ApplicationContext initialization to refresh(), IoC container, Bean lifecycle, and circular dependency resolution using three-level cache." 
+keywords: ["spring framework startup process", "spring refresh method", "spring ioc container", "spring beanfactory", "spring bean lifecycle", "spring circular dependency", "spring 6 startup"] 
 ---
 
 # Inside Spring: A Friendly Walkthrough of the Startup Process

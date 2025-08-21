@@ -1,9 +1,11 @@
 ---
 layout: post
-title: "Smart Locking in Java: From Spin to Virtual Threads"
-date: 2025-04-08
+title: "Smart Locking in Java: From Spin Locks to Virtual Threads"
+date: 2025-06-28
 categories: concurrency
 published: true
+description: "Explore Java locking strategies from spin locks to modern virtual threads, including biased locks, lightweight locks, and scalability." 
+keywords: ["java smart locking", "java spin lock", "biased locking java", "virtual threads concurrency", "lightweight lock java"]
 ---
 
 # Smart Locking in Java: From Spin to Virtual Threads

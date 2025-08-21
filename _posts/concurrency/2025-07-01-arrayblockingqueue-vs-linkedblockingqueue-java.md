@@ -1,9 +1,11 @@
 ---
 layout: post
-title: "In-Depth Comparison of `ArrayBlockingQueue` and `LinkedBlockingQueue` in Java"
-date: 2025-04-09
+title: "ArrayBlockingQueue vs LinkedBlockingQueue in Java: In-Depth Comparison" 
+date: 2025-07-01
 categories: concurrency
 published: true
+description: "Comprehensive comparison of ArrayBlockingQueue and LinkedBlockingQueue in Java, covering performance, memory, fairness, and use cases." 
+keywords: ["Java ArrayBlockingQueue", "Java LinkedBlockingQueue", "blockingqueue comparison", "java concurrency queue", "producer consumer java"]
 ---
 
 # In-Depth Comparison of `ArrayBlockingQueue` and `LinkedBlockingQueue` in Java

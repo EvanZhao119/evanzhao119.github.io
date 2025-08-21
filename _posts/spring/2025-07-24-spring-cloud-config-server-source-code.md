@@ -1,9 +1,11 @@
 ---
 layout: post
-title: "Spring Cloud Config Server Explained: Behind the Scenes with Source Code"
-date: 2025-04-11
+title: "Spring Cloud Config Server Explained: Source Code and Architecture"
+date: 2025-07-24
 categories: spring
 published: true
+description: "Deep dive into Spring Cloud Config Server, including @EnableConfigServer, auto-configuration, environment repository setup, and request handling with EnvironmentController."
+keywords: ["spring cloud config server", "spring boot config", "spring cloud architecture", "spring config source code", "spring environmentcontroller"]
 ---
 
 # Spring Cloud Config Server Explained: Behind the Scenes with Source Code

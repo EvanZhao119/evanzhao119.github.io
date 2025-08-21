@@ -1,9 +1,11 @@
 ---
 layout: post
-title: "The Secret Sauce Behind `ThreadPoolExecutor` in Java"
-date: 2025-04-09
+title: "ThreadPoolExecutor in Java Explained: Internal Working, Queueing, and RejectedExecutionHandler" 
+date: 2025-07-03
 categories: concurrency
 published: true
+description: "Deep dive into Java ThreadPoolExecutor: core threads, work queues, worker lifecycle, and rejected execution handler with examples."
+keywords: ["Java ThreadPoolExecutor", "thread pool java", "executorservice internals", "RejectedExecutionHandler", "java concurrency"]
 ---
 
 # The Secret Sauce Behind `ThreadPoolExecutor` in Java

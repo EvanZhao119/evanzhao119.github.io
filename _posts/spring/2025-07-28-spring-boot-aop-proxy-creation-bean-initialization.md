@@ -1,9 +1,11 @@
 ---
 layout: post
-title: "Understanding AOP in Spring Boot: How Proxies Are Created During Bean Initialization"
-date: 2025-04-11
+title: "Spring Boot AOP Explained: How Proxies Are Created During Bean Initialization"
+date: 2025-07-28
 categories: spring
 published: true
+description: "Understand how Spring Boot creates AOP proxies (JDK and CGLIB) during bean initialization in refresh(), including AnnotationAwareAspectJAutoProxyCreator and BeanPostProcessors."
+keywords: ["spring boot aop", "spring boot proxy creation", "jdk dynamic proxy", "spring cglib", "spring beanpostprocessor"]
 ---
 
 # Understanding AOP in Spring Boot: How Proxies Are Created During Bean Initialization

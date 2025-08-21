@@ -1,9 +1,11 @@
 ---
 layout: post
-title: "Understanding `synchronized` in Java: Mechanism and Modern Implementation"
-date: 2025-04-05
+title: "Java synchronized Keyword Explained: Mechanism, JVM Implementation, and Modern Enhancements" 
+date: 2025-06-15
 categories: concurrency
 published: true
+description: "Deep dive into the synchronized keyword in Java, covering internal JVM implementation, object header Mark Word, ObjectMonitor, lock optimizations, and best practices in modern Java concurrency."
+keywords: ["Java synchronized", "synchronized keyword", "Java concurrency", "ObjectMonitor", "Mark Word", "Java lock optimization", "JVM synchronized implementation"]
 ---
 
 # Understanding `synchronized` in Java: Mechanism and Modern Implementation

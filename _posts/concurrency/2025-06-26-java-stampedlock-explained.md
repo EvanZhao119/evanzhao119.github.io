@@ -1,9 +1,11 @@
 ---
 layout: post
-title: "High-Performance Read-Write Lock in Java — Understanding `StampedLock`"
-date: 2025-04-08
+title: "Java StampedLock Explained: High-Performance Read-Write Lock with Optimistic Reads"
+date: 2025-06-26
 categories: concurrency
 published: true
+description: "Understand Java StampedLock: a high-performance read-write lock supporting optimistic reads, write locks, and conversion with examples."
+keywords: ["java stampedlock", "read write lock java", "optimistic read lock java", "stampedlock example", "concurrency java"]
 ---
 
 # High-Performance Read-Write Lock in Java — Understanding `StampedLock`
