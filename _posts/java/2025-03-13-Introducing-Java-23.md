@@ -1,8 +1,9 @@
 ---
 layout: post
-title: "Introducing Java 23: What’s New in the Latest Release?"
+title: "What’s New in Java 23? Latest Features, Updates & Improvements"
 date: 2025-03-13
 categories: java
+description: "Explore the new features of Java 23 including pattern matching, Class-File API, ZGC generational mode, and Structured Concurrency."
 ---
 
 # Introducing Java 23: What’s New in the Latest Release?
