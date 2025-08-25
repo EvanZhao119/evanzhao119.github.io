@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Spring MVC vs WebFlux: Performance, Concurrency, and Benchmark Comparison"
-date: 2025-08-29
+date: 2025-08-25
 categories: ai
 published: true
 description: "Compare Spring MVC vs Spring WebFlux with real benchmarks. Learn their performance, scalability, and best use cases for high-concurrency and AI applications."
@@ -119,3 +119,12 @@ Spring MVC and WebFlux are not rivals. In contrast, they are **complementary**.
 In our benchmark, WebFlux showed **lower average latency and stronger concurrency handling**, even though it suffered from long-tail requests. In real production, with **GPU acceleration, batching, or distributed inference**, WebFlux’s advantage grows even bigger.
 
 The future is **hybrid**: use MVC where it makes sense, and WebFlux where performance and scalability matter most. 
+
+---
+
+## Related Resources
+## Related Resources
+- [Spring WebFlux Documentation](https://docs.spring.io/spring-framework/reference/web/webflux.html)
+- [Project Reactor Reference Guide](https://projectreactor.io/docs/core/release/reference/)
+- Related post: [Building an AI Moderation API with Spring Boot & WebFlux](/ai/2025/08/24/spring-boot-djl-image-moderation-api.html)
+- Related post: [JNI Preprocessing for ResNet in Java DJL](/ai/2025/08/21/djl-resnet-jni-image-preprocessing.html)
