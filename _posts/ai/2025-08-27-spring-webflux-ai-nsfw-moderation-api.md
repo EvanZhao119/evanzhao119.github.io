@@ -214,4 +214,4 @@ This project demonstrates how to build a **production-ready AI moderation servic
 - Benchmarking showed **clear advantages over MVC**  
 - Real-world JMeter tests revealed **inference performance as the main bottleneck**
 
-This is more than just a demo — it’s a **practical AI engineering case study** for bringing deep learning models into production systems.
+This is more than just a demo — it’s a **practical AI engineering case study** for bringing deep learning models into production systems. 
