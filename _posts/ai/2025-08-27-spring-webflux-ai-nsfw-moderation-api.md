@@ -207,6 +207,8 @@ On local CPU tests, MVC delivers slightly higher throughput but suffers from rig
 
 **Next steps:** Optimizations such as **GPU acceleration, inference batching, or distributed model serving** will significantly improve throughput and latency in production environments.  
 
+---
+
 ## 5. Conclusion
 This project demonstrates how to build a **production-ready AI moderation service**:
 - Java-native model inference with **DJL**  
@@ -215,3 +217,11 @@ This project demonstrates how to build a **production-ready AI moderation servic
 - Real-world JMeter tests revealed **inference performance as the main bottleneck**
 
 This is more than just a demo — it’s a **practical AI engineering case study** for bringing deep learning models into production systems. 
+
+---
+
+## Related Resources
+- [Spring WebFlux Documentation](https://docs.spring.io/spring-framework/reference/web/webflux.html)
+- [Project Reactor Reference Guide](https://projectreactor.io/docs/core/release/reference/)
+- Related post: [Building an AI Moderation API with Spring Boot & WebFlux](/ai/2025/08/24/spring-boot-djl-image-moderation-api.html)
+- Related post: [Spring MVC vs WebFlux: A Practical Look at Concurrency and Performance](/ai/2025/08/25/spring-mvc-vs-webflux-performance-comparison.html)

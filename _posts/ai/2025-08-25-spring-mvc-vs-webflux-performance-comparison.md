@@ -123,7 +123,6 @@ The future is **hybrid**: use MVC where it makes sense, and WebFlux where perfor
 ---
 
 ## Related Resources
-## Related Resources
 - [Spring WebFlux Documentation](https://docs.spring.io/spring-framework/reference/web/webflux.html)
 - [Project Reactor Reference Guide](https://projectreactor.io/docs/core/release/reference/)
 - Related post: [Building an AI Moderation API with Spring Boot & WebFlux](/ai/2025/08/24/spring-boot-djl-image-moderation-api.html)
