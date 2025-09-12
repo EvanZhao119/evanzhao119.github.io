@@ -2,6 +2,8 @@
 main:
   - title: "Home"
     url: /
+  - title: "AI Engineering"
+    url: /ai/
   - title: "Java"
     url: /java/
   - title: "JVM"
@@ -10,5 +12,3 @@ main:
     url: /concurrency/
   - title: "Java Spring"
     url: /spring/
-  - title: "AI Engineering"
-    url: /ai/
