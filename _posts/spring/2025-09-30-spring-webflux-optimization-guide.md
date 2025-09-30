@@ -115,4 +115,4 @@ With careful tuning of APIs, schedulers, backpressure, and monitoring, your apps
 - Related post: [Project Reactor Guide: Explained with Examples](/concurrency/2025/09/26/project-reactor-explained.html)  
 - Related post: [Spring MVC vs WebFlux: A Practical Look at Concurrency and Performance](/ai/2025/08/25/spring-mvc-vs-webflux-performance-comparison.html)  
 - Related post: [Building a High-Concurrency AI Moderation Service with Spring WebFlux — From Concept to Production](/ai/2025/08/27/spring-webflux-ai-nsfw-moderation-api.html)  
-- Related post: [Monitoring Spring WebFlux with Prometheus and Grafana](/ai/2025/08/31/spring-webflux-monitoring-prometheus-grafana.html)  
+- Related post: [Monitoring Spring WebFlux with Prometheus and Grafana](/ai/2025/08/31/spring-webflux-monitoring-prometheus-grafana.html)
