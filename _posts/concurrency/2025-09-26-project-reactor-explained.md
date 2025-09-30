@@ -130,7 +130,7 @@ Common schedulers:
 - [Reactive Streams Specification](https://www.reactive-streams.org/)  
 - [Spring WebFlux Documentation](https://docs.spring.io/spring-framework/reference/web/webflux.html)  
 - [Spring WebClient Guide](https://docs.spring.io/spring-framework/reference/web/webflux-webclient.html)  
-- Related post: [Reactive Spring: Reactive Web Explained](/spring/2025/09/22/reactive-spring-reactive-web-explained.html)  
+- Related post: [Reactive Spring: Reactive Web Explained](/spring/2025/09/22/reactive-spring-webflux.html)  
 - Related post: [Spring MVC vs WebFlux: A Practical Look at Concurrency and Performance](/ai/2025/08/25/spring-mvc-vs-webflux-performance-comparison.html)  
 - Related post: [Building a High-Concurrency AI Moderation Service with Spring WebFlux — From Concept to Production](/ai/2025/08/27/spring-webflux-ai-nsfw-moderation-api.html)  
 - Related post: [Monitoring Spring WebFlux with Prometheus and Grafana](/ai/2025/08/31/spring-webflux-monitoring-prometheus-grafana.html) 
