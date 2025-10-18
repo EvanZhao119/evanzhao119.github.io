@@ -243,4 +243,4 @@ With it, you can achieve
 
 ## Related Resources
 - [Stable Names + Task Contracts: Keep Callers Stable While You Evolve Internals](/ai/2025/10/12/stable-names-task-contracts-json-schema.html)  
-- [The Reuse Layer: Governing AI as a Capability, Not a Credential](/ai/2025/10/07/capability-pool-simple-guide.html)
+- [The Reuse Layer: Governing AI as a Capability, Not a Credential](/ai/2025/10/07/capability-pool-simple-guide.html) 
