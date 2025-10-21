@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Versioned Prompts and Tool Contracts: Building a Safe, Auditable, and Rollback-Ready AI System"
-date: 2025-10-20
+date: 2025-10-21
 categories: ai
 published: true
 tags: ["Prompt Versioning", "Tool Contracts", "Governance", "Rollback", "LLM Operations", "AI DevOps"]
