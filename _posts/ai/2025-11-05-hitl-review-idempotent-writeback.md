@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Human-in-the-Loop Review and Idempotent Write-Back: From /review to Auditable Adapters (SharePoint/Jira/DB)"
-date: 2025-10-30
+date: 2025-11-05
 categories: ai
 published: true
 tags: ["Human-in-the-Loop","Idempotency","Audit Trail","SharePoint","Jira","Database","Observability","DevEx","Trustworthy AI"]
