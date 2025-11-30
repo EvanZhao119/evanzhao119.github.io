@@ -161,7 +161,7 @@ Once out automation can **explain itself**, we have taken a big step towards bui
 ---
 
 ## Related Resources
-- [Evaluation and Redlines: Offline Baseline + Production Replay + Automatic Rollback](/ai/)  
+- [Evaluation and Redlines: Offline Baseline + Production Replay + Automatic Rollback](/ai/2025/10/31/eval-canary-redlines.html)  
 - [Building a Trustworthy RAG System: Make AI Answers Traceable with Source Citations](/ai/2025/10/27/rag-query-citations.html)  
 - [Versioned Prompts and Tool Contracts: Building a Safe, Auditable, and Rollback-Ready AI System](/ai/2025/10/21/versioned-prompts-and-tool-contracts.html)  
 - [LLM Gateway: One Endpoint for Safety, Cost Control, and Observability](/ai/2025/10/15/llm-gateway.html)  

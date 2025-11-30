@@ -144,8 +144,8 @@ With daily validation and anomaly detection, your platform becomes not only **st
 ---
 
 ## Related Resources
-- [Human-in-the-Loop Review and Idempotent Write-Back: From `/review` to Auditable System Updates](/ai/)  
-- [Evaluation and Redlines: Offline Baseline + Production Replay + Automatic Rollback](/ai/)  
+- [Human-in-the-Loop Review and Idempotent Write-Back: From `/review` to Auditable System Updates](/ai/2025/11/05/hitl-review-idempotent-writeback.html)  
+- [Evaluation and Redlines: Offline Baseline + Production Replay + Automatic Rollback](/ai/2025/10/31/eval-canary-redlines.html)  
 - [Building a Trustworthy RAG System: Make AI Answers Traceable with Source Citations](/ai/2025/10/27/rag-query-citations.html)  
 - [Versioned Prompts and Tool Contracts: Building a Safe, Auditable, and Rollback-Ready AI System](/ai/2025/10/21/versioned-prompts-and-tool-contracts.html)  
 - [LLM Gateway: One Endpoint for Safety, Cost Control, and Observability](/ai/2025/10/15/llm-gateway.html)  
