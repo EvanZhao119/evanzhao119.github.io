@@ -1,0 +1,73 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="how-rag-works-from-documents-to-better-llm-answers">How RAG Works: From Documents to Better LLM Answers</h1>
+
+<p>Large Language Models do not automatically know an organization’s private or up-to-date information. For example, a company may want an AI assistant to answer questions using internal PDFs, Word documents, Excel files, manuals, or policies that were not included in the model’s training data.</p>
+
+<p><strong>Retrieval-Augmented Generation</strong>, or <strong>RAG</strong>, addresses this limitation by retrieving relevant information from a knowledge base before asking the LLM to generate an answer.</p>
+
+<h2 id="what-the-article-covers">What the Article Covers</h2>
+
+<ul>
+  <li>Why LLMs need access to external information</li>
+  <li>How documents are divided into smaller sections called chunks</li>
+  <li>Why a RAG system retrieves relevant chunks instead of entire documents</li>
+  <li>How embeddings represent the meaning of text as numerical vectors</li>
+  <li>How vectors are stored in a vector database</li>
+  <li>How a user’s question is matched with relevant document chunks</li>
+  <li>How retrieved content is provided to the LLM as context</li>
+</ul>
+
+<p>A simple RAG pipeline can be represented like this:</p>
+
+<pre>
+Collect Documents
+        ↓
+Divide Documents into Chunks
+        ↓
+Convert Chunks into Embeddings
+        ↓
+Store Vectors in a Vector Database
+        ↓
+Convert the User Question into an Embedding
+        ↓
+Find Similar Document Chunks
+        ↓
+Send Retrieved Chunks to the LLM
+        ↓
+Generate an Answer
+</pre>
+
+<p>Instead of sending a complete document to the model, the system retrieves the sections most closely related to the user’s question. These chunks are added to the prompt, giving the LLM useful context for generating its answer.</p>
+
+<p>A more advanced RAG system must also determine which retrieved information should actually be included. This introduces additional operations such as ranking, context selection, and prompt construction.</p>
+
+<p><a href="https://macstuforum.top/d/25-rag-from-documents-to-better-llm-answers">Read the full article and join the discussion →</a></p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

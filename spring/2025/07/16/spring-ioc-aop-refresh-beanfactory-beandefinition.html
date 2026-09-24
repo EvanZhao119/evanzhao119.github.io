@@ -1,0 +1,264 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="understanding-ioc-and-aop-in-refresh-how-beanfactory-and-beandefinition-power-your-application">Understanding IoC and AOP in <code class="language-plaintext highlighter-rouge">refresh()</code>: How BeanFactory and BeanDefinition Power Your Application</h1>
+
+<p>The <code class="language-plaintext highlighter-rouge">refresh()</code> method is one of the most critical methods in the Spring framework. It serves as the <strong>entry point for the entire application context lifecycle</strong>, and it’s also where <strong>two core features of Spring—Inversion of Control (IoC)</strong> and <strong>Aspect-Oriented Programming (AOP)</strong>—are initialized and integrated.</p>
+
+<p>Both <strong>Spring Framework</strong> and <strong>Spring Boot</strong> utilize <code class="language-plaintext highlighter-rouge">BeanFactory</code> and <code class="language-plaintext highlighter-rouge">BeanDefinition</code> concepts similarly.</p>
+
+<blockquote>
+  <p><strong><em>Note (Spring Boot 3.x)</em></strong>: Spring Boot has increasingly moved away from XML-based configuration in favor of annotations and Java-based configurations (<code class="language-plaintext highlighter-rouge">@Configuration</code>, <code class="language-plaintext highlighter-rouge">@ComponentScan</code>, etc.), making traditional XML bean definitions less common in modern applications.</p>
+</blockquote>
+
+<h2 id="beanfactory-the-core-of-ioc-container-in-spring-framework-and-spring-boot">BeanFactory: The Core of IoC Container in Spring Framework and Spring Boot</h2>
+<p>A <code class="language-plaintext highlighter-rouge">BeanFactory</code> is the <strong>factory responsible for managing and instantiating beans</strong> in Spring. During the execution of <code class="language-plaintext highlighter-rouge">refresh()</code>, the method <code class="language-plaintext highlighter-rouge">obtainFreshBeanFactory()</code> is called to retrieve or initialize the <code class="language-plaintext highlighter-rouge">BeanFactory</code>.</p>
+
+<h3 id="in-spring-framework">In Spring Framework</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// From AbstractApplicationContext</span>
+<span class="nc">ConfigurableListableBeanFactory</span> <span class="n">beanFactory</span> <span class="o">=</span> <span class="n">obtainFreshBeanFactory</span><span class="o">();</span>
+
+<span class="kd">protected</span> <span class="nc">ConfigurableListableBeanFactory</span> <span class="nf">obtainFreshBeanFactory</span><span class="o">()</span> <span class="o">{</span>
+    <span class="n">refreshBeanFactory</span><span class="o">();</span>
+    <span class="k">return</span> <span class="nf">getBeanFactory</span><span class="o">();</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>In <code class="language-plaintext highlighter-rouge">AbstractRefreshableApplicationContext</code> class, <code class="language-plaintext highlighter-rouge">refreshBeanFactory()</code> is implemented as follows:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Override</span>
+<span class="kd">protected</span> <span class="kd">final</span> <span class="kt">void</span> <span class="nf">refreshBeanFactory</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">BeansException</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">hasBeanFactory</span><span class="o">())</span> <span class="o">{</span>
+        <span class="n">destroyBeans</span><span class="o">();</span>
+        <span class="n">closeBeanFactory</span><span class="o">();</span>
+    <span class="o">}</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="nc">DefaultListableBeanFactory</span> <span class="n">beanFactory</span> <span class="o">=</span> <span class="n">createBeanFactory</span><span class="o">();</span>
+        <span class="n">beanFactory</span><span class="o">.</span><span class="na">setSerializationId</span><span class="o">(</span><span class="n">getId</span><span class="o">());</span>
+        <span class="n">customizeBeanFactory</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+        <span class="n">loadBeanDefinitions</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+        <span class="kd">synchronized</span> <span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">beanFactoryMonitor</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">beanFactory</span> <span class="o">=</span> <span class="n">beanFactory</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">IOException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="nf">ApplicationContextException</span><span class="o">(</span><span class="s">"I/O error parsing bean definition source"</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>The default implementation of the <code class="language-plaintext highlighter-rouge">BeanFactory</code> in both Spring and Spring Boot is <code class="language-plaintext highlighter-rouge">DefaultListableBeanFactory</code>.</p>
+
+<h3 id="in-spring-boot">In Spring Boot</h3>
+<p>In contrast, <strong>Spring Boot’s <code class="language-plaintext highlighter-rouge">GenericApplicationContext</code></strong> creates the <code class="language-plaintext highlighter-rouge">BeanFactory</code> <strong>during context initialization</strong>, not during the <code class="language-plaintext highlighter-rouge">refresh()</code> call.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Override</span>
+<span class="kd">protected</span> <span class="kd">final</span> <span class="kt">void</span> <span class="nf">refreshBeanFactory</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">IllegalStateException</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(!</span><span class="k">this</span><span class="o">.</span><span class="na">refreshed</span><span class="o">.</span><span class="na">compareAndSet</span><span class="o">(</span><span class="kc">false</span><span class="o">,</span> <span class="kc">true</span><span class="o">))</span> <span class="o">{</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">"GenericApplicationContext does not support multiple refresh attempts"</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">beanFactory</span><span class="o">.</span><span class="na">setSerializationId</span><span class="o">(</span><span class="n">getId</span><span class="o">());</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Spring Boot initializes the <code class="language-plaintext highlighter-rouge">BeanFactory</code> earlier to optimize startup performance and make auto-configuration features easy.</p>
+
+<h2 id="beandefinition-metadata-driving-bean-creation-in-spring-ioc-and-boot">BeanDefinition: Metadata Driving Bean Creation in Spring IoC and Boot</h2>
+<p>A <code class="language-plaintext highlighter-rouge">BeanDefinition</code> is a <strong>meta-description of a bean</strong>. It includes the bean’s class name, scope (singleton/prototype), properties, constructor arguments, and more. Spring parses XML configurations, Java annotations, or Java configuration classes to generate <code class="language-plaintext highlighter-rouge">BeanDefinition</code> objects.</p>
+
+<p>These definitions are then used to create actual bean instances.</p>
+
+<h3 id="xml-based-configuration-flow-in-spring-framework">XML-based Configuration Flow in Spring Framework</h3>
+<p>Here’s how Spring processes XML-based bean definitions:</p>
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">obtainFreshBeanFactory()</code> is invoked, which internally calls <code class="language-plaintext highlighter-rouge">loadBeanDefinitions(beanFactory)</code></li>
+  <li>This triggers a series of function calls leading to the parsing of the XML document.
+    <h4 id="call-chain">Call Chain</h4>
+  </li>
+</ol>
+
+<table>
+  <thead>
+    <tr>
+      <th>Class</th>
+      <th>Method</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">AbstractXmlApplicationContext</code></td>
+      <td><code class="language-plaintext highlighter-rouge">loadBeanDefinitions(DefaultListableBeanFactory)</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">AbstractXmlApplicationContext</code></td>
+      <td><code class="language-plaintext highlighter-rouge">loadBeanDefinitions(XmlBeanDefinitionReader)</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">AbstractBeanDefinitionReader</code></td>
+      <td><code class="language-plaintext highlighter-rouge">loadBeanDefinitions(String... locations)</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">XmlBeanDefinitionReader</code></td>
+      <td><code class="language-plaintext highlighter-rouge">doLoadBeanDefinitions(InputSource, Resource)</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="key-implementation">Key Implementation</h4>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kt">int</span> <span class="nf">doLoadBeanDefinitions</span><span class="o">(</span><span class="nc">InputSource</span> <span class="n">inputSource</span><span class="o">,</span> <span class="nc">Resource</span> <span class="n">resource</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">Document</span> <span class="n">doc</span> <span class="o">=</span> <span class="n">doLoadDocument</span><span class="o">(</span><span class="n">inputSource</span><span class="o">,</span> <span class="n">resource</span><span class="o">);</span>
+    <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="n">registerBeanDefinitions</span><span class="o">(</span><span class="n">doc</span><span class="o">,</span> <span class="n">resource</span><span class="o">);</span>
+    <span class="k">return</span> <span class="n">count</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Then, in <code class="language-plaintext highlighter-rouge">XmlBeanDefinitionReader</code>.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kt">int</span> <span class="nf">registerBeanDefinitions</span><span class="o">(</span><span class="nc">Document</span> <span class="n">doc</span><span class="o">,</span> <span class="nc">Resource</span> <span class="n">resource</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">BeanDefinitionDocumentReader</span> <span class="n">documentReader</span> <span class="o">=</span> <span class="n">createBeanDefinitionDocumentReader</span><span class="o">();</span>
+    <span class="kt">int</span> <span class="n">countBefore</span> <span class="o">=</span> <span class="n">getRegistry</span><span class="o">().</span><span class="na">getBeanDefinitionCount</span><span class="o">();</span>
+    <span class="n">documentReader</span><span class="o">.</span><span class="na">registerBeanDefinitions</span><span class="o">(</span><span class="n">doc</span><span class="o">,</span> <span class="n">createReaderContext</span><span class="o">(</span><span class="n">resource</span><span class="o">));</span>
+    <span class="k">return</span> <span class="nf">getRegistry</span><span class="o">().</span><span class="na">getBeanDefinitionCount</span><span class="o">()</span> <span class="o">-</span> <span class="n">countBefore</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Finally, in <code class="language-plaintext highlighter-rouge">DefaultBeanDefinitionDocumentReader</code>.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kt">void</span> <span class="nf">doRegisterBeanDefinitions</span><span class="o">(</span><span class="nc">Element</span> <span class="n">root</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">delegate</span> <span class="o">=</span> <span class="n">createDelegate</span><span class="o">(</span><span class="n">getReaderContext</span><span class="o">(),</span> <span class="n">root</span><span class="o">,</span> <span class="n">parent</span><span class="o">);</span>
+    <span class="n">parseBeanDefinitions</span><span class="o">(</span><span class="n">root</span><span class="o">,</span> <span class="k">this</span><span class="o">.</span><span class="na">delegate</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>And at last. This is where each <code class="language-plaintext highlighter-rouge">&lt;bean&gt;</code> tag is transformed into a <code class="language-plaintext highlighter-rouge">BeanDefinition</code> object.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kt">void</span> <span class="nf">parseDefaultElement</span><span class="o">(</span><span class="nc">Element</span> <span class="n">ele</span><span class="o">,</span> <span class="nc">BeanDefinitionParserDelegate</span> <span class="n">delegate</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">delegate</span><span class="o">.</span><span class="na">nodeNameEquals</span><span class="o">(</span><span class="n">ele</span><span class="o">,</span> <span class="s">"bean"</span><span class="o">))</span> <span class="o">{</span>
+        <span class="n">processBeanDefinition</span><span class="o">(</span><span class="n">ele</span><span class="o">,</span> <span class="n">delegate</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="annotation-based-configuration-in-spring-boot-auto-configuration--component-scan">Annotation-based Configuration in Spring Boot (Auto-Configuration &amp; Component Scan)</h3>
+<p>Spring Boot <strong>does not rely on XML files by default</strong>. Instead, it uses <strong>annotation-driven configuration</strong> with the <code class="language-plaintext highlighter-rouge">@Configuration</code> and <code class="language-plaintext highlighter-rouge">@ComponentScan</code> annotations.</p>
+
+<p>The core registration logic moves to:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// From AbstractApplicationContext</span>
+<span class="n">invokeBeanFactoryPostProcessors</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+</code></pre></div></div>
+<p>This is where Spring Boot auto-configuration classes and other <code class="language-plaintext highlighter-rouge">@Bean</code>-defined methods are scanned, parsed, and turned into <code class="language-plaintext highlighter-rouge">BeanDefinition</code> instances.</p>
+
+<blockquote>
+  <p>Instead of XML files, use <code class="language-plaintext highlighter-rouge">@Configuration</code>, <code class="language-plaintext highlighter-rouge">@Component</code>, <code class="language-plaintext highlighter-rouge">@Service</code>, and <code class="language-plaintext highlighter-rouge">@Repository</code> annotations with component scanning in Spring Boot.</p>
+</blockquote>
+
+<h3 id="java-configuration-classes-with-configuration-and-bean-in-spring-boot">Java Configuration Classes with @Configuration and @Bean in Spring Boot</h3>
+<p>Besides XML and annotation-based component scanning, <strong>Java-based configuration using <code class="language-plaintext highlighter-rouge">@Configuration</code> classes</strong> is another widely used approach for defining Spring beans.</p>
+
+<p>This method uses <strong>explicit Java classes and <code class="language-plaintext highlighter-rouge">@Bean</code> methods</strong> to define beans.</p>
+
+<h4 id="example">Example</h4>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Configuration</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">AppConfig</span> <span class="o">{</span>
+
+    <span class="nd">@Bean</span>
+    <span class="kd">public</span> <span class="nc">UserService</span> <span class="nf">userService</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">UserServiceImpl</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Bean</span>
+    <span class="kd">public</span> <span class="nc">UserRepository</span> <span class="nf">userRepository</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">UserRepositoryImpl</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Each <code class="language-plaintext highlighter-rouge">@Bean</code> method returns a fully configured bean instance, and Spring internally registers a corresponding <strong><code class="language-plaintext highlighter-rouge">BeanDefinition</code></strong> for each method.</p>
+
+<blockquote>
+  <p>Whether beans are defined via XML, annotations, or Java config, <strong>Spring always converts them into <code class="language-plaintext highlighter-rouge">BeanDefinition</code> objects</strong> during the context initialization phase.</p>
+</blockquote>
+
+<h3 id="how-it-works-internally-configurationclasspostprocessor-and-beanfactorypostprocessors">How It Works Internally: ConfigurationClassPostProcessor and BeanFactoryPostProcessors</h3>
+<ul>
+  <li>During the call to <code class="language-plaintext highlighter-rouge">refresh()</code>, Spring processes configuration classes through <strong><code class="language-plaintext highlighter-rouge">ConfigurationClassPostProcessor</code></strong>, a special <code class="language-plaintext highlighter-rouge">BeanFactoryPostProcessor</code>.</li>
+  <li>It reads <code class="language-plaintext highlighter-rouge">@Configuration</code> classes, scans <code class="language-plaintext highlighter-rouge">@Bean</code> methods, and generates corresponding <code class="language-plaintext highlighter-rouge">BeanDefinition</code> entries.</li>
+  <li>This process is triggered in the method <code class="language-plaintext highlighter-rouge">invokeBeanFactoryPostProcessors()</code> (same as for annotations).</li>
+</ul>
+
+<h3 id="summary">Summary</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Configuration Style</th>
+      <th>Description</th>
+      <th>Common In</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>XML-based</td>
+      <td>Traditional, verbose, but highly explicit</td>
+      <td>Legacy projects</td>
+    </tr>
+    <tr>
+      <td>Annotation-based</td>
+      <td>Uses <code class="language-plaintext highlighter-rouge">@Component</code>, <code class="language-plaintext highlighter-rouge">@Service</code>, etc.</td>
+      <td>Modern Spring apps</td>
+    </tr>
+    <tr>
+      <td>Java Configuration</td>
+      <td>Uses <code class="language-plaintext highlighter-rouge">@Configuration</code> and <code class="language-plaintext highlighter-rouge">@Bean</code> methods</td>
+      <td>Spring Boot and test configurations</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="summary-of-key-differences-between-spring-framework-xml-and-spring-boot-annotations">Summary of Key Differences Between Spring Framework XML and Spring Boot Annotations</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>Spring Framework (XML)</th>
+      <th>Spring Boot (Annotations)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>BeanFactory Creation</td>
+      <td>During <code class="language-plaintext highlighter-rouge">refresh()</code></td>
+      <td>At context initialization</td>
+    </tr>
+    <tr>
+      <td>BeanDefinition Registration</td>
+      <td><code class="language-plaintext highlighter-rouge">loadBeanDefinitions()</code> parses XML</td>
+      <td><code class="language-plaintext highlighter-rouge">invokeBeanFactoryPostProcessors()</code> parses annotations</td>
+    </tr>
+    <tr>
+      <td>Default Configuration Style</td>
+      <td>XML + manual setup</td>
+      <td>Auto-config + annotations</td>
+    </tr>
+    <tr>
+      <td>Flexibility</td>
+      <td>Fully customizable</td>
+      <td>Convention over configuration</td>
+    </tr>
+  </tbody>
+</table>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

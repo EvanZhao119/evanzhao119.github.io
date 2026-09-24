@@ -1,0 +1,244 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="building-a-trustworthy-rag-system-make-ai-answers-traceable-with-source-citations">Building a Trustworthy RAG System: Make AI Answers Traceable with Source Citations</h1>
+<blockquote>
+  <p>A good AI system shouldn’t just <em>answer</em> questions; it should show <strong>where the answers come from</strong>.</p>
+</blockquote>
+
+<hr />
+
+<h2 id="1-why-ai-needs-citations">1. Why AI Needs “Citations”</h2>
+
+<p>If you’ve ever asked an AI assistant something like,</p>
+
+<blockquote>
+  <p>“Summarize this project report.”<br />
+or<br />
+“What safety standard is mentioned in chapter 3 of our manual?”</p>
+</blockquote>
+
+<p>You’ve probably noticed the answer sounds confident but gives <strong>no clue where it came from</strong>.</p>
+
+<p>In enterprise or research environments, this isn’t just a user experience issue, but a <strong>trust problem</strong>.</p>
+<ul>
+  <li>Auditors need traceability.</li>
+  <li>Engineers need to verify sources.</li>
+  <li>Managers need explainability.</li>
+</ul>
+
+<p>So, how can we make AI answers <strong>verifiable</strong> and <strong>auditable</strong>? That’s where <strong>RAG</strong> comes in.</p>
+
+<hr />
+
+<h2 id="2-what-is-rag">2. What Is RAG?</h2>
+<p>RAG stands for <strong>Retrieval-Augmented Generation</strong>, and it basically means,</p>
+<blockquote>
+  <p>Let your language model “look up” real documents before it speaks.</p>
+</blockquote>
+
+<p>Instead of guessing from memory, the model retrieves factual content first, and then uses it to generate the final response.</p>
+<ol>
+  <li><strong>Retrieval</strong>: The system searches a document library for the most relevant text chunks.</li>
+  <li><strong>Augmentation</strong>: It attaches those chunks to the user’s question.</li>
+  <li><strong>Generation</strong>: The model uses both the question and retrieved data to write an answer.</li>
+</ol>
+
+<h3 id="for-example">For Example</h3>
+<blockquote>
+  <p><em>Question:</em> “What does the PDCA cycle stand for?”<br />
+<em>RAG retrieves:</em> “PDCA stands for Plan, Do, Check, Act — a continuous improvement method. (source: local://docs/quality_manual#p3)”<br />
+<em>Model responds:</em> “According to <em>Quality Manual</em> (page 3), PDCA includes four stages: Plan, Do, Check, and Act.”</p>
+</blockquote>
+
+<p>That’s a transparent, verifiable answer, <strong>an AI that shows its work</strong>.</p>
+
+<hr />
+
+<h2 id="3-the-goal-a-unified-ragquery-interface">3. The Goal: A Unified <code class="language-plaintext highlighter-rouge">rag.query()</code> Interface</h2>
+<p>We’ll build a simple function that works with any search engine.</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">query</span><span class="p">(</span>
+    <span class="n">corpus</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">q</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
+    <span class="n">require_citations</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="sh">"""</span><span class="s">Return [{</span><span class="sh">'</span><span class="s">text</span><span class="sh">'</span><span class="s">: </span><span class="sh">'</span><span class="s">...</span><span class="sh">'</span><span class="s">, </span><span class="sh">'</span><span class="s">sourceUrl</span><span class="sh">'</span><span class="s">: </span><span class="sh">'</span><span class="s">local://...</span><span class="sh">'</span><span class="s">, </span><span class="sh">'</span><span class="s">score</span><span class="sh">'</span><span class="s">: 0.82}, ...]</span><span class="sh">"""</span>
+</code></pre></div></div>
+
+<p>Invoke a call,</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">query</span><span class="p">(</span><span class="sh">"</span><span class="s">local://docs</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">What is the PDCA cycle?</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Output, each snippet includes both <strong>text</strong> and <strong>sourceUrl</strong>, making every answer traceable.</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span>
+  <span class="p">{</span>
+    <span class="sh">"</span><span class="s">text</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">PDCA cycle stands for Plan, Do, Check, and Act, used for continuous improvement...</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">sourceUrl</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">local://docs/quality_manual#p3</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">score</span><span class="sh">"</span><span class="p">:</span> <span class="mf">0.89</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="sh">"</span><span class="s">text</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">The PDCA model promotes iterative learning and process standardization...</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">sourceUrl</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">local://docs/process_guide#p12</span><span class="sh">"</span><span class="p">,</span>
+    <span class="sh">"</span><span class="s">score</span><span class="sh">"</span><span class="p">:</span> <span class="mf">0.81</span>
+  <span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="4-from-documents-to-traceable-answers">4. From Documents to Traceable Answers</h2>
+
+<h3 id="load-data-sources">Load Data Sources</h3>
+<p>The system can connect to:</p>
+<ul>
+  <li>Local folders (<code class="language-plaintext highlighter-rouge">/docs</code>) containing PDFs, Markdown, or text files</li>
+  <li>Cloud sources like SharePoint or Google Drive</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">files</span> <span class="o">=</span> <span class="nf">load_documents</span><span class="p">(</span><span class="sh">"</span><span class="s">/docs</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="chunk-the-text">Chunk the Text</h3>
+<p>Long documents are split into smaller, overlapping chunks, each tagged with a source reference.</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">chunks</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="p">{</span><span class="sh">"</span><span class="s">text</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">PDCA is a four-stage model for continuous improvement...</span><span class="sh">"</span><span class="p">,</span>
+   <span class="sh">"</span><span class="s">sourceUrl</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">local://docs/quality_manual#p3</span><span class="sh">"</span><span class="p">},</span>
+  <span class="p">{</span><span class="sh">"</span><span class="s">text</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">Developed by W....</span><span class="sh">"</span><span class="p">,</span>
+   <span class="sh">"</span><span class="s">sourceUrl</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">local://docs/process_history#p7</span><span class="sh">"</span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div></div>
+
+<h3 id="vectorize-the-chunks">Vectorize the Chunks</h3>
+<p>We convert each chunk into an embedding, a numerical vector that captures its meaning.</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">sentence_transformers</span> <span class="kn">import</span> <span class="n">SentenceTransformer</span>
+<span class="n">model</span> <span class="o">=</span> <span class="nc">SentenceTransformer</span><span class="p">(</span><span class="sh">"</span><span class="s">all-MiniLM-L6-v2</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">vectors</span> <span class="o">=</span> <span class="n">model</span><span class="p">.</span><span class="nf">encode</span><span class="p">([</span><span class="n">c</span><span class="p">[</span><span class="sh">"</span><span class="s">text</span><span class="sh">"</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">chunks</span><span class="p">])</span>
+</code></pre></div></div>
+<p>These embeddings are stored in a vector database for fast similarity search.</p>
+
+<h3 id="retrieve-relevant-segments">Retrieve Relevant Segments</h3>
+<p>When a user asks a question,</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">query</span><span class="p">(</span><span class="sh">"</span><span class="s">local://docs</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">Explain the PDCA model</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The system:</p>
+<ol>
+  <li>Embeds the question,</li>
+  <li>Computes similarity against stored vectors,</li>
+  <li>Returns the top-k matching chunks, each with its <code class="language-plaintext highlighter-rouge">sourceUrl</code> and score.</li>
+</ol>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span>
+  <span class="p">{</span><span class="sh">"</span><span class="s">text</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">PDCA stands for Plan, Do, Check, Act...</span><span class="sh">"</span><span class="p">,</span>
+   <span class="sh">"</span><span class="s">sourceUrl</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">local://docs/quality_manual#p3</span><span class="sh">"</span><span class="p">,</span>
+   <span class="sh">"</span><span class="s">score</span><span class="sh">"</span><span class="p">:</span> <span class="mf">0.89</span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="5-about-faiss-pgvector-elastic-and-vector-cloud-services">5. About FAISS, PGVector, Elastic, and Vector Cloud Services</h2>
+<p>All these names refer to <strong>vector search engines</strong>, tools for storing and querying embeddings.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Engine</th>
+      <th>Description</th>
+      <th>When to Use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>FAISS</strong></td>
+      <td>A fast, open-source library from Facebook AI for local vector search.</td>
+      <td>Local or prototype projects</td>
+    </tr>
+    <tr>
+      <td><strong>PGVector</strong></td>
+      <td>A PostgreSQL extension that stores vectors directly in the database.</td>
+      <td>Enterprise apps needing SQL + vectors</td>
+    </tr>
+    <tr>
+      <td><strong>Elastic (with vector plugin)</strong></td>
+      <td>Adds vector search to Elasticsearch, ideal for document-based data.</td>
+      <td>Large text or log systems</td>
+    </tr>
+    <tr>
+      <td><strong>Vector Cloud Services</strong></td>
+      <td>Hosted options like Pinecone, Milvus Cloud, or Azure Cognitive Search.</td>
+      <td>Scalable cloud deployments</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Our <code class="language-plaintext highlighter-rouge">rag.query()</code> interface hides these differences, so switching engines doesn’t break your business logic.</p>
+
+<hr />
+
+<h2 id="6-unified-design-replace-the-engine-keep-the-logic">6. Unified Design: Replace the Engine, Keep the Logic</h2>
+
+<p>We can use a standard retriever interface. When we swap FAISS for PGVector or a cloud API, the <code class="language-plaintext highlighter-rouge">query()</code> function stays the same.</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Retriever</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">retrieve</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span> <span class="bp">...</span>
+
+<span class="k">class</span> <span class="nc">FAISSRetriever</span><span class="p">(</span><span class="n">Retriever</span><span class="p">):</span> <span class="bp">...</span>
+<span class="k">class</span> <span class="nc">PGVectorRetriever</span><span class="p">(</span><span class="n">Retriever</span><span class="p">):</span> <span class="bp">...</span>
+
+<span class="k">def</span> <span class="nf">query</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">require_citations</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="n">retriever</span> <span class="o">=</span> <span class="nf">get_retriever</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">retriever</span><span class="p">.</span><span class="nf">retrieve</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="7-conclusion-make-every-answer-verifiable">7. Conclusion: Make Every Answer Verifiable</h2>
+<ul>
+  <li><strong>1st-gen AI</strong> focused on <em>fluency</em> — “Can it talk?”</li>
+  <li><strong>2nd-gen AI</strong> focused on <em>accuracy</em> — “Does it know?”</li>
+  <li><strong>3rd-gen AI (RAG)</strong> focuses on <em>accountability</em> — “Can it prove it?”</li>
+</ul>
+
+<p>By implementing a unified, citation-enabled <code class="language-plaintext highlighter-rouge">rag.query()</code> interface, you build an AI system that is transparent, auditable, and easy to maintain, no matter how the underlying search engine evolves.</p>
+
+<blockquote>
+  <p>The future of AI isn’t just about answers. It will be about <strong>answers with evidence</strong>.</p>
+</blockquote>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+<ul>
+  <li><a href="/ai/2025/10/21/versioned-prompts-and-tool-contracts.html">Versioned Prompts and Tool Contracts: Building a Safe, Auditable, and Rollback-Ready AI System</a></li>
+  <li><a href="/ai/2025/10/15/llm-gateway.html">LLM Gateway: One Endpoint for Safety, Cost Control, and Observability</a></li>
+  <li><a href="/ai/2025/10/12/stable-names-task-contracts-json-schema.html">Stable Names + Task Contracts: Keep Callers Stable While You Evolve Internals</a></li>
+  <li><a href="/ai/2025/10/07/capability-pool-simple-guide.html">The Reuse Layer: Governing AI as a Capability, Not a Credential</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

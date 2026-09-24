@@ -1,0 +1,188 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="in-depth-comparison-of-arrayblockingqueue-and-linkedblockingqueue-in-java">In-Depth Comparison of <code class="language-plaintext highlighter-rouge">ArrayBlockingQueue</code> and <code class="language-plaintext highlighter-rouge">LinkedBlockingQueue</code> in Java</h1>
+<p>Java’s blocking queues are critical components for implementing producer-consumer patterns in concurrent programming.</p>
+
+<h2 id="1-arrayblockingqueue-implementation-details">1. ArrayBlockingQueue: Implementation Details</h2>
+<ul>
+  <li><strong>Underlying Data Structure</strong>: Backed by an array <code class="language-plaintext highlighter-rouge">Object[]</code>.</li>
+  <li><strong>Capacity</strong>: Fixed at initialization; bounded queue.</li>
+  <li><strong>Thread Safety</strong>
+    <ul>
+      <li>Uses a <strong>single <code class="language-plaintext highlighter-rouge">ReentrantLock</code></strong> to control both read and write operations.</li>
+      <li>Two <code class="language-plaintext highlighter-rouge">Condition</code> variables: <code class="language-plaintext highlighter-rouge">notEmpty</code> (for consumers) and <code class="language-plaintext highlighter-rouge">notFull</code> (for producers).</li>
+    </ul>
+  </li>
+  <li><strong>Blocking Behavior</strong>: Threads wait on the appropriate condition when the queue is empty/full.</li>
+  <li><strong>Performance</strong>: Simple implementation, but read/write operations are mutually exclusive.</li>
+</ul>
+
+<p>As of the newest verion, <code class="language-plaintext highlighter-rouge">ArrayBlockingQueue</code> continues to use a single lock design. This simplifies the implementation and reduces overhead, but may become a performance bottleneck under high concurrency since producers and consumers cannot proceed in parallel.</p>
+
+<h2 id="2-linkedblockingqueue-implementation-details">2. LinkedBlockingQueue: Implementation Details</h2>
+<ul>
+  <li><strong>Underlying Data Structure</strong>: Based on a <strong>singly-linked list</strong>.</li>
+  <li><strong>Capacity</strong>
+    <ul>
+      <li>Can be explicitly set;</li>
+      <li>Defaults to <code class="language-plaintext highlighter-rouge">Integer.MAX_VALUE</code> if not specified.</li>
+    </ul>
+  </li>
+  <li><strong>Thread Safety</strong>
+    <ul>
+      <li>Uses two separate <code class="language-plaintext highlighter-rouge">ReentrantLock</code> instances
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">putLock</code> for producers</li>
+          <li><code class="language-plaintext highlighter-rouge">takeLock</code> for consumers</li>
+        </ul>
+      </li>
+      <li>Two <code class="language-plaintext highlighter-rouge">Condition</code> objects: <code class="language-plaintext highlighter-rouge">notEmpty</code> and <code class="language-plaintext highlighter-rouge">notFull</code>, each tied to a different lock.</li>
+      <li>Queue size is tracked by an <code class="language-plaintext highlighter-rouge">AtomicInteger</code> count to ensure atomic updates.</li>
+    </ul>
+  </li>
+  <li><strong>Concurrency Advantage</strong>: Read and write operations can proceed concurrently without contention.</li>
+</ul>
+
+<h2 id="3-ensuring-safe-concurrent-access-in-linkedblockingqueue">3. Ensuring Safe Concurrent Access in LinkedBlockingQueue</h2>
+<p>The producer and consumer operations act on opposite ends of the queue:</p>
+<ul>
+  <li><strong>Producer</strong>
+    <ul>
+      <li>Appends a new node to <code class="language-plaintext highlighter-rouge">tail.next</code> and advances the <code class="language-plaintext highlighter-rouge">tail</code> pointer.</li>
+    </ul>
+  </li>
+  <li><strong>Consumer</strong>
+    <ul>
+      <li>Removes <code class="language-plaintext highlighter-rouge">head.next</code> and advances the <code class="language-plaintext highlighter-rouge">head</code> pointer.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>This separation ensures minimal contention. While the queue is empty:</p>
+<ul>
+  <li>Both <code class="language-plaintext highlighter-rouge">head</code> and <code class="language-plaintext highlighter-rouge">tail</code> point to <strong>a dummy node</strong> with <code class="language-plaintext highlighter-rouge">null</code> data.</li>
+  <li>This <strong>dummy node</strong> is reused until the first real element is inserted.
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="nf">LinkedBlockingQueue</span><span class="o">(</span><span class="kt">int</span> <span class="n">capacity</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">if</span> <span class="o">(</span><span class="n">capacity</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="o">)</span> <span class="k">throw</span> <span class="k">new</span> <span class="nc">IllegalArgumentException</span><span class="o">();</span>
+  <span class="k">this</span><span class="o">.</span><span class="na">capacity</span> <span class="o">=</span> <span class="n">capacity</span><span class="o">;</span>
+  <span class="n">last</span> <span class="o">=</span> <span class="n">head</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Node</span><span class="o">&lt;</span><span class="no">E</span><span class="o">&gt;(</span><span class="kc">null</span><span class="o">);</span> <span class="c1">// dummy node</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<h4 id="dequeue-operation-example">Dequeue Operation Example</h4>
+<p>The technique of self-linking (<code class="language-plaintext highlighter-rouge">h.next = h</code>) aids garbage collection by breaking unnecessary references.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="no">E</span> <span class="nf">dequeue</span><span class="o">()</span> <span class="o">{</span>
+    <span class="nc">Node</span><span class="o">&lt;</span><span class="no">E</span><span class="o">&gt;</span> <span class="n">h</span> <span class="o">=</span> <span class="n">head</span><span class="o">;</span>
+    <span class="nc">Node</span><span class="o">&lt;</span><span class="no">E</span><span class="o">&gt;</span> <span class="n">first</span> <span class="o">=</span> <span class="n">h</span><span class="o">.</span><span class="na">next</span><span class="o">;</span>
+    <span class="n">h</span><span class="o">.</span><span class="na">next</span> <span class="o">=</span> <span class="n">h</span><span class="o">;</span> <span class="c1">// help GC</span>
+    <span class="n">head</span> <span class="o">=</span> <span class="n">first</span><span class="o">;</span>
+    <span class="no">E</span> <span class="n">x</span> <span class="o">=</span> <span class="n">first</span><span class="o">.</span><span class="na">item</span><span class="o">;</span>
+    <span class="n">first</span><span class="o">.</span><span class="na">item</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="4-blocking-and-signaling-condition-variables">4. Blocking and Signaling (Condition Variables)</h2>
+
+<p>Both queues use <code class="language-plaintext highlighter-rouge">Condition</code> variables for signaling between producers and consumers.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Queue Type</th>
+      <th>Locking Strategy</th>
+      <th>Condition Variables</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>ArrayBlockingQueue</td>
+      <td>One shared lock</td>
+      <td><code class="language-plaintext highlighter-rouge">notEmpty</code>, <code class="language-plaintext highlighter-rouge">notFull</code></td>
+    </tr>
+    <tr>
+      <td>LinkedBlockingQueue</td>
+      <td>Two separate locks</td>
+      <td><code class="language-plaintext highlighter-rouge">notEmpty</code> (bound to <code class="language-plaintext highlighter-rouge">takeLock</code>), <code class="language-plaintext highlighter-rouge">notFull</code> (bound to <code class="language-plaintext highlighter-rouge">putLock</code>)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="5-summary-comparison">5. Summary Comparison</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>ArrayBlockingQueue</th>
+      <th>LinkedBlockingQueue</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Capacity</td>
+      <td>Fixed, must be specified</td>
+      <td>Optional, defaults to <code class="language-plaintext highlighter-rouge">Integer.MAX_VALUE</code></td>
+    </tr>
+    <tr>
+      <td>Data Structure</td>
+      <td>Array</td>
+      <td>Singly-linked list</td>
+    </tr>
+    <tr>
+      <td>Locking Strategy</td>
+      <td>Single lock</td>
+      <td>Separate locks for <code class="language-plaintext highlighter-rouge">put</code> / <code class="language-plaintext highlighter-rouge">take</code></td>
+    </tr>
+    <tr>
+      <td>Concurrency</td>
+      <td>Lower (read/write mutually exclusive)</td>
+      <td>Higher (read/write can proceed concurrently)</td>
+    </tr>
+    <tr>
+      <td>Memory Usage</td>
+      <td>Lower</td>
+      <td>Higher (dynamic node allocation)</td>
+    </tr>
+    <tr>
+      <td>GC Optimization</td>
+      <td>N/A</td>
+      <td>Self-linking and nullification</td>
+    </tr>
+    <tr>
+      <td>Recommended Use Case</td>
+      <td>Small, high-throughput queue</td>
+      <td>High-concurrency, large or long-lived queues</td>
+    </tr>
+  </tbody>
+</table>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

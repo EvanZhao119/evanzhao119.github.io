@@ -1,0 +1,266 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="some-interesting-string-features-in-java">Some Interesting <code class="language-plaintext highlighter-rouge">String</code> Features in Java</h1>
+
+<h2 id="1-string-literals-constants-and-singletons">1. String Literals: Constants and Singletons</h2>
+
+<p>In Java, if the same string literal (e.g., <code class="language-plaintext highlighter-rouge">"Hello World"</code>) is used in multiple variable declarations, the Java Virtual Machine (JVM) may create only <strong>one instance</strong> in memory. Thus, string literals act as <strong>constants</strong> or <strong>singletons</strong>.</p>
+
+<h3 id="constants-or-singleton">constants or singleton</h3>
+
+<p>In this case, both str1 and str2 point to the <strong>same</strong> String object stored in the <strong>String Pool</strong> of the JVM.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">String</span> <span class="n">str1</span> <span class="o">=</span> <span class="s">"Hello World"</span><span class="o">;</span>
+<span class="nc">String</span> <span class="n">str2</span> <span class="o">=</span> <span class="s">"Hello World"</span><span class="o">;</span>
+</code></pre></div></div>
+
+<p>JVM maintains a String Constant Pool, where all string literals are stored. Even if classes from different projects are compiled separately, they may still share the same constant String objects at runtime.</p>
+
+<h3 id="separate-string-objects">Separate String Objects</h3>
+
+<p>If you want two String variables to point to separate objects, use the new operator.</p>
+
+<p>Although both strings contain the same text, the JVM creates two different objects in memory.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">String</span> <span class="n">str1</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">String</span><span class="o">(</span><span class="s">"Hello World"</span><span class="o">);</span>
+<span class="nc">String</span> <span class="n">str2</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">String</span><span class="o">(</span><span class="s">"Hello World"</span><span class="o">);</span>
+</code></pre></div></div>
+
+<h2 id="2-compact-strings">2. Compact Strings</h2>
+
+<p>Introduced in Java 9, Compact Strings optimize <strong>memory usage</strong> for String objects.</p>
+
+<ul>
+  <li>When a String is created, the JVM <strong>detects</strong> if it contains only <strong>ISO-8859-1/Latin-1</strong> characters.</li>
+  <li>If so, it stores the String internally as a <strong>byte array</strong> (byte[]) instead of a char[], reducing memory consumption (each character takes only one byte).</li>
+  <li>This check occurs at the time of string creation and does not affect the <strong>immutability</strong> of the String.</li>
+</ul>
+
+<p><strong>Before Java 9 (UTF-16 representation)</strong></p>
+
+<ul>
+  <li><strong><code class="language-plaintext highlighter-rouge">"Hello"</code> → Stored as a <code class="language-plaintext highlighter-rouge">char[]</code> with 10 bytes (2 bytes per character).</strong></li>
+  <li><code class="language-plaintext highlighter-rouge">"你好"</code> → Stored as a <code class="language-plaintext highlighter-rouge">char[]</code> with 4 bytes (since non-Latin-1 characters require UTF-16).
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">StringMemoryTest</span> <span class="o">{</span>
+  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">String</span> <span class="n">str1</span> <span class="o">=</span> <span class="s">"Hello"</span><span class="o">;</span> <span class="c1">// 5 characters → 10 bytes (UTF-16, 2 bytes per char)</span>
+      <span class="nc">String</span> <span class="n">str2</span> <span class="o">=</span> <span class="s">"你好"</span><span class="o">;</span>   <span class="c1">// 2 characters → 4 bytes (UTF-16)</span>
+        
+      <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">str1</span><span class="o">);</span>
+      <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">str2</span><span class="o">);</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<p><strong>After Java 9 (Compact Strings enabled)</strong></p>
+
+<ul>
+  <li><strong><code class="language-plaintext highlighter-rouge">"Hello"</code> → Stored in a <code class="language-plaintext highlighter-rouge">byte[]</code> (5 bytes total) instead of a <code class="language-plaintext highlighter-rouge">char[]</code> (10 bytes).</strong></li>
+  <li><code class="language-plaintext highlighter-rouge">"你好"</code> → Since it contains non-Latin-1 characters, it falls back to UTF-16 using <code class="language-plaintext highlighter-rouge">char[]</code> (4 bytes).
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">CompactStringTest</span> <span class="o">{</span>
+  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+      <span class="nc">String</span> <span class="n">latinString</span> <span class="o">=</span> <span class="s">"Hello"</span><span class="o">;</span> <span class="c1">// Uses byte[] internally (5 bytes)</span>
+      <span class="nc">String</span> <span class="n">unicodeString</span> <span class="o">=</span> <span class="s">"你好"</span><span class="o">;</span> <span class="c1">// Uses char[] internally (4 bytes)</span>
+        
+      <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">latinString</span><span class="o">);</span>
+      <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">unicodeString</span><span class="o">);</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<h2 id="3-java-text-blocks">3. Java Text Blocks</h2>
+
+<p><strong>Introduced in Java 13 (as a preview) and officially released in Java 15</strong>, Text Blocks provide a more readable and convenient way to define multi-line strings in Java. This feature eliminates the need for <strong>escape sequences (\n, ", etc.)</strong> and improves code maintainability.</p>
+
+<p>A text block is a multi-line string literal enclosed within <strong>triple double-quotes (“””)</strong>. It automatically preserves new lines and indentation, making it an ideal choice for defining formatted text such as:</p>
+<ul>
+  <li>HTML</li>
+  <li>JSON</li>
+  <li>SQL queries</li>
+  <li>Multi-line logs</li>
+</ul>
+
+<h3 id="features-and-advantages">Features and Advantages</h3>
+<ul>
+  <li><strong>Automatic Line Breaks</strong></li>
+</ul>
+
+<p>Text blocks preserve new lines as they appear in the source code.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">String</span> <span class="n">message</span> <span class="o">=</span> <span class="sh">"""
+    Hello,
+    This is a multi-line message.
+    Have a great day!
+    """</span><span class="o">;</span>
+<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">message</span><span class="o">);</span>
+</code></pre></div></div>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Hello</span><span class="o">,</span>
+<span class="nc">This</span> <span class="n">is</span> <span class="n">a</span> <span class="n">multi</span><span class="o">-</span><span class="n">line</span> <span class="n">message</span><span class="o">.</span>
+<span class="nc">Have</span> <span class="n">a</span> <span class="n">great</span> <span class="n">day</span><span class="o">!</span>
+</code></pre></div></div>
+<ul>
+  <li><strong>No Need to Escape Double Quotes (<code class="language-plaintext highlighter-rouge">"</code>)</strong></li>
+</ul>
+
+<p>In regular Java strings, double quotes inside the string must be escaped (<code class="language-plaintext highlighter-rouge">\"</code>).
+With text blocks, escaping is unnecessary.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">String</span> <span class="n">json</span> <span class="o">=</span> <span class="sh">"""
+    {
+        "name": "Alice",
+        "age": 25
+    }
+    """</span><span class="o">;</span>
+<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">json</span><span class="o">);</span>
+</code></pre></div></div>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">{</span>
+    <span class="s">"name"</span><span class="o">:</span> <span class="s">"Alice"</span><span class="o">,</span>
+    <span class="s">"age"</span><span class="o">:</span> <span class="mi">25</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<ul>
+  <li><strong>Supports Indentation Handling</strong></li>
+</ul>
+
+<p>By default, Java removes common leading whitespace based on the leftmost non-space character.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">String</span> <span class="n">sqlQuery</span> <span class="o">=</span> <span class="sh">"""
+        SELECT * FROM users
+        WHERE active = true
+        ORDER BY created_at DESC;
+    """</span><span class="o">;</span>
+
+</code></pre></div></div>
+
+<p>The leading whitespace in each line is automatically aligned.</p>
+
+<ul>
+  <li><strong>Handling Escaping and Special Characters</strong></li>
+</ul>
+
+<p>Although escaping quotes (<code class="language-plaintext highlighter-rouge">"</code>) is not required, certain characters still need escaping such as Triple double-quotes (<code class="language-plaintext highlighter-rouge">"""</code>) and Backslashes (<code class="language-plaintext highlighter-rouge">\</code>).</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">String</span> <span class="n">text</span> <span class="o">=</span> <span class="sh">"""
+    This is a "quote" inside a text block.
+    To use triple quotes, escape one: \"""
+    This is how you add \"\\\" inside text blocks.
+    """</span><span class="o">;</span>
+<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">text</span><span class="o">);</span>
+</code></pre></div></div>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">This</span> <span class="n">is</span> <span class="n">a</span> <span class="s">"quote"</span> <span class="n">inside</span> <span class="n">a</span> <span class="n">text</span> <span class="n">block</span><span class="o">.</span>
+<span class="nc">To</span> <span class="n">use</span> <span class="n">triple</span> <span class="n">quotes</span><span class="o">,</span> <span class="n">escape</span> <span class="nl">one:</span> <span class="s">"""
+This is how you add "</span><span class="err">\</span><span class="s">""</span> <span class="n">inside</span> <span class="n">text</span> <span class="n">blocks</span><span class="o">.</span>
+</code></pre></div></div>
+
+<ul>
+  <li><strong>String Formatting with .formatted()</strong></li>
+</ul>
+
+<p>Text blocks support String formatting using .formatted().</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">String</span> <span class="n">template</span> <span class="o">=</span> <span class="sh">"""
+    Name: %s
+    Age: %d
+    Country: %s
+    """</span><span class="o">.</span><span class="na">formatted</span><span class="o">(</span><span class="s">"Alice"</span><span class="o">,</span> <span class="mi">25</span><span class="o">,</span> <span class="s">"Canada"</span><span class="o">);</span>
+
+<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">template</span><span class="o">);</span>
+</code></pre></div></div>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nl">Name:</span> <span class="nc">Alice</span>
+<span class="nl">Age:</span> <span class="mi">25</span>
+<span class="nl">Country:</span> <span class="nc">Canada</span>
+</code></pre></div></div>
+
+<h3 id="use-cases-of-java-text-blocks">Use Cases of Java Text Blocks</h3>
+<ul>
+  <li>JSON or XML Formatting</li>
+  <li>Writing SQL Queries</li>
+  <li>Multi-line Logging and Messages</li>
+  <li>HTML Content Representation</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">String</span> <span class="n">sql</span> <span class="o">=</span> <span class="sh">"""
+    SELECT id, name, email
+    FROM users
+    WHERE status = 'active'
+    ORDER BY created_at DESC;
+    """</span><span class="o">;</span>
+</code></pre></div></div>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">String</span> <span class="n">html</span> <span class="o">=</span> <span class="sh">"""
+    &lt;html&gt;
+        &lt;head&gt;
+            &lt;title&gt;Java Text Blocks&lt;/title&gt;
+        &lt;/head&gt;
+        &lt;body&gt;
+            &lt;h1&gt;Welcome to Java 15!&lt;/h1&gt;
+        &lt;/body&gt;
+    &lt;/html&gt;
+    """</span><span class="o">;</span>
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>Description</th>
+      <th>Available Since</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>String Literals</strong></td>
+      <td>Identical string literals are stored in the <strong>String Pool</strong>, preventing redundant object creation.</td>
+      <td>All Versions</td>
+    </tr>
+    <tr>
+      <td><strong>String Singleton</strong></td>
+      <td>String literals with the same value share the <strong>same instance</strong>, unless explicitly created with <code class="language-plaintext highlighter-rouge">new String()</code>.</td>
+      <td>All Versions</td>
+    </tr>
+    <tr>
+      <td><strong>Compact Strings</strong></td>
+      <td>If a <code class="language-plaintext highlighter-rouge">String</code> contains only <strong>Latin-1</strong> characters, it is stored using <code class="language-plaintext highlighter-rouge">byte[]</code> to reduce memory usage.</td>
+      <td>Java 9+</td>
+    </tr>
+    <tr>
+      <td><strong>Text Blocks</strong></td>
+      <td>Multi-line strings with <strong>automatic formatting</strong> and <strong>built-in support for quotes</strong>.</td>
+      <td>Java 13+</td>
+    </tr>
+  </tbody>
+</table>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

@@ -1,0 +1,231 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="how-spring-boot-uses-three-level-caching-to-solve-circular-dependencies">How Spring Boot Uses Three-Level Caching to Solve Circular Dependencies</h1>
+<p>Circular dependencies in Spring are a common issue when two or more beans depend on each other. Spring can resolve <em>singleton</em> circular dependencies but <strong>only for property-based injection</strong> — <strong>not constructor injection</strong>. Spring uses a <strong>three-level caching mechanism</strong> to achieve this. Spring Boot reuses Spring’s default strategy.</p>
+
+<blockquote>
+  <p>Starting with Spring 6.0, constructor-based circular dependencies are no longer allowed by default, and this restriction is now enforced more strictly than in previous versions.</p>
+</blockquote>
+
+<h2 id="three-level-caching-in-spring">Three-Level Caching in Spring</h2>
+<p>Spring manages singleton beans using three caches in the <code class="language-plaintext highlighter-rouge">DefaultSingletonBeanRegistry</code>.</p>
+<h3 id="1-singletonobjects--first-level-cache">1. <code class="language-plaintext highlighter-rouge">singletonObjects</code> – First-Level Cache</h3>
+<p>Contains fully initialized and ready-to-use singleton bean instances.</p>
+<h3 id="2-earlysingletonobjects--second-level-cache">2. <code class="language-plaintext highlighter-rouge">earlySingletonObjects</code> – Second-Level Cache</h3>
+<p>Holds “early references” to beans currently in creation. If a bean is subject to AOP, this may hold the proxy object; otherwise, it holds the actual bean instance.</p>
+<h3 id="3-singletonfactories--third-level-cache">3. <code class="language-plaintext highlighter-rouge">singletonFactories</code> – Third-Level Cache</h3>
+<p>Stores <code class="language-plaintext highlighter-rouge">ObjectFactory</code> instances that used to lazily generate early references to beans (or proxies) when needed. This allows other beans to inject this bean during its creation phase.</p>
+
+<blockquote>
+  <p>This structure helps avoid creating multiple proxies for the same bean when using AOP, which would be a risk with just two caches.</p>
+</blockquote>
+
+<h2 id="example-circular-dependency-between-beana-and-beanb">Example: Circular Dependency Between BeanA and BeanB</h2>
+<p>Suppose <code class="language-plaintext highlighter-rouge">BeanA</code> and <code class="language-plaintext highlighter-rouge">BeanB</code> depend on each other via field injection:</p>
+<ol>
+  <li>Spring starts creating <code class="language-plaintext highlighter-rouge">BeanA</code>, and places an <code class="language-plaintext highlighter-rouge">ObjectFactory</code> for it in <code class="language-plaintext highlighter-rouge">singletonFactories</code>.</li>
+  <li>While populating <code class="language-plaintext highlighter-rouge">BeanA</code>, it needs <code class="language-plaintext highlighter-rouge">BeanB</code>, which is not created yet.</li>
+  <li>Spring begins creating <code class="language-plaintext highlighter-rouge">BeanB</code>, and during its dependency injection phase, it finds that <code class="language-plaintext highlighter-rouge">BeanA</code> is still in the creation phase.</li>
+  <li>Since <code class="language-plaintext highlighter-rouge">singletonFactories</code> has an <code class="language-plaintext highlighter-rouge">ObjectFactory</code> for <code class="language-plaintext highlighter-rouge">BeanA</code>, it calls <code class="language-plaintext highlighter-rouge">getObject()</code> to retrieve an early reference and moves it into <code class="language-plaintext highlighter-rouge">earlySingletonObjects</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">BeanB</code> is now fully created and placed in <code class="language-plaintext highlighter-rouge">singletonObjects</code>.</li>
+  <li>Control returns to complete <code class="language-plaintext highlighter-rouge">BeanA</code>, which now has <code class="language-plaintext highlighter-rouge">BeanB</code>, and then <code class="language-plaintext highlighter-rouge">BeanA</code> is finalized and placed in <code class="language-plaintext highlighter-rouge">singletonObjects</code>.</li>
+</ol>
+
+<h2 id="key-methods-involved">Key Methods Involved</h2>
+<h3 id="1-dogetbean--entry-point">1. <code class="language-plaintext highlighter-rouge">doGetBean()</code> — Entry Point</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Object</span> <span class="n">sharedInstance</span> <span class="o">=</span> <span class="n">getSingleton</span><span class="o">(</span><span class="n">beanName</span><span class="o">);</span>
+<span class="c1">//....</span>
+<span class="k">if</span> <span class="o">(</span><span class="n">mbd</span><span class="o">.</span><span class="na">isSingleton</span><span class="o">())</span> <span class="o">{</span>
+    <span class="n">sharedInstance</span> <span class="o">=</span> <span class="n">getSingleton</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="n">createBean</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">mbd</span><span class="o">,</span> <span class="n">args</span><span class="o">));</span>
+    <span class="n">bean</span> <span class="o">=</span> <span class="n">getObjectForBeanInstance</span><span class="o">(</span><span class="n">sharedInstance</span><span class="o">,</span> <span class="n">name</span><span class="o">,</span> <span class="n">beanName</span><span class="o">,</span> <span class="n">mbd</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h4 id="object-sharedinstance--getsingletonbeanname"><code class="language-plaintext highlighter-rouge">Object sharedInstance = getSingleton(beanName);</code></h4>
+<ul>
+  <li>Checks the three-level cache to find if the bean already exists.</li>
+  <li>Looks into:
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">singletonObjects</code> (fully created beans),</li>
+      <li><code class="language-plaintext highlighter-rouge">earlySingletonObjects</code> (early-exposed beans),</li>
+      <li><code class="language-plaintext highlighter-rouge">singletonFactories</code> (can generate early references).</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="if-mbdissingleton"><code class="language-plaintext highlighter-rouge">if (mbd.isSingleton())</code></h4>
+<ul>
+  <li>Ensures the bean’s scope is singleton before proceeding.</li>
+  <li><code class="language-plaintext highlighter-rouge">mbd</code> is the <code class="language-plaintext highlighter-rouge">MergedBeanDefinition</code>, containing the bean’s configuration.</li>
+</ul>
+
+<h4 id="sharedinstance--getsingletonbeanname----createbeanbeanname-mbd-args"><code class="language-plaintext highlighter-rouge">sharedInstance = getSingleton(beanName, () -&gt; createBean(beanName, mbd, args));</code></h4>
+<ul>
+  <li>Triggers bean creation using <code class="language-plaintext highlighter-rouge">ObjectFactory</code>, if not already present.</li>
+  <li>Stores the factory in the third-level cache to support circular dependencies.</li>
+</ul>
+
+<h4 id="bean--getobjectforbeaninstancesharedinstance-name-beanname-mbd"><code class="language-plaintext highlighter-rouge">bean = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);</code></h4>
+<ul>
+  <li>Resolves the actual object to return.</li>
+  <li>If it’s a <code class="language-plaintext highlighter-rouge">FactoryBean</code>, returns its product, not the factory itself.</li>
+</ul>
+
+<h3 id="2-getsingleton--cache-retrieval-logic">2. <code class="language-plaintext highlighter-rouge">getSingleton()</code> — Cache Retrieval Logic</h3>
+<p>The <code class="language-plaintext highlighter-rouge">getSingleton(beanName, allowEarlyReference)</code> method is used to retrieve a singleton bean from Spring’s internal caches. It first checks the fully initialized singleton cache, then looks for early exposed beans that are still in the process of creation. If <code class="language-plaintext highlighter-rouge">allowEarlyReference</code> is <code class="language-plaintext highlighter-rouge">true</code> and the bean is still being created, it may retrieve an early reference via an <code class="language-plaintext highlighter-rouge">ObjectFactory</code> from the third-level cache. This mechanism is key to resolving circular dependencies between singleton beans.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="nc">Object</span> <span class="nf">getSingleton</span><span class="o">(</span><span class="nc">String</span> <span class="n">beanName</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">allowEarlyReference</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">Object</span> <span class="n">singletonObject</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">singletonObjects</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">beanName</span><span class="o">);</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">singletonObject</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">isSingletonCurrentlyInCreation</span><span class="o">(</span><span class="n">beanName</span><span class="o">))</span> <span class="o">{</span>
+        <span class="n">singletonObject</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">earlySingletonObjects</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">beanName</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">singletonObject</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">allowEarlyReference</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">ObjectFactory</span><span class="o">&lt;?&gt;</span> <span class="n">singletonFactory</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">singletonFactories</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">beanName</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">singletonFactory</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">singletonObject</span> <span class="o">=</span> <span class="n">singletonFactory</span><span class="o">.</span><span class="na">getObject</span><span class="o">();</span>
+                <span class="k">this</span><span class="o">.</span><span class="na">earlySingletonObjects</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">singletonObject</span><span class="o">);</span>
+                <span class="k">this</span><span class="o">.</span><span class="na">singletonFactories</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">beanName</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="n">singletonObject</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="3-createbean--preparing-for-circular-dependency-resolution">3. <code class="language-plaintext highlighter-rouge">createBean()</code> — Preparing for Circular Dependency Resolution</h3>
+<p>If the singleton bean is not found in the cache during the initial call to <code class="language-plaintext highlighter-rouge">getSingleton(beanName)</code>, Spring proceeds to create the bean using the <code class="language-plaintext highlighter-rouge">ObjectFactory</code> provided in the second call.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="o">(</span><span class="n">mbd</span><span class="o">.</span><span class="na">isSingleton</span><span class="o">())</span> <span class="o">{</span>
+    <span class="n">sharedInstance</span> <span class="o">=</span> <span class="n">getSingleton</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="n">createBean</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">mbd</span><span class="o">,</span> <span class="n">args</span><span class="o">));</span>
+    <span class="n">bean</span> <span class="o">=</span> <span class="n">getObjectForBeanInstance</span><span class="o">(</span><span class="n">sharedInstance</span><span class="o">,</span> <span class="n">name</span><span class="o">,</span> <span class="n">beanName</span><span class="o">,</span> <span class="n">mbd</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>This triggers the <code class="language-plaintext highlighter-rouge">createBean()</code> method, which eventually delegates to the <code class="language-plaintext highlighter-rouge">doCreateBean()</code> method in the <code class="language-plaintext highlighter-rouge">AbstractAutowireCapableBeanFactory</code> class. During this process, if circular dependency resolution is allowed and the bean is currently in creation, Spring <strong>registers an early exposure factory</strong> to the third-level cache via <code class="language-plaintext highlighter-rouge">addSingletonFactory()</code>.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kt">void</span> <span class="nf">addSingletonFactory</span><span class="o">(</span><span class="nc">String</span> <span class="n">beanName</span><span class="o">,</span> <span class="nc">ObjectFactory</span><span class="o">&lt;?&gt;</span> <span class="n">singletonFactory</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">singletonFactories</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">singletonFactory</span><span class="o">);</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">earlySingletonObjects</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">beanName</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>This call ensures that other beans encountering this one during their injection phase can access an early reference to it (or its proxy) even before it has been fully initialized.</p>
+
+<h3 id="4-getearlybeanreference--aop-aware-reference">4. <code class="language-plaintext highlighter-rouge">getEarlyBeanReference()</code> — AOP-Aware Reference</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="nc">Object</span> <span class="nf">getEarlyBeanReference</span><span class="o">(</span><span class="nc">String</span> <span class="n">beanName</span><span class="o">,</span> <span class="nc">RootBeanDefinition</span> <span class="n">mbd</span><span class="o">,</span> <span class="nc">Object</span> <span class="n">bean</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">bean</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">mbd</span><span class="o">.</span><span class="na">isSynthetic</span><span class="o">()</span> <span class="o">&amp;&amp;</span> <span class="n">hasInstantiationAwareBeanPostProcessors</span><span class="o">())</span> <span class="o">{</span>
+        <span class="k">for</span> <span class="o">(</span><span class="nc">BeanPostProcessor</span> <span class="n">bp</span> <span class="o">:</span> <span class="n">getBeanPostProcessors</span><span class="o">())</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">bp</span> <span class="k">instanceof</span> <span class="nc">SmartInstantiationAwareBeanPostProcessor</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">bean</span> <span class="o">=</span> <span class="o">((</span><span class="nc">SmartInstantiationAwareBeanPostProcessor</span><span class="o">)</span> <span class="n">bp</span><span class="o">)</span>
+                         <span class="o">.</span><span class="na">getEarlyBeanReference</span><span class="o">(</span><span class="n">bean</span><span class="o">,</span> <span class="n">beanName</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="n">bean</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>This method is used to return an early reference to a bean, often a proxy, during its creation. It is invoked by the <code class="language-plaintext highlighter-rouge">ObjectFactory</code> registered in the third-level cache (<code class="language-plaintext highlighter-rouge">singletonFactories</code>) via <code class="language-plaintext highlighter-rouge">addSingletonFactory()</code>.</p>
+
+<p>When another bean requires this one during dependency injection, Spring uses this method to provide an early reference, enabling <strong>circular dependency resolution</strong>.</p>
+
+<p>If any registered <code class="language-plaintext highlighter-rouge">BeanPostProcessor</code> implements <code class="language-plaintext highlighter-rouge">SmartInstantiationAwareBeanPostProcessor</code>, it can decide whether a proxy is needed and wrap the original bean accordingly. This ensures only <strong>one proxy is created</strong>, even if the bean is injected before full initialization, avoiding issues with duplicated proxies and maintaining the singleton guarantee.</p>
+
+<p>This mechanism is especially important in AOP scenarios, where proxies must be injected even before full bean initialization.</p>
+
+<h2 id="why-three-caches">Why Three Caches?</h2>
+<h3 id="why-not-just-two-caches">Why Not Just Two Caches?</h3>
+<p>At first glance, two levels seem enough:</p>
+<ul>
+  <li>singletonObjects – the final instance</li>
+  <li>earlySingletonObjects – the “just-in-time” object exposed for injection</li>
+</ul>
+
+<p>However, in circular dependency scenarios involving AOP, two caches are insufficient.</p>
+<h4 id="the-problem-with-two-caches">The Problem with Two Caches</h4>
+<p>Imagine two beans with circular dependencies:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Service</span>
+<span class="kd">class</span> <span class="nc">A</span> <span class="o">{</span>
+    <span class="nd">@Autowired</span> <span class="no">B</span> <span class="n">b</span><span class="o">;</span>
+<span class="o">}</span>
+
+<span class="nd">@Service</span>
+<span class="kd">class</span> <span class="nc">B</span> <span class="o">{</span>
+    <span class="nd">@Autowired</span> <span class="no">A</span> <span class="n">a</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Assume that Spring must create a proxy for A.
+Now, during creation:</p>
+<ol>
+  <li>Spring starts creating <code class="language-plaintext highlighter-rouge">A</code>, instantiates the raw object.</li>
+  <li>Before completing <code class="language-plaintext highlighter-rouge">A</code>, it needs to inject <code class="language-plaintext highlighter-rouge">B</code>, so it starts creating <code class="language-plaintext highlighter-rouge">B</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">B</code> depends on <code class="language-plaintext highlighter-rouge">A</code>, but <code class="language-plaintext highlighter-rouge">A</code> is not yet fully initialized.</li>
+</ol>
+
+<p>Without the third cache:</p>
+<ul>
+  <li>Spring can only expose the raw object <code class="language-plaintext highlighter-rouge">A</code> via <code class="language-plaintext highlighter-rouge">earlySingletonObjects</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">B</code> gets this raw object injected.</li>
+  <li>Later, during <code class="language-plaintext highlighter-rouge">A</code>’s post-processing phase, Spring detects AOP and creates a proxy (<code class="language-plaintext highlighter-rouge">proxyA</code>), placing it into <code class="language-plaintext highlighter-rouge">singletonObjects</code>.</li>
+</ul>
+
+<p><strong>Result:</strong></p>
+<ul>
+  <li>One place (<code class="language-plaintext highlighter-rouge">B</code>) has raw <code class="language-plaintext highlighter-rouge">A</code>, another has <code class="language-plaintext highlighter-rouge">proxyA</code></li>
+  <li>Singleton scope is broken</li>
+</ul>
+
+<h3 id="the-solution-a-third-level-cache">The Solution: A Third-Level Cache</h3>
+<p>To address this, Spring introduces <code class="language-plaintext highlighter-rouge">singletonFactories</code>, the third-level cache. This stores a lazily executed <code class="language-plaintext highlighter-rouge">ObjectFactory</code>.</p>
+<ul>
+  <li>During creation of <code class="language-plaintext highlighter-rouge">A</code>, Spring executes:
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">addSingletonFactory</span><span class="o">(</span><span class="s">"A"</span><span class="o">,</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="n">getEarlyBeanReference</span><span class="o">(</span><span class="s">"A"</span><span class="o">,</span> <span class="no">A</span><span class="o">));</span>
+</code></pre></div>    </div>
+  </li>
+  <li>The factory is placed in <code class="language-plaintext highlighter-rouge">singletonFactories</code> <strong>before dependency injection begins</strong>.</li>
+  <li>When <code class="language-plaintext highlighter-rouge">B</code> tries to inject <code class="language-plaintext highlighter-rouge">A</code>, Spring:
+    <ul>
+      <li>Misses in first-level and second-level caches,</li>
+      <li>Falls back to <code class="language-plaintext highlighter-rouge">singletonFactories</code>,</li>
+      <li>Executes the <code class="language-plaintext highlighter-rouge">ObjectFactory</code>, which internally:
+        <ul>
+          <li>Checks if <code class="language-plaintext highlighter-rouge">A</code> needs proxying</li>
+          <li>Wraps the raw object if needed (<code class="language-plaintext highlighter-rouge">wrapIfNecessary()</code>)</li>
+          <li>Produces <code class="language-plaintext highlighter-rouge">proxyA</code></li>
+          <li>Puts <code class="language-plaintext highlighter-rouge">proxyA</code> into second-level cache <code class="language-plaintext highlighter-rouge">earlySingletonObjects</code></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>Now <code class="language-plaintext highlighter-rouge">B</code> receives <code class="language-plaintext highlighter-rouge">proxyA</code> during injection.</li>
+  <li>When <code class="language-plaintext highlighter-rouge">A</code> finishes initialization, Spring finds the proxy already exists and uses it — no duplicate proxy creation.</li>
+</ul>
+
+<blockquote>
+  <p><strong>[Common Misconception]</strong> Some believe that Spring uses three caches only for legacy reasons. In fact, the third cache (<code class="language-plaintext highlighter-rouge">singletonFactories</code>) is essential — it allows Spring to delay proxy creation and handle circular dependencies correctly and efficiently.</p>
+</blockquote>
+
+<blockquote>
+  <p>There is no such thing as a “perfect” design — every solution involves trade-offs. While it is technically possible to reduce the number of caches, doing so would make the system more complex. You would need additional logic to determine whether a bean is fully created, whether it is a proxy, and whether it is safe to inject early. This would make the entire framework harder to understand and maintain.</p>
+</blockquote>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

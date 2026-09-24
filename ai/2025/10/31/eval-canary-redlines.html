@@ -1,0 +1,149 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="evaluation-and-redlines-offline-baseline--production-replay--automatic-rollback">Evaluation and Redlines: Offline Baseline + Production Replay + Automatic Rollback</h1>
+<blockquote>
+  <p><strong>Goal:</strong> A new model version should go live <strong>only when data proves it’s better</strong>, otherwise, it automatically rolls back.</p>
+</blockquote>
+
+<hr />
+
+<h2 id="1-why-we-need-redlines">1. Why We Need “Redlines”</h2>
+<p>In many AI teams, new model versions are deployed based on gut feeling:<br />
+&gt; “It looks better.”<br />
+&gt; “I tried a few prompts — seems fine.”</p>
+
+<p>That approach might work at an early stage, but it becomes dangerous as systems scale. Three common issues quickly appear:</p>
+<ol>
+  <li><strong>No quantitative proof.</strong> A new model may look smarter on a few samples but degrade overall accuracy.</li>
+  <li><strong>Hidden risks.</strong> One small regression can trigger privacy leaks, citation loss, or higher latency for thousands of users.</li>
+  <li><strong>No accountability.</strong> When something breaks, it’s unclear which version caused it or why.</li>
+</ol>
+
+<p>To fix this, we need a <strong>data-driven release gate</strong>, a structured way to measure, compare, and decide. The core idea is simple but powerful. We try to build an <strong>offline baseline</strong> to measure progress consistently; run <strong>production replay</strong> to see how new versions perform on real traffic; set <strong>redline and yellowline thresholds</strong> that trigger alerts or rollbacks automatically.</p>
+
+<p>This is how we move from “it feels good” to “the data says it’s good.”</p>
+
+<hr />
+
+<h2 id="2-the-offline-baseline-defining-a-fair-comparison">2. The Offline Baseline: Defining a Fair Comparison</h2>
+<p>Before testing a new model, we need a reference which is a consistent “control group” that captures what <em>good</em> performance looks like. That’s what an <strong>offline baseline</strong> provides.</p>
+
+<p>It’s a fixed set of around <strong>200 anonymized test samples</strong>, and each includes,</p>
+<ul>
+  <li><strong>Input:</strong> a de-identified real or synthetic user request;</li>
+  <li><strong>Checkpoints:</strong> rules for evaluation (e.g., “must include citations,” “must extract company and date”);</li>
+  <li><strong>Gold reference:</strong> the expected output or key phrases.</li>
+</ul>
+
+<p>These samples cover normal use cases, edge cases, and known problem areas from previous incidents. Running both the <strong>stable</strong> and <strong>canary</strong> models on this same dataset gives us a reliable side-by-side comparison. If a canary model can’t perform well on this 200-sample baseline, it’s unlikely to do better in production.</p>
+
+<hr />
+
+<h2 id="3-production-replay-testing-on-real-world-traffic">3. Production Replay: Testing on Real-World Traffic</h2>
+<p>Even if a model passes offline evaluation, it might still fail in production. Why? Because real-world data is messy, long, noisy, and unpredictable.</p>
+
+<p>That’s why we add a <strong>production replay</strong> step. We sample 24–72 hours of <strong>real production traffic</strong> (fully anonymized), and run both the stable and canary models on those same inputs. We then compare five key metrics,</p>
+<ol>
+  <li><strong>Accuracy</strong>: How close the model output is to the expected answer</li>
+  <li><strong>Coverage</strong>: Whether it covers required fields or key facts</li>
+  <li><strong>Citation Rate</strong>: Whether it properly includes and aligns references</li>
+  <li><strong>Cost</strong>: Dollar cost per 1K tokens or per request</li>
+  <li><strong>Latency</strong>: Response time (P50/P95) is critical for user experience</li>
+</ol>
+
+<p>This gives us a true picture of performance under realistic load and data diversity. <strong>Production replay bridges the gap between “lab success” and “production reliability.”</strong></p>
+
+<hr />
+
+<h2 id="4-the-redline-and-yellowline-system-when-to-roll-back">4. The Redline and Yellowline System: When to Roll Back</h2>
+<p>Once we can measure, we need rules to decide what’s acceptable, that is the <strong>redline system</strong>.</p>
+
+<p>It should work like this,</p>
+<ul>
+  <li><strong>Redline:</strong> Critical failure. Automatically roll back.</li>
+  <li><strong>Yellowline:</strong> Minor regression. Pause rollout and alert for manual review.</li>
+</ul>
+
+<p>For example, if Citation rate is lower 0.95, rollback operation will be performed. If Cost per 1K tokens exceeds, the system will send an alert. These thresholds are stored in a simple YAML configuration that becomes part of every release. Once triggered, the pipeline doesn’t wait for human approval and it executes the decision automatically.</p>
+
+<p>This ensures <strong>Objectivity</strong>(decisions based on numbers, not opinions), <strong>Speed</strong>(rollback happening in minutes, not hours), and <strong>Safety</strong>(bad versions never reaching all users).</p>
+
+<hr />
+
+<h2 id="5-automated-evaluation-and-cicd-integration">5. Automated Evaluation and CI/CD Integration</h2>
+<p>When a new model version is ready for release, the CI/CD pipeline runs an automated evaluation process.</p>
+<ol>
+  <li>Load the offline baseline samples.</li>
+  <li>Run both <strong>stable</strong> and <strong>canary</strong> models.</li>
+  <li>Compute the five metrics.</li>
+  <li>Compare them against the configured thresholds.</li>
+  <li>Output a decision: <em>Pass</em>, <em>Alert</em>, or <em>Rollback</em>.</li>
+</ol>
+
+<p>If results are <em>Pass</em>, rollout continues. If any yellowline or redline is triggered, the system pauses or rolls back automatically.</p>
+
+<hr />
+
+<h2 id="6-a-real-example-the-canary-that-got-rolled-back">6. A Real Example: The Canary That Got Rolled Back</h2>
+<p>During one release, our canary model seemed promising:</p>
+<ul>
+  <li>Accuracy: 0.88 → 0.86</li>
+  <li>Coverage: 0.97 → 0.93</li>
+  <li>Citation rate: 0.98 → 0.92</li>
+  <li>Cost: → -8%</li>
+  <li>Latency: → -5%</li>
+</ul>
+
+<p>Lower cost and faster speed looked great, but the citation rate dropped below 0.95, violating a redline. Within minutes, the system automatically rolled back the release and notified the on-call channel. No human had to intervene.</p>
+
+<hr />
+
+<h2 id="7-conclusion">7. Conclusion</h2>
+<p>After adopting this system, people stop saying <em>“it feels better”</em> and start saying <em>“it performs 3% better on accuracy and 10% faster in latency.”</em> Every release is measured on the same data. You can explain why a version passed or failed. Teams deploy faster, knowing rollback is automatic and safe. That is a mindset shift.</p>
+
+<p>Additionally, in practice, there are more frequent and safer releases, fewer production issues, and lower risk for compliance and security teams.</p>
+
+<blockquote>
+  <p><strong>The release gate is no longer built on trust. In fact, it is built on data.</strong></p>
+</blockquote>
+
+<p>With offline baselines, production replay, and automated redlines, we no longer <em>hope</em> a model is better. In contract, we <em>prove</em> it is. Every deployment becomes safer, faster, and smarter.</p>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+<ul>
+  <li><a href="/ai/2025/10/27/rag-query-citations.html">Building a Trustworthy RAG System: Make AI Answers Traceable with Source Citations</a></li>
+  <li><a href="/ai/2025/10/21/versioned-prompts-and-tool-contracts.html">Versioned Prompts and Tool Contracts: Building a Safe, Auditable, and Rollback-Ready AI System</a></li>
+  <li><a href="/ai/2025/10/15/llm-gateway.html">LLM Gateway: One Endpoint for Safety, Cost Control, and Observability</a></li>
+  <li><a href="/ai/2025/10/12/stable-names-task-contracts-json-schema.html">Stable Names + Task Contracts: Keep Callers Stable While You Evolve Internals</a></li>
+  <li><a href="/ai/2025/10/07/capability-pool-simple-guide.html">The Reuse Layer: Governing AI as a Capability, Not a Credential</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

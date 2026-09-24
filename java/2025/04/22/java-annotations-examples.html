@@ -1,0 +1,157 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="introduction-to-java-annotations-with-real-world-examples">Introduction to Java Annotations with Real-World Examples</h1>
+
+<h2 id="what-are-java-annotations">What are Java Annotations?</h2>
+<p>Java Annotations are a form of metadata introduced in <strong>JDK 5</strong> that provide <strong>additional information about the code</strong>.</p>
+
+<p>Annotations do not directly affect program semantics but can be <strong>used by compilers, tools, and frameworks</strong> to perform various operations.</p>
+
+<h2 id="common-use-cases">Common Use Cases</h2>
+<ol>
+  <li><strong>Compiler Instructions</strong><br />
+Example: <code class="language-plaintext highlighter-rouge">@Override</code> tells the compiler that a method overrides a superclass method.</li>
+  <li><strong>Compile-Time Processing (Code Generation, Validation)</strong><br />
+Example: <code class="language-plaintext highlighter-rouge">@Getter</code> from Lombok.</li>
+  <li><strong>Runtime Processing (via Reflection)</strong><br />
+Example: Spring annotations like <code class="language-plaintext highlighter-rouge">@Autowired</code>, <code class="language-plaintext highlighter-rouge">@RequestMapping</code>.</li>
+</ol>
+
+<h2 id="built-in-annotations-in-java">Built-in Annotations in Java</h2>
+<p>| Annotation           | Description                                 |
+|———————-|———————————————|
+| <code class="language-plaintext highlighter-rouge">@Override</code>          | Indicates a method overrides a superclass method |
+| <code class="language-plaintext highlighter-rouge">@Deprecated</code>        | Marks a method/class as deprecated          |
+| <code class="language-plaintext highlighter-rouge">@SuppressWarnings</code>  | Suppresses compiler warnings                |</p>
+
+<h3 id="example">Example:</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyClass</span> <span class="o">{</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="nc">String</span> <span class="nf">toString</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="s">"MyClass instance"</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Deprecated</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">oldMethod</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Old method"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@SuppressWarnings</span><span class="o">(</span><span class="s">"unchecked"</span><span class="o">)</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">example</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">List</span> <span class="n">list</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">();</span>  <span class="c1">// Suppress warning for raw type</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="creating-my-own-annotations">Creating My Own Annotations</h2>
+
+<h3 id="1-define-mylog-annotation">1. Define <code class="language-plaintext highlighter-rouge">MyLog</code> Annotation</h3>
+<p>First the Annotation <code class="language-plaintext highlighter-rouge">@MyLog</code> is created using <code class="language-plaintext highlighter-rouge">@interface</code>, targeted at methods (<code class="language-plaintext highlighter-rouge">@Target(ElementType.METHOD)</code>) and retained at runtime (<code class="language-plaintext highlighter-rouge">@Retention(RetentionPolicy.RUNTIME)</code>). It has a <code class="language-plaintext highlighter-rouge">value()</code> field with a default string.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.lang.annotation.*</span><span class="o">;</span>
+
+<span class="nd">@Target</span><span class="o">(</span><span class="nc">ElementType</span><span class="o">.</span><span class="na">METHOD</span><span class="o">)</span>
+<span class="nd">@Retention</span><span class="o">(</span><span class="nc">RetentionPolicy</span><span class="o">.</span><span class="na">RUNTIME</span><span class="o">)</span>
+<span class="kd">public</span> <span class="nd">@interface</span> <span class="nc">MyLog</span> <span class="o">{</span>
+    <span class="nc">String</span> <span class="nf">value</span><span class="o">()</span> <span class="k">default</span> <span class="s">"default log"</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="2-use-the-annotation">2. Use the Annotation</h3>
+<p>The <code class="language-plaintext highlighter-rouge">@MyLog("Calling sayHello")</code> annotation is applied to the <code class="language-plaintext highlighter-rouge">sayHello()</code> method of a <code class="language-plaintext highlighter-rouge">Service</code> class.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Service</span> <span class="o">{</span>
+    <span class="nd">@MyLog</span><span class="o">(</span><span class="s">"Calling sayHello"</span><span class="o">)</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">sayHello</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Hello!"</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="3-read-the-annotation-via-reflection">3. Read the Annotation via Reflection</h3>
+<p>At last, reflection is used to check if <code class="language-plaintext highlighter-rouge">sayHello()</code> has the <code class="language-plaintext highlighter-rouge">@MyLog</code> annotation.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.lang.reflect.Method</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Main</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">Method</span> <span class="n">method</span> <span class="o">=</span> <span class="nc">Service</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getMethod</span><span class="o">(</span><span class="s">"sayHello"</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">isAnnotationPresent</span><span class="o">(</span><span class="nc">MyLog</span><span class="o">.</span><span class="na">class</span><span class="o">))</span> <span class="o">{</span>
+            <span class="nc">MyLog</span> <span class="n">log</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="na">getAnnotation</span><span class="o">(</span><span class="nc">MyLog</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Log value: "</span> <span class="o">+</span> <span class="n">log</span><span class="o">.</span><span class="na">value</span><span class="o">());</span>
+        <span class="o">}</span>
+
+        <span class="k">new</span> <span class="nf">Service</span><span class="o">().</span><span class="na">sayHello</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="annotations-in-frameworks-spring-example">Annotations in Frameworks (Spring Example)</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Annotation</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">@Component</code></td>
+      <td>Declares a Spring-managed component</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">@Autowired</code></td>
+      <td>Injects dependencies automatically</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">@Controller</code>/<code class="language-plaintext highlighter-rouge">@RestController</code></td>
+      <td>Marks controller classes</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">@RequestMapping</code></td>
+      <td>Maps HTTP requests to handler methods</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">@Service</code></td>
+      <td>Declares a service layer component</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="example-1">Example:</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@RestController</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">HelloController</span> <span class="o">{</span>
+    <span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/hello"</span><span class="o">)</span>
+    <span class="kd">public</span> <span class="nc">String</span> <span class="nf">hello</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="s">"Hello Spring Boot"</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

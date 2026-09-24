@@ -1,0 +1,197 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="high-performance-read-write-lock-in-java--understanding-stampedlock">High-Performance Read-Write Lock in Java — Understanding <code class="language-plaintext highlighter-rouge">StampedLock</code></h1>
+<p>Introduced in <strong>Java 8</strong>, <code class="language-plaintext highlighter-rouge">StampedLock</code> is a high-performance read-write lock designed to address the <strong>writer starvation</strong> issue present in <code class="language-plaintext highlighter-rouge">ReentrantReadWriteLock</code>.</p>
+
+<p>Compared to traditional locking mechanisms, <code class="language-plaintext highlighter-rouge">StampedLock</code> offers:</p>
+<ul>
+  <li><strong>Optimistic, non-blocking reads</strong></li>
+  <li><strong>Independence from the AQS framework</strong></li>
+  <li><strong>Better concurrency and lower locking overhead</strong></li>
+</ul>
+
+<blockquote>
+  <p><strong><em>Note</em></strong>: <code class="language-plaintext highlighter-rouge">StampedLock</code> is <strong>not reentrant</strong> and not suited for nested lock usage.</p>
+</blockquote>
+
+<h2 id="1-comparison-stampedlock-vs-reentrantreadwritelock">1. Comparison: <code class="language-plaintext highlighter-rouge">StampedLock</code> vs. <code class="language-plaintext highlighter-rouge">ReentrantReadWriteLock</code></h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>StampedLock</th>
+      <th>ReentrantReadWriteLock</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>AQS-based</td>
+      <td>No</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td>Supports Optimistic Read</td>
+      <td>Yes</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <td>Lock Downgrading</td>
+      <td>Yes (manually)</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td>Reentrancy</td>
+      <td>No</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td>Fairness Policy</td>
+      <td>Non-fair only</td>
+      <td>Configurable</td>
+    </tr>
+    <tr>
+      <td>Performance (Read-heavy)</td>
+      <td>High</td>
+      <td>Moderate</td>
+    </tr>
+    <tr>
+      <td>Writer Starvation</td>
+      <td>Solved</td>
+      <td>Possible</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="2-core-concepts-of-stampedlock">2. Core Concepts of <code class="language-plaintext highlighter-rouge">StampedLock</code></h2>
+
+<h3 id="21-optimistic-read-lock">2.1 Optimistic Read Lock</h3>
+<p><code class="language-plaintext highlighter-rouge">StampedLock</code> allows non-blocking reads through optimistic locking, which works under the assumption that write conflicts are rare and checks for conflicts only after the read is done.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">long</span> <span class="n">stamp</span> <span class="o">=</span> <span class="n">lock</span><span class="o">.</span><span class="na">tryOptimisticRead</span><span class="o">();</span>
+<span class="k">try</span> <span class="o">{</span>
+    <span class="c1">// Perform read operations</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">lock</span><span class="o">.</span><span class="na">validate</span><span class="o">(</span><span class="n">stamp</span><span class="o">))</span> <span class="o">{</span>
+        <span class="c1">// No write occurred — safe to proceed</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+        <span class="c1">// Fallback to read lock</span>
+        <span class="n">stamp</span> <span class="o">=</span> <span class="n">lock</span><span class="o">.</span><span class="na">readLock</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+    <span class="n">lock</span><span class="o">.</span><span class="na">unlock</span><span class="o">(</span><span class="n">stamp</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">tryOptimisticRead()</code> returns a <strong>version stamp</strong> if no write is ongoing.</li>
+  <li><code class="language-plaintext highlighter-rouge">validate(stamp)</code> checks whether the version remains unchanged.</li>
+</ul>
+
+<blockquote>
+  <p><strong><em>Note</em></strong>: In highly contended environments, excessive optimistic failures may degrade performance.</p>
+</blockquote>
+
+<h3 id="22-lock-state-management">2.2 Lock State Management</h3>
+<p>Unlike AQS-based locks, <code class="language-plaintext highlighter-rouge">StampedLock</code> manages lock state via a <code class="language-plaintext highlighter-rouge">volatile long state</code> field.</p>
+
+<h4 id="bit-partitioning-64-bits-total">Bit Partitioning (64 bits total)</h4>
+<p>| Bits       | Purpose                        |
+|————|——————————–|
+| High 24    | Version number (incremented by write lock) |
+| Bit 8      | Write lock indicator           |
+| Low 7      | Read lock count                |</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// The number of bits used to represent the reader count (lowest 7 bits of the state)</span>
+<span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="no">LG_READERS</span> <span class="o">=</span> <span class="mi">7</span><span class="o">;</span>
+
+<span class="c1">// Bit mask for the write lock (the 8th bit, value: 128)</span>
+<span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">long</span> <span class="no">WBIT</span>  <span class="o">=</span> <span class="mi">1L</span> <span class="o">&lt;&lt;</span> <span class="no">LG_READERS</span><span class="o">;</span>
+
+<span class="c1">// Bit mask for the read lock count (lowest 7 bits, value: 127)</span>
+<span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">long</span> <span class="no">RBITS</span> <span class="o">=</span> <span class="no">WBIT</span> <span class="o">-</span> <span class="mi">1L</span><span class="o">;</span>
+
+<span class="c1">// Initial stamp value for the lock state (version number starts at 256)</span>
+<span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">long</span> <span class="no">ORIGIN</span> <span class="o">=</span> <span class="no">WBIT</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span><span class="o">;</span>
+</code></pre></div></div>
+
+<h3 id="23-spin-locking">2.3 Spin Locking</h3>
+<p>To avoid the cost of blocking threads, <code class="language-plaintext highlighter-rouge">StampedLock</code> uses <strong>spin loops</strong> extensively while acquiring locks.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">spins</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">;;)</span> <span class="o">{</span>
+    <span class="c1">// Spin-wait logic for contention handling</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p><strong><em>Note</em></strong>: For long-duration write locks, Spin-locking will waste CPU resources.</p>
+</blockquote>
+
+<h3 id="24-improved-clh-queue-for-thread-management">2.4 Improved CLH Queue for Thread Management</h3>
+<p><code class="language-plaintext highlighter-rouge">StampedLock</code> uses a lightweight variation of the <strong>CLH queue</strong> to manage contention.</p>
+<ul>
+  <li>Consecutive reader threads are grouped into a <code class="language-plaintext highlighter-rouge">cowait</code> chain.</li>
+  <li>Writer threads are queued separately and not bypassed by new readers.</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">WNode</span> <span class="o">{</span>
+    <span class="kd">volatile</span> <span class="nc">WNode</span> <span class="n">prev</span><span class="o">,</span> <span class="n">next</span><span class="o">,</span> <span class="n">cowait</span><span class="o">;</span>
+    <span class="kd">volatile</span> <span class="nc">Thread</span> <span class="n">thread</span><span class="o">;</span>
+    <span class="kd">volatile</span> <span class="kt">int</span> <span class="n">status</span><span class="o">;</span>
+    <span class="kd">final</span> <span class="kt">int</span> <span class="n">mode</span><span class="o">;</span> <span class="c1">// RMODE or WMODE</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p><code class="language-plaintext highlighter-rouge">StampedLock</code> <strong>does not support condition variables</strong>, which is <strong>not suitable</strong> for advanced thread coordination (e.g., <code class="language-plaintext highlighter-rouge">await()</code>/<code class="language-plaintext highlighter-rouge">signal()</code> use cases).</p>
+</blockquote>
+
+<h2 id="3-limitations-and-considerations">3. Limitations and Considerations</h2>
+<ul>
+  <li><strong>Non-reentrant</strong>: Acquiring the same lock twice in the same thread leads to deadlock.</li>
+  <li><strong>No condition support</strong>: You cannot use <code class="language-plaintext highlighter-rouge">Condition</code> or equivalent APIs.</li>
+  <li><strong>Manual stamp management</strong>: Users must manually track and release locks.</li>
+  <li><strong>Best suited for read-heavy scenarios</strong>: Optimistic reads work best under low contention.</li>
+  <li><strong>Compatible with Virtual Threads (Java 21+)</strong>: Still requires careful release semantics.</li>
+</ul>
+
+<h2 id="4-use-cases">4. Use Cases</h2>
+<ul>
+  <li>In-memory data caching</li>
+  <li>Read-heavy data structures (e.g., Maps, Lists)</li>
+  <li>High-frequency read systems under low write contention</li>
+</ul>
+
+<h2 id="5-some-suggestions">5. Some Suggestions</h2>
+<p>While <code class="language-plaintext highlighter-rouge">StampedLock</code> delivers exceptional performance in specific scenarios, it introduces <strong>higher programming complexity</strong> and lacks features like reentrancy and conditions.</p>
+
+<p>Consider alternatives based on your needs:</p>
+<ul>
+  <li>For ease of use → use <code class="language-plaintext highlighter-rouge">ReentrantReadWriteLock</code></li>
+  <li>For condition signaling → use <code class="language-plaintext highlighter-rouge">ReentrantLock + Condition</code></li>
+  <li>For non-blocking read/write → use <code class="language-plaintext highlighter-rouge">StampedLock</code></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

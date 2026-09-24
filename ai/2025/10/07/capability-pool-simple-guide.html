@@ -1,0 +1,126 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="the-reuse-layer-governing-ai-as-a-capability-not-a-credential">The Reuse Layer: Governing AI as a Capability, Not a Credential</h1>
+
+<blockquote>
+  <p>Stop wiring every app to every vendor. Put all model or tool power behind one safe doorway, so teams <strong>reuse</strong> instead of <strong>rebuild</strong>.</p>
+</blockquote>
+
+<h2 id="what-is-a-capability-pool">What is a “Capability Pool”?</h2>
+<p>It’s a <strong>shared, governed toolbox</strong> for your company’s AI work.<br />
+Instead of each app holding its own keys and prompts, the pool <strong>hides the keys</strong>, <strong>standardizes the contracts</strong>, and <strong>tracks cost and quality</strong>.<br />
+Apps call <strong>one gateway</strong>; the platform takes care of routing, quotas, bills, and safety. 
+For example:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-X</span> POST http://localhost:8080/v1/run <span class="nt">-H</span> <span class="s2">"Content-Type: application/json"</span>   
+<span class="nt">-d</span> <span class="s1">'{"task":"report.generate",
+     "input":{"period":"2025-08",
+              "sourceIds":["sp:/dept/2025-08.xlsx"]},
+              "policy":"finance",
+              "tags":{"dept":"Ops"}
+  }'</span>
+</code></pre></div></div>
+
+<h2 id="why-should-we-care">Why should we care?</h2>
+<ul>
+  <li><strong>Ship faster:</strong> integrate once, reuse everywhere.</li>
+  <li><strong>Control cost and risk:</strong> one place to see usage, cost, and who did what.</li>
+  <li><strong>Change safely:</strong> evaluation tests and human sampling mean upgrades aren’t gambles.</li>
+</ul>
+
+<h2 id="whats-inside-the-pool">What’s inside the pool?</h2>
+<ul>
+  <li><strong>Models and compute:</strong> LLMs, embeddings, batch inference queues.</li>
+  <li><strong>Tools and functions:</strong> search, DB access, external APIs, internal actions.</li>
+  <li><strong>Knowledge:</strong> RAG indexes, curated corpora, permission-aware views.</li>
+  <li><strong>Policies:</strong> routing rules, quotas, redaction, data residency, risk controls.</li>
+</ul>
+
+<h2 id="what-makes-it-different">What makes it different?</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Not this…</th>
+      <th>But this…</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Shared key vault</td>
+      <td><strong>Stable contracts</strong> (Prompt/Tool) that hide raw keys</td>
+    </tr>
+    <tr>
+      <td>Service catalog only</td>
+      <td><strong>Orchestration</strong>: route, limit, audit, <strong>settle cost</strong></td>
+    </tr>
+    <tr>
+      <td>Offline model registry</td>
+      <td><strong>Runtime governance</strong> with tests, sampling, rollback</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="minimal-architecture">Minimal architecture</h2>
+<ul>
+  <li><strong>Gateway:</strong> single entry; routing, quotas, policies, redaction.</li>
+  <li><strong>Capability Registry:</strong> Prompt/Tool contracts, versions, approvals, canary.</li>
+  <li><strong>RAG Layer:</strong> index and retrieval wired to permissions.</li>
+  <li><strong>Evaluation:</strong> regression/AB checks before rollouts.</li>
+  <li><strong>Human Review:</strong> smart sampling and escalation when needed.</li>
+  <li><strong>Observability and Ledger:</strong> traces, logs, metrics, <strong>usage and cost</strong>.</li>
+</ul>
+
+<p><img src="/assets/images/2025_10_07_minimal-architecture.png" alt="Minimal architecture" title="Minimal architecture" /></p>
+
+<h2 id="how-do-apps-talk-to-the-pool">How do apps talk to the pool?</h2>
+<p><strong>Inputs:</strong> <code class="language-plaintext highlighter-rouge">task</code> (what to do), <code class="language-plaintext highlighter-rouge">input</code> (data), <code class="language-plaintext highlighter-rouge">policy</code> (rules), <code class="language-plaintext highlighter-rouge">tags</code> (for cost/ownership)<br />
+<strong>Outputs:</strong> result and a <strong>trace</strong> with usage, cost, route, eval status, and review status.</p>
+
+<p><strong>Example trace (conceptual):</strong></p>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"traceId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"9e1a..."</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"contract"</span><span class="p">:</span><span class="w"> </span><span class="s2">"prompt:report.generate@v2"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"route"</span><span class="p">:</span><span class="w"> </span><span class="s2">"gptx:2025-08-canary"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"quotaUsed"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"tokens"</span><span class="p">:</span><span class="w"> </span><span class="mi">18342</span><span class="p">},</span><span class="w">
+  </span><span class="nl">"cost"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"currency"</span><span class="p">:</span><span class="w"> </span><span class="s2">"USD"</span><span class="p">,</span><span class="w"> </span><span class="nl">"amount"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.92</span><span class="p">,</span><span class="w"> </span><span class="nl">"tags"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"dept"</span><span class="p">:</span><span class="s2">"Ops"</span><span class="p">}},</span><span class="w">
+  </span><span class="nl">"evals"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"suite"</span><span class="p">:</span><span class="s2">"regression-v5"</span><span class="p">,</span><span class="nl">"status"</span><span class="p">:</span><span class="s2">"pass"</span><span class="p">},</span><span class="w">
+  </span><span class="nl">"humanReview"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"sampled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"approved"</span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="what-are-our-kpis">What are our KPIs?</h2>
+<ul>
+  <li><strong>Reuse rate:</strong> % of capabilities used by <strong>2+ apps</strong></li>
+  <li><strong>Blast radius:</strong> apps affected per prompt/model change (lower is better)</li>
+  <li><strong>Time‑to‑availability:</strong> request to usable in prod (median)</li>
+  <li><strong>Cost visibility:</strong> % spend with app/team/use‑case attribution</li>
+  <li><strong>Compliance coverage:</strong> audit completeness; human sampling hit rate</li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

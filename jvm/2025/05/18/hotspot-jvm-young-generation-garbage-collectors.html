@@ -1,0 +1,76 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="hotspot-jvm---young-generation-garbage-collectors">HotSpot JVM - Young Generation Garbage Collectors</h1>
+
+<p>The HotSpot JVM provides several garbage collectors (GC) optimized for different scenarios. This section focuses on <strong>young generation</strong> collectors, which are primarily responsible for handling short-lived objects.</p>
+
+<p>While these collectors are foundational and important for understanding GC mechanisms, many of them are now considered legacy and are being gradually phased out in favor of more modern collectors like G1, ZGC, and Shenandoah.</p>
+
+<h2 id="serial-collector">Serial Collector</h2>
+<ul>
+  <li><strong>Single-threaded</strong> garbage collector: uses only one thread for minor GC.</li>
+  <li><strong>Mark-Copy algorithm</strong>: divides memory into Eden and Survivor spaces and copies surviving objects.</li>
+  <li><strong>Stop-The-World (STW)</strong> pause: all application threads are paused during collection.</li>
+  <li>It is the <strong>default collector in client mode</strong> of HotSpot JVM (primarily legacy use).</li>
+  <li><strong>Simple and low-overhead</strong>: best suited for single-threaded or memory-constrained environments.</li>
+</ul>
+
+<blockquote>
+  <p><strong><em>Note:</em></strong> In modern server-side applications, the Serial collector is mostly used for testing or very small footprint systems. It is no longer the default for most environments since <strong>G1 has become the default collector</strong> in newer JDKs (since <strong>JDK 9</strong>).</p>
+</blockquote>
+
+<h2 id="parnew-collector">ParNew Collector</h2>
+<ul>
+  <li>A <strong>multi-threaded</strong> version of the Serial collector.</li>
+  <li>Also uses the <strong>Mark-Copy algorithm</strong>.</li>
+  <li>Requires <strong>Stop-The-World (STW)</strong> pause.</li>
+  <li>Designed to work alongside the <strong>Concurrent Mark Sweep (CMS)</strong> collector for the old generation.</li>
+</ul>
+
+<blockquote>
+  <p><strong>Deprecated Feature:</strong><br />
+As of <strong>JDK 14</strong>, the CMS collector has been <strong>removed</strong>, and thus <strong>ParNew is obsolete and no longer recommended</strong>.<br />
+Consider using <strong>G1</strong> or <strong>ZGC</strong> instead for low-pause-time requirements.</p>
+</blockquote>
+
+<h2 id="parallel-scavenge-collector">Parallel Scavenge Collector</h2>
+<ul>
+  <li>A <strong>multi-threaded, throughput-focused</strong> garbage collector.</li>
+  <li>Uses the <strong>Mark-Copy algorithm</strong> for young generation collection.</li>
+  <li>Also causes <strong>Stop-The-World</strong> pauses.</li>
+  <li><strong>Optimized for high throughput</strong> rather than low latency.</li>
+  <li>Throughput is calculated as: <code class="language-plaintext highlighter-rouge">Throughput = Time spent running user application / (Time running user application + Time spent in GC)</code></li>
+</ul>
+
+<blockquote>
+  <p><strong><em>note:</em></strong> The <strong>Parallel GC (Parallel Scavenge + Parallel Old)</strong> is still available and maintained.<br />
+However, it is being gradually replaced by <strong>G1 GC</strong>, which offers a better balance between throughput and pause time.</p>
+</blockquote>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

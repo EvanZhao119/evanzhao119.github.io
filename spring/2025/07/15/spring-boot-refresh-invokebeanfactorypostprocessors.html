@@ -1,0 +1,224 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="spring-boot-refresh-function-invokebeanfactorypostprocessors-in-action">Spring Boot <code class="language-plaintext highlighter-rouge">refresh()</code> Function: <code class="language-plaintext highlighter-rouge">invokeBeanFactoryPostProcessors</code> in Action</h1>
+<p>Spring Boot has largely replaced the traditional XML-based Spring configuration and has become the dominant framework in many modern software and Internet companies.</p>
+
+<p>Now we begin with the <code class="language-plaintext highlighter-rouge">refresh()</code> method of the <code class="language-plaintext highlighter-rouge">AbstractApplicationContext</code> class, trace the execution of the <code class="language-plaintext highlighter-rouge">invokeBeanFactoryPostProcessors()</code> method and explore how Spring Boot registers <code class="language-plaintext highlighter-rouge">BeanDefinition</code> structures.</p>
+
+<h2 id="entry-point-abstractapplicationcontextrefresh-in-spring-boot">Entry Point: <code class="language-plaintext highlighter-rouge">AbstractApplicationContext.refresh()</code> in Spring Boot</h2>
+<p>This method initializes post-processing of the <code class="language-plaintext highlighter-rouge">BeanFactory</code> <strong>after</strong> it has been created, but <strong>before</strong> any beans are instantiated. One of its key roles is to register all <code class="language-plaintext highlighter-rouge">BeanDefinition</code> instances based on annotated classes like those with <code class="language-plaintext highlighter-rouge">@Configuration</code>, <code class="language-plaintext highlighter-rouge">@Component</code>, etc.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">invokeBeanFactoryPostProcessors</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+</code></pre></div></div>
+
+<h2 id="delegation-to-postprocessorregistrationdelegate-in-refresh">Delegation to <code class="language-plaintext highlighter-rouge">PostProcessorRegistrationDelegate</code> in refresh()</h2>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">PostProcessorRegistrationDelegate</span><span class="o">.</span><span class="na">invokeBeanFactoryPostProcessors</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">,</span> <span class="n">getBeanFactoryPostProcessors</span><span class="o">());</span>
+</code></pre></div></div>
+<p>This static method first invokes all implementations of <code class="language-plaintext highlighter-rouge">BeanDefinitionRegistryPostProcessor</code>, which are used to <strong>register <code class="language-plaintext highlighter-rouge">BeanDefinition</code> objects</strong>, such as <code class="language-plaintext highlighter-rouge">ConfigurationClassPostProcessor</code> for processing <code class="language-plaintext highlighter-rouge">@Configuration</code> annotated classes.</p>
+
+<h3 id="code-fragment">Code Fragment:</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">List</span><span class="o">&lt;</span><span class="nc">BeanDefinitionRegistryPostProcessor</span><span class="o">&gt;</span> <span class="n">priorityOrderedPostProcessors</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;();</span>
+<span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">ppName</span> <span class="o">:</span> <span class="n">postProcessorNames</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">beanFactory</span><span class="o">.</span><span class="na">isTypeMatch</span><span class="o">(</span><span class="n">ppName</span><span class="o">,</span> <span class="nc">PriorityOrdered</span><span class="o">.</span><span class="na">class</span><span class="o">))</span> <span class="o">{</span>
+        <span class="n">priorityOrderedPostProcessors</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="n">ppName</span><span class="o">,</span> <span class="nc">BeanDefinitionRegistryPostProcessor</span><span class="o">.</span><span class="na">class</span><span class="o">));</span>
+        <span class="n">processedBeans</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">ppName</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+<span class="n">sortPostProcessors</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">,</span> <span class="n">priorityOrderedPostProcessors</span><span class="o">);</span>
+<span class="n">registryPostProcessors</span><span class="o">.</span><span class="na">addAll</span><span class="o">(</span><span class="n">priorityOrderedPostProcessors</span><span class="o">);</span>
+<span class="n">invokeBeanDefinitionRegistryPostProcessors</span><span class="o">(</span><span class="n">priorityOrderedPostProcessors</span><span class="o">,</span> <span class="n">registry</span><span class="o">);</span>
+</code></pre></div></div>
+
+<h2 id="step-into-invokebeandefinitionregistrypostprocessors-flow">Step Into: <code class="language-plaintext highlighter-rouge">invokeBeanDefinitionRegistryPostProcessors()</code> Flow</h2>
+<p>Among the post-processors, <code class="language-plaintext highlighter-rouge">ConfigurationClassPostProcessor</code> is a key player that processes classes annotated with <code class="language-plaintext highlighter-rouge">@Configuration</code>.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">invokeBeanDefinitionRegistryPostProcessors</span><span class="o">(</span>
+    <span class="nc">Collection</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="nc">BeanDefinitionRegistryPostProcessor</span><span class="o">&gt;</span> <span class="n">postProcessors</span><span class="o">,</span> 
+    <span class="nc">BeanDefinitionRegistry</span> <span class="n">registry</span><span class="o">)</span> <span class="o">{</span>
+
+    <span class="k">for</span> <span class="o">(</span><span class="nc">BeanDefinitionRegistryPostProcessor</span> <span class="n">postProcessor</span> <span class="o">:</span> <span class="n">postProcessors</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">postProcessor</span><span class="o">.</span><span class="na">postProcessBeanDefinitionRegistry</span><span class="o">(</span><span class="n">registry</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="key-logic-in-postprocessbeandefinitionregistry-for-beandefinition">Key Logic in <code class="language-plaintext highlighter-rouge">postProcessBeanDefinitionRegistry()</code> for BeanDefinition</h2>
+<p>This method is called to register <code class="language-plaintext highlighter-rouge">BeanDefinition</code>s based on annotated configuration classes.</p>
+<ul>
+  <li>It first generates a unique ID for the <code class="language-plaintext highlighter-rouge">registry</code> using <code class="language-plaintext highlighter-rouge">System.identityHashCode(registry)</code>.</li>
+  <li>Then, it checks if this registry has already been processed by this post-processor.
+    <ul>
+      <li>If yes, it throws an <code class="language-plaintext highlighter-rouge">IllegalStateException</code> to avoid duplicate processing.</li>
+    </ul>
+  </li>
+  <li>If not, it marks the registry as processed by adding its ID to the <code class="language-plaintext highlighter-rouge">registriesPostProcessed</code> set.</li>
+  <li>Finally, it calls <code class="language-plaintext highlighter-rouge">processConfigBeanDefinitions(registry)</code> to scan and register configuration classes (like those annotated with <code class="language-plaintext highlighter-rouge">@Configuration</code>, <code class="language-plaintext highlighter-rouge">@Component</code>, etc.).</li>
+</ul>
+
+<p>This ensures that each <code class="language-plaintext highlighter-rouge">BeanDefinitionRegistry</code> is only processed once and safely initializes all configuration-related bean definitions.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Override</span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">postProcessBeanDefinitionRegistry</span><span class="o">(</span><span class="nc">BeanDefinitionRegistry</span> <span class="n">registry</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">registryId</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="na">identityHashCode</span><span class="o">(</span><span class="n">registry</span><span class="o">);</span>
+    <span class="k">if</span> <span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">registriesPostProcessed</span><span class="o">.</span><span class="na">contains</span><span class="o">(</span><span class="n">registryId</span><span class="o">))</span> <span class="o">{</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(...);</span>
+    <span class="o">}</span>
+
+    <span class="k">this</span><span class="o">.</span><span class="na">registriesPostProcessed</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">registryId</span><span class="o">);</span>
+    <span class="n">processConfigBeanDefinitions</span><span class="o">(</span><span class="n">registry</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="parsing-configuration-classes-in-spring-boot-refresh">Parsing @Configuration Classes in Spring Boot refresh()</h2>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">ConfigurationClassParser</span> <span class="n">parser</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ConfigurationClassParser</span><span class="o">(...);</span>
+<span class="n">parser</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="n">candidates</span><span class="o">);</span>
+<span class="n">parser</span><span class="o">.</span><span class="na">validate</span><span class="o">();</span>
+</code></pre></div></div>
+<ul>
+  <li>This creates a <code class="language-plaintext highlighter-rouge">ConfigurationClassParser</code> instance responsible for analyzing configuration classes.</li>
+  <li><code class="language-plaintext highlighter-rouge">parser.parse(candidates)</code> starts the parsing process for all <code class="language-plaintext highlighter-rouge">@Configuration</code>-annotated classes passed as <code class="language-plaintext highlighter-rouge">candidates</code>.</li>
+  <li>After parsing, <code class="language-plaintext highlighter-rouge">parser.validate()</code> ensures the configuration is valid (e.g., checks for circular imports or invalid annotations).</li>
+</ul>
+
+<h3 id="recursive-analysis-with-processconfigurationclass">Recursive Analysis with <code class="language-plaintext highlighter-rouge">processConfigurationClass()</code></h3>
+<ul>
+  <li>This method handles recursive parsing of a configuration class and its possible superclasses.</li>
+  <li>It starts by converting the <code class="language-plaintext highlighter-rouge">ConfigurationClass</code> to a <code class="language-plaintext highlighter-rouge">SourceClass</code>, a wrapper that allows metadata inspection.</li>
+  <li>Then it enters a loop, calling <code class="language-plaintext highlighter-rouge">doProcessConfigurationClass(...)</code> to process the configuration class and any additional imported or scanned configuration classes.</li>
+  <li>The loop continues as long as there is another class (e.g., a superclass or an imported config) to process.
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kt">void</span> <span class="nf">processConfigurationClass</span><span class="o">(</span><span class="nc">ConfigurationClass</span> <span class="n">configClass</span><span class="o">)</span> <span class="o">{</span>
+  <span class="nc">SourceClass</span> <span class="n">sourceClass</span> <span class="o">=</span> <span class="n">asSourceClass</span><span class="o">(</span><span class="n">configClass</span><span class="o">);</span>
+  <span class="k">do</span> <span class="o">{</span>
+      <span class="n">sourceClass</span> <span class="o">=</span> <span class="n">doProcessConfigurationClass</span><span class="o">(</span><span class="n">configClass</span><span class="o">,</span> <span class="n">sourceClass</span><span class="o">);</span>
+  <span class="o">}</span> <span class="k">while</span> <span class="o">(</span><span class="n">sourceClass</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<h2 id="detailed-parsing-with-doprocessconfigurationclass-and-component-scanning">Detailed Parsing with <code class="language-plaintext highlighter-rouge">doProcessConfigurationClass()</code> and Component Scanning</h2>
+<p>This method processes <code class="language-plaintext highlighter-rouge">@ComponentScan</code> annotations inside a <code class="language-plaintext highlighter-rouge">@Configuration</code> class.</p>
+<ul>
+  <li>It first retrieves all <code class="language-plaintext highlighter-rouge">@ComponentScan</code> annotations using <code class="language-plaintext highlighter-rouge">AnnotationConfigUtils.attributesForRepeatable(...)</code>.</li>
+  <li>For each <code class="language-plaintext highlighter-rouge">@ComponentScan</code>, it uses <code class="language-plaintext highlighter-rouge">componentScanParser.parse(...)</code> to scan the specified packages and find candidate components (like classes annotated with <code class="language-plaintext highlighter-rouge">@Component</code>, <code class="language-plaintext highlighter-rouge">@Service</code>, etc.).</li>
+  <li>Each found component is wrapped as a <code class="language-plaintext highlighter-rouge">BeanDefinitionHolder</code>.</li>
+  <li>Then, it checks if any of these scanned classes are also <code class="language-plaintext highlighter-rouge">@Configuration</code> classes using <code class="language-plaintext highlighter-rouge">ConfigurationClassUtils.checkConfigurationClassCandidate(...)</code>.
+    <ul>
+      <li>If yes, it recursively parses them using the <code class="language-plaintext highlighter-rouge">parse()</code> method.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>This enables Spring to discover and process nested or indirectly referenced configuration classes automatically.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kd">final</span> <span class="nc">SourceClass</span> <span class="nf">doProcessConfigurationClass</span><span class="o">(...)</span> <span class="o">{</span>
+    <span class="nc">Set</span><span class="o">&lt;</span><span class="nc">AnnotationAttributes</span><span class="o">&gt;</span> <span class="n">componentScans</span> <span class="o">=</span> <span class="nc">AnnotationConfigUtils</span><span class="o">.</span><span class="na">attributesForRepeatable</span><span class="o">(...);</span>
+    <span class="k">for</span> <span class="o">(</span><span class="nc">AnnotationAttributes</span> <span class="n">componentScan</span> <span class="o">:</span> <span class="n">componentScans</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Set</span><span class="o">&lt;</span><span class="nc">BeanDefinitionHolder</span><span class="o">&gt;</span> <span class="n">scannedBeanDefinitions</span> <span class="o">=</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">componentScanParser</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="n">componentScan</span><span class="o">,</span> <span class="n">sourceClass</span><span class="o">.</span><span class="na">getMetadata</span><span class="o">().</span><span class="na">getClassName</span><span class="o">());</span>
+
+        <span class="k">for</span> <span class="o">(</span><span class="nc">BeanDefinitionHolder</span> <span class="n">holder</span> <span class="o">:</span> <span class="n">scannedBeanDefinitions</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="nc">ConfigurationClassUtils</span><span class="o">.</span><span class="na">checkConfigurationClassCandidate</span><span class="o">(...))</span> <span class="o">{</span>
+                <span class="n">parse</span><span class="o">(</span><span class="n">holder</span><span class="o">.</span><span class="na">getBeanDefinition</span><span class="o">().</span><span class="na">getBeanClassName</span><span class="o">(),</span> <span class="n">holder</span><span class="o">.</span><span class="na">getBeanName</span><span class="o">());</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="deep-dive-componentscanannotationparserparse-in-spring-boot">Deep Dive: <code class="language-plaintext highlighter-rouge">ComponentScanAnnotationParser.parse()</code> in Spring Boot</h2>
+<ul>
+  <li>This code creates a <code class="language-plaintext highlighter-rouge">ClassPathBeanDefinitionScanner</code>, which is responsible for scanning specified packages to find candidate components (e.g., classes annotated with <code class="language-plaintext highlighter-rouge">@Component</code>, <code class="language-plaintext highlighter-rouge">@Service</code>, <code class="language-plaintext highlighter-rouge">@Repository</code>, <code class="language-plaintext highlighter-rouge">@Controller</code>, etc.).</li>
+  <li>The <code class="language-plaintext highlighter-rouge">basePackages</code> value is usually extracted from the <code class="language-plaintext highlighter-rouge">@ComponentScan</code> annotation.</li>
+  <li><code class="language-plaintext highlighter-rouge">scanner.doScan(...)</code> performs the actual scanning of these packages and returns a set of <code class="language-plaintext highlighter-rouge">BeanDefinitionHolder</code> objects representing the discovered beans.</li>
+  <li>These beans will later be registered with the <code class="language-plaintext highlighter-rouge">BeanFactory</code>.
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">ClassPathBeanDefinitionScanner</span> <span class="n">scanner</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ClassPathBeanDefinitionScanner</span><span class="o">(...);</span>
+<span class="k">return</span> <span class="n">scanner</span><span class="o">.</span><span class="na">doScan</span><span class="o">(</span><span class="nc">StringUtils</span><span class="o">.</span><span class="na">toStringArray</span><span class="o">(</span><span class="n">basePackages</span><span class="o">));</span>
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<h2 id="scanning-components-with-classpathbeandefinitionscanner">Scanning Components with <code class="language-plaintext highlighter-rouge">ClassPathBeanDefinitionScanner</code></h2>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="nc">Set</span><span class="o">&lt;</span><span class="nc">BeanDefinitionHolder</span><span class="o">&gt;</span> <span class="nf">doScan</span><span class="o">(</span><span class="nc">String</span><span class="o">...</span> <span class="n">basePackages</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">basePackage</span> <span class="o">:</span> <span class="n">basePackages</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Set</span><span class="o">&lt;</span><span class="nc">BeanDefinition</span><span class="o">&gt;</span> <span class="n">candidates</span> <span class="o">=</span> <span class="n">findCandidateComponents</span><span class="o">(</span><span class="n">basePackage</span><span class="o">);</span>
+
+        <span class="k">for</span> <span class="o">(</span><span class="nc">BeanDefinition</span> <span class="n">candidate</span> <span class="o">:</span> <span class="n">candidates</span><span class="o">)</span> <span class="o">{</span>
+            <span class="c1">// Assign scope, name, and proxy metadata</span>
+            <span class="c1">// Register into BeanFactory</span>
+            <span class="n">registerBeanDefinition</span><span class="o">(</span><span class="n">definitionHolder</span><span class="o">,</span> <span class="k">this</span><span class="o">.</span><span class="na">registry</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="n">beanDefinitions</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<ul>
+  <li>This method performs <strong>component scanning</strong> within the specified <code class="language-plaintext highlighter-rouge">basePackages</code>.</li>
+  <li>For each base package:
+    <ol>
+      <li>It calls <code class="language-plaintext highlighter-rouge">findCandidateComponents(basePackage)</code> to locate all eligible classes annotated with <code class="language-plaintext highlighter-rouge">@Component</code>, <code class="language-plaintext highlighter-rouge">@Service</code>, <code class="language-plaintext highlighter-rouge">@Repository</code>, etc.</li>
+      <li>It then iterates over the discovered <code class="language-plaintext highlighter-rouge">BeanDefinition</code> objects.</li>
+    </ol>
+  </li>
+  <li>For each candidate:
+    <ul>
+      <li>It assigns scope metadata (like singleton or prototype).</li>
+      <li>Generates a bean name.</li>
+      <li>Applies any necessary proxy mode (such as for scoped beans).</li>
+      <li>Finally, it <strong>registers the bean</strong> using <code class="language-plaintext highlighter-rouge">registerBeanDefinition(...)</code>, which adds it to the Spring <code class="language-plaintext highlighter-rouge">BeanFactory</code>.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>All valid component classes in the specified packages are converted to <code class="language-plaintext highlighter-rouge">BeanDefinition</code> objects and registered, so Spring can manage and inject them as needed.</p>
+
+<h2 id="spring-boot-3x-enhancements"><strong>Spring Boot 3.x Enhancements</strong></h2>
+<ol>
+  <li><strong>Kotlin and Functional Bean Registration</strong> (Optional):</li>
+</ol>
+
+<p>In addition to <code class="language-plaintext highlighter-rouge">@Configuration</code>, Spring Boot 3.x also supports Kotlin DSLs and programmatic registration via <code class="language-plaintext highlighter-rouge">GenericApplicationContext.registerBean(...)</code>.</p>
+
+<ol>
+  <li><strong>Record Support</strong>:</li>
+</ol>
+
+<p>Java <code class="language-plaintext highlighter-rouge">record</code> classes can now be used directly as <code class="language-plaintext highlighter-rouge">@ConfigurationProperties</code> or <code class="language-plaintext highlighter-rouge">@Component</code> types, improving immutability and readability.</p>
+
+<ol>
+  <li><strong>Declarative Initialization with <code class="language-plaintext highlighter-rouge">ApplicationContextInitializer</code></strong>:</li>
+</ol>
+
+<p>Although <code class="language-plaintext highlighter-rouge">ConfigurationClassPostProcessor</code> is still used, more initialization is now often handled using lambda-based registration or externalized configuration loading strategies for performance and simplicity.</p>
+
+<ol>
+  <li><strong>Module Scanning and Native Configuration</strong>:</li>
+</ol>
+
+<p>Spring Boot 3.x adds support for GraalVM and native images. To make applications start faster and use less memory, Spring now allows you to give explicit hints about which classes and methods should be kept at compile time. This is done using annotations like <code class="language-plaintext highlighter-rouge">@NativeHint</code>, <code class="language-plaintext highlighter-rouge">@ImportRuntimeHints</code>, and through the AOT (Ahead-Of-Time) compilation process. These tools help Spring avoid relying on runtime reflection, which native images don’t support well.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

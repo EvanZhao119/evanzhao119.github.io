@@ -1,0 +1,482 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="djl-resnet-with-jni-accelerating-image-preprocessing-in-java">DJL ResNet with JNI: Accelerating Image Preprocessing in Java</h1>
+<p>When deploying deep learning models in production, <strong>image preprocessing</strong> often becomes the hidden bottleneck. In this guide, we’ll explore how to move preprocessing from <strong>Java</strong> to <strong>C/C++</strong> via <strong>JNI</strong>, then feed the results directly into <a href="https://djl.ai/">DJL (Deep Java Library)</a>.</p>
+
+<p>By the end, you’ll have a ResNet classifier running with <strong>native preprocessing</strong>, delivering lower latency and CPU overhead — without sacrificing accuracy.</p>
+
+<p>We need to download <strong>3rd‑party files</strong> in advance - <code class="language-plaintext highlighter-rouge">stb_image.h</code> and <code class="language-plaintext highlighter-rouge">stb_image_resize2.h</code>.</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-fL</span> <span class="nt">--retry</span> 3 <span class="nt">-o</span> native/third_party/stb_image.h https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
+curl <span class="nt">-fL</span> <span class="nt">--retry</span> 3 <span class="nt">-o</span> native/third_party/stb_image_resize2.h https://raw.githubusercontent.com/nothings/stb/master/stb_image_resize2.h
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="what-well-build">What We’ll Build</h2>
+<ul>
+  <li>Move the image preprocessing pipeline (<strong>decode → resize → center crop → normalize</strong>) into <strong>C/C++</strong></li>
+  <li>Wrap the result in a <code class="language-plaintext highlighter-rouge">DirectByteBuffer</code></li>
+  <li>Feed it directly into DJL’s <code class="language-plaintext highlighter-rouge">NDArray</code></li>
+  <li>Compare <strong>latency and accuracy</strong> with stock Java preprocessing</li>
+</ul>
+
+<p><strong>Reference</strong>: <a href="/ai/2025/08/14/deploy-resnet-java-djl-tutorial.html">Deploying ResNet Models with Java DJL – From Zero to Hero</a></p>
+
+<hr />
+
+<h2 id="project-layout">Project Layout</h2>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>djl-resnet/
+├─ assets/1.png 2.png 3.png
+├─ src/main/java/org/estech/
+│  ├─ App.java                     # Toggle between JNI and the stock DJL translator
+│  ├─ NativeImageOps.java          # JNI shell (declares native methods)
+│  └─ ResNetJniTranslator.java     # JNI translator (input: byte[]; output: CHW without batch dim)
+├─ src/main/resources/models/resnet18/
+│  ├─ traced_resnet18.pt
+│  └─ synset.txt
+├─ native/
+│  ├─ CMakeLists.txt
+│  ├─ imageops.cpp                 # Uses stb_image + stb_image_resize2
+│  └─ third_party/
+│     ├─ stb_image.h
+│     └─ stb_image_resize2.h
+└─ pom.xml
+</code></pre></div></div>
+<p>Final project layout:
+<img src="/assets/images/2025_08_21_project_layout.png" alt="Project layout for DJL ResNet JNI preprocessing pipeline in Java" /></p>
+
+<hr />
+
+<h2 id="stepbystep-build">Step‑by‑Step Build</h2>
+
+<h3 id="1-java-jni-shell">1) Java JNI Shell</h3>
+<p><code class="language-plaintext highlighter-rouge">src/main/java/org/estech/NativeImageOps.java</code></p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">package</span> <span class="nn">org.estech</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">java.nio.ByteBuffer</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">NativeImageOps</span> <span class="o">{</span>
+    <span class="kd">static</span> <span class="o">{</span> <span class="nc">System</span><span class="o">.</span><span class="na">loadLibrary</span><span class="o">(</span><span class="s">"imageops"</span><span class="o">);</span> <span class="o">}</span> <span class="c1">// pass -Djava.library.path at runtime</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kd">native</span> <span class="nc">ByteBuffer</span> <span class="nf">preprocessToCHW</span><span class="o">(</span>
+            <span class="nc">ByteBuffer</span> <span class="n">encoded</span><span class="o">,</span> <span class="kt">int</span> <span class="n">outW</span><span class="o">,</span> <span class="kt">int</span> <span class="n">outH</span><span class="o">,</span>
+            <span class="kt">float</span> <span class="n">m0</span><span class="o">,</span> <span class="kt">float</span> <span class="n">m1</span><span class="o">,</span> <span class="kt">float</span> <span class="n">m2</span><span class="o">,</span>
+            <span class="kt">float</span> <span class="n">s0</span><span class="o">,</span> <span class="kt">float</span> <span class="n">s1</span><span class="o">,</span> <span class="kt">float</span> <span class="n">s2</span><span class="o">);</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kd">native</span> <span class="kt">void</span> <span class="nf">freeBuffer</span><span class="o">(</span><span class="nc">ByteBuffer</span> <span class="n">buf</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="2-generate-jni-header">2) Generate JNI Header</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>mvn <span class="nt">-q</span> <span class="nt">-DskipTests</span> package
+<span class="c"># create header in native/ and keep .class in target/classes</span>
+javac <span class="nt">-h</span> native <span class="nt">-cp</span> target/classes <span class="nt">-d</span> target/classes src/main/java/org/estech/NativeImageOps.java
+<span class="c"># output: native/org_estech_NativeImageOps.h</span>
+</code></pre></div></div>
+
+<h3 id="3-native-implementation-with-jni-c-preprocessing">3) Native Implementation with JNI (C++ Preprocessing)</h3>
+<p><code class="language-plaintext highlighter-rouge">native/imageops.cpp</code>(key points of <strong>JNI image preprocessing</strong>):</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">#define STB_IMAGE_IMPLEMENTATION</code> + <code class="language-plaintext highlighter-rouge">#include "third_party/stb_image.h"</code></li>
+  <li><code class="language-plaintext highlighter-rouge">#define STB_IMAGE_RESIZE2_IMPLEMENTATION</code> + <code class="language-plaintext highlighter-rouge">#include "third_party/stb_image_resize2.h"</code></li>
+  <li>Implement <code class="language-plaintext highlighter-rouge">Java_org_estech_NativeImageOps_preprocessToCHW</code>
+    <ol>
+      <li>Read encoded image pointer from a direct <code class="language-plaintext highlighter-rouge">ByteBuffer</code></li>
+      <li>Decode using <a href="https://github.com/nothings/stb"><code class="language-plaintext highlighter-rouge">stbi_load_from_memory</code></a> → RGB (HWC/uint8)</li>
+      <li><strong>Resize</strong> the short side to 256 using <a href="https://github.com/nothings/stb"><code class="language-plaintext highlighter-rouge">stbir_resize_uint8_linear</code></a> (stride = width * channels)</li>
+      <li>Center-crop to <code class="language-plaintext highlighter-rouge">224×224</code> (ResNet standard input size)</li>
+      <li>HWC (u8) → CHW (float32) + normalize (ImageNet mean/std)</li>
+      <li><code class="language-plaintext highlighter-rouge">NewDirectByteBuffer(chw, bytes)</code> to return it to Java</li>
+    </ol>
+  </li>
+  <li>Implement <code class="language-plaintext highlighter-rouge">Java_org_estech_NativeImageOps_freeBuffer</code> to free the native allocation.</li>
+</ul>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">JNIEXPORT</span> <span class="n">jobject</span> <span class="n">JNICALL</span> <span class="nf">Java_org_estech_NativeImageOps_preprocessToCHW</span>
+  <span class="p">(</span><span class="n">JNIEnv</span><span class="o">*</span> <span class="n">env</span><span class="p">,</span> <span class="n">jclass</span><span class="p">,</span>
+   <span class="n">jobject</span> <span class="n">encodedImage</span><span class="p">,</span> <span class="n">jint</span> <span class="n">outW</span><span class="p">,</span> <span class="n">jint</span> <span class="n">outH</span><span class="p">,</span>
+   <span class="n">jfloat</span> <span class="n">mean0</span><span class="p">,</span> <span class="n">jfloat</span> <span class="n">mean1</span><span class="p">,</span> <span class="n">jfloat</span> <span class="n">mean2</span><span class="p">,</span>
+   <span class="n">jfloat</span> <span class="n">std0</span><span class="p">,</span>  <span class="n">jfloat</span> <span class="n">std1</span><span class="p">,</span>  <span class="n">jfloat</span> <span class="n">std2</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">encodedImage</span><span class="p">)</span> <span class="k">return</span> <span class="nb">nullptr</span><span class="p">;</span>
+    <span class="k">auto</span><span class="o">*</span> <span class="n">in_ptr</span> <span class="o">=</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">char</span><span class="o">*</span><span class="p">)</span> <span class="n">env</span><span class="o">-&gt;</span><span class="n">GetDirectBufferAddress</span><span class="p">(</span><span class="n">encodedImage</span><span class="p">);</span>
+    <span class="n">jlong</span> <span class="n">in_len</span> <span class="o">=</span> <span class="n">env</span><span class="o">-&gt;</span><span class="n">GetDirectBufferCapacity</span><span class="p">(</span><span class="n">encodedImage</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">in_ptr</span> <span class="o">||</span> <span class="n">in_len</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span> <span class="nb">nullptr</span><span class="p">;</span>
+
+    <span class="kt">int</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">c</span><span class="p">;</span>
+    <span class="kt">unsigned</span> <span class="kt">char</span><span class="o">*</span> <span class="n">hwc</span> <span class="o">=</span> <span class="n">stbi_load_from_memory</span><span class="p">(</span><span class="n">in_ptr</span><span class="p">,</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">in_len</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">w</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">h</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">c</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">hwc</span><span class="p">)</span> <span class="k">return</span> <span class="nb">nullptr</span><span class="p">;</span>
+
+    <span class="c1">// resize the short side to 256</span>
+    <span class="k">const</span> <span class="kt">int</span> <span class="n">short_target</span> <span class="o">=</span> <span class="mi">256</span><span class="p">;</span>
+    <span class="kt">double</span> <span class="n">scale</span> <span class="o">=</span> <span class="p">(</span><span class="n">w</span> <span class="o">&lt;</span> <span class="n">h</span><span class="p">)</span> <span class="o">?</span> <span class="p">(</span><span class="kt">double</span><span class="p">)</span><span class="n">short_target</span> <span class="o">/</span> <span class="n">w</span> <span class="o">:</span> <span class="p">(</span><span class="kt">double</span><span class="p">)</span><span class="n">short_target</span> <span class="o">/</span> <span class="n">h</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">rw</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">std</span><span class="o">::</span><span class="n">round</span><span class="p">(</span><span class="n">w</span> <span class="o">*</span> <span class="n">scale</span><span class="p">);</span>
+    <span class="kt">int</span> <span class="n">rh</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">std</span><span class="o">::</span><span class="n">round</span><span class="p">(</span><span class="n">h</span> <span class="o">*</span> <span class="n">scale</span><span class="p">);</span>
+
+    <span class="kt">unsigned</span> <span class="kt">char</span><span class="o">*</span> <span class="n">resized256</span> <span class="o">=</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">char</span><span class="o">*</span><span class="p">)</span> <span class="n">std</span><span class="o">::</span><span class="n">malloc</span><span class="p">((</span><span class="kt">size_t</span><span class="p">)</span><span class="n">rw</span> <span class="o">*</span> <span class="n">rh</span> <span class="o">*</span> <span class="mi">3</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">resized256</span><span class="p">)</span> <span class="p">{</span> <span class="n">stbi_image_free</span><span class="p">(</span><span class="n">hwc</span><span class="p">);</span> <span class="k">return</span> <span class="nb">nullptr</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">stbir_resize_uint8_linear</span><span class="p">(</span>
+            <span class="n">hwc</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">src_stride</span><span class="p">,</span>
+            <span class="n">resized256</span><span class="p">,</span> <span class="n">rw</span><span class="p">,</span> <span class="n">rh</span><span class="p">,</span> <span class="n">dst_stride</span><span class="p">,</span>
+            <span class="n">STBIR_RGB</span><span class="p">))</span>
+    <span class="p">{</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">free</span><span class="p">(</span><span class="n">resized256</span><span class="p">);</span>
+        <span class="n">stbi_image_free</span><span class="p">(</span><span class="n">hwc</span><span class="p">);</span>
+        <span class="k">return</span> <span class="nb">nullptr</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">stbi_image_free</span><span class="p">(</span><span class="n">hwc</span><span class="p">);</span>
+
+    <span class="c1">// Center-crop to 224×224</span>
+    <span class="kt">unsigned</span> <span class="kt">char</span><span class="o">*</span> <span class="n">cropped</span> <span class="o">=</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">char</span><span class="o">*</span><span class="p">)</span> <span class="n">std</span><span class="o">::</span><span class="n">malloc</span><span class="p">((</span><span class="kt">size_t</span><span class="p">)</span><span class="n">outW</span> <span class="o">*</span> <span class="n">outH</span> <span class="o">*</span> <span class="mi">3</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">cropped</span><span class="p">)</span> <span class="p">{</span> <span class="n">std</span><span class="o">::</span><span class="n">free</span><span class="p">(</span><span class="n">resized256</span><span class="p">);</span> <span class="k">return</span> <span class="nb">nullptr</span><span class="p">;</span> <span class="p">}</span>
+    <span class="n">center_crop_rgb_u8</span><span class="p">(</span><span class="n">resized256</span><span class="p">,</span> <span class="n">rw</span><span class="p">,</span> <span class="n">rh</span><span class="p">,</span> <span class="n">cropped</span><span class="p">,</span> <span class="n">outW</span><span class="p">,</span> <span class="n">outH</span><span class="p">);</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">free</span><span class="p">(</span><span class="n">resized256</span><span class="p">);</span>
+
+    <span class="c1">// HWC (u8) → CHW (float32) + normalize</span>
+    <span class="kt">size_t</span> <span class="n">N</span> <span class="o">=</span> <span class="p">(</span><span class="kt">size_t</span><span class="p">)</span><span class="n">outW</span> <span class="o">*</span> <span class="n">outH</span> <span class="o">*</span> <span class="mi">3</span><span class="p">;</span>
+    <span class="kt">float</span><span class="o">*</span> <span class="n">chw</span> <span class="o">=</span> <span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="p">)</span> <span class="n">std</span><span class="o">::</span><span class="n">malloc</span><span class="p">(</span><span class="n">N</span> <span class="o">*</span> <span class="nf">sizeof</span><span class="p">(</span><span class="kt">float</span><span class="p">));</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">chw</span><span class="p">)</span> <span class="p">{</span> <span class="n">std</span><span class="o">::</span><span class="n">free</span><span class="p">(</span><span class="n">cropped</span><span class="p">);</span> <span class="k">return</span> <span class="nb">nullptr</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="k">const</span> <span class="kt">float</span> <span class="n">mean</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">mean0</span><span class="p">,</span> <span class="n">mean1</span><span class="p">,</span> <span class="n">mean2</span><span class="p">};</span>
+    <span class="k">const</span> <span class="kt">float</span> <span class="n">stdv</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">std0</span><span class="p">,</span> <span class="n">std1</span><span class="p">,</span> <span class="n">std2</span><span class="p">};</span>
+    <span class="kt">int</span> <span class="n">hw</span> <span class="o">=</span> <span class="n">outW</span> <span class="o">*</span> <span class="n">outH</span><span class="p">;</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="n">outH</span><span class="p">;</span> <span class="o">++</span><span class="n">y</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">outW</span><span class="p">;</span> <span class="o">++</span><span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">*</span> <span class="n">outW</span> <span class="o">+</span> <span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="mi">3</span><span class="p">;</span>
+            <span class="c1">// RGB -&gt; CHW，/255 再 normalize</span>
+            <span class="kt">float</span> <span class="n">r</span> <span class="o">=</span> <span class="p">(</span><span class="n">cropped</span><span class="p">[</span><span class="n">i</span>    <span class="p">]</span> <span class="o">/</span> <span class="mf">255.0</span><span class="n">f</span> <span class="o">-</span> <span class="n">mean</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">stdv</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+            <span class="kt">float</span> <span class="n">g</span> <span class="o">=</span> <span class="p">(</span><span class="n">cropped</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="mf">255.0</span><span class="n">f</span> <span class="o">-</span> <span class="n">mean</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">stdv</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+            <span class="kt">float</span> <span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="n">cropped</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="mf">255.0</span><span class="n">f</span> <span class="o">-</span> <span class="n">mean</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">/</span> <span class="n">stdv</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+            <span class="kt">int</span> <span class="n">idx</span> <span class="o">=</span> <span class="n">y</span> <span class="o">*</span> <span class="n">outW</span> <span class="o">+</span> <span class="n">x</span><span class="p">;</span>
+            <span class="n">chw</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>        <span class="o">=</span> <span class="n">r</span><span class="p">;</span>     <span class="c1">// C=0</span>
+            <span class="n">chw</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="n">hw</span><span class="p">]</span>   <span class="o">=</span> <span class="n">g</span><span class="p">;</span>     <span class="c1">// C=1</span>
+            <span class="n">chw</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">hw</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span><span class="p">;</span>     <span class="c1">// C=2</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">free</span><span class="p">(</span><span class="n">cropped</span><span class="p">);</span>
+
+    <span class="k">return</span> <span class="nf">wrap_as_direct</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">chw</span><span class="p">,</span> <span class="n">N</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">float</span><span class="p">));</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="4-build-the-jni-dynamic-library-macos-intel-example">4) Build the JNI Dynamic Library (macOS Intel Example)</h3>
+<p><code class="language-plaintext highlighter-rouge">CMakeLists.txt</code> is the build recipe: where headers live, which sources to compile, that we want a <strong>shared</strong> library, and that we depend on JNI. CMake then creates Makefiles/Xcode projects and builds <code class="language-plaintext highlighter-rouge">libimageops.dylib</code>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">native/CMakeLists.txt</code>:</p>
+<div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cmake_minimum_required</span><span class="p">(</span>VERSION 3.15<span class="p">)</span>
+<span class="nb">project</span><span class="p">(</span>imageops<span class="p">)</span>
+<span class="nb">set</span><span class="p">(</span>CMAKE_CXX_STANDARD 11<span class="p">)</span>
+<span class="nb">set</span><span class="p">(</span>CMAKE_POSITION_INDEPENDENT_CODE ON<span class="p">)</span>
+
+<span class="nb">find_package</span><span class="p">(</span>JNI REQUIRED<span class="p">)</span>
+<span class="nb">include_directories</span><span class="p">(</span><span class="si">${</span><span class="nv">JNI_INCLUDE_DIRS</span><span class="si">}</span><span class="p">)</span>
+<span class="nb">include_directories</span><span class="p">(</span><span class="si">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="si">}</span><span class="p">)</span>
+<span class="nb">include_directories</span><span class="p">(</span><span class="si">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="si">}</span>/third_party<span class="p">)</span>
+
+<span class="nb">add_library</span><span class="p">(</span>imageops SHARED imageops.cpp<span class="p">)</span>
+</code></pre></div></div>
+
+<p>Build command:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cmake <span class="nt">-S</span> native <span class="nt">-B</span> native/build   <span class="nt">-DJAVA_HOME</span><span class="o">=</span><span class="s2">"</span><span class="nv">$JAVA_HOME</span><span class="s2">"</span>   <span class="nt">-DCMAKE_OSX_ARCHITECTURES</span><span class="o">=</span>x86_64   <span class="nt">-DCMAKE_BUILD_TYPE</span><span class="o">=</span>Release
+cmake <span class="nt">--build</span> native/build <span class="nt">--config</span> Release
+<span class="c"># Output: native/build/libimageops.dylib</span>
+</code></pre></div></div>
+
+<h3 id="5-jni-translator-in-java-resnetjnitranslatorjava">5) JNI Translator in Java (ResNetJniTranslator.java)</h3>
+<p>The translator integrates the JNI preprocessing pipeline with DJL model inference.
+Key points:</p>
+<ul>
+  <li>Accepts raw image bytes (<code class="language-plaintext highlighter-rouge">byte[]</code>)</li>
+  <li>Calls <code class="language-plaintext highlighter-rouge">NativeImageOps.preprocessToCHW</code> → returns DirectByteBuffer</li>
+  <li>Converts buffer into <code class="language-plaintext highlighter-rouge">NDArray</code> with shape <code class="language-plaintext highlighter-rouge">(3,224,224)</code></li>
+  <li>Applies ImageNet normalization and forwards into ResNet18 model</li>
+</ul>
+
+<p><code class="language-plaintext highlighter-rouge">src/main/java/org/estech/ResNetJniTranslator.java</code>:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ResNetJniTranslator</span> <span class="kd">implements</span> <span class="nc">Translator</span><span class="o">&lt;</span><span class="kt">byte</span><span class="o">[],</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="no">SIZE</span> <span class="o">=</span> <span class="mi">224</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">float</span> <span class="no">M0</span> <span class="o">=</span> <span class="mf">0.485f</span><span class="o">,</span> <span class="no">M1</span> <span class="o">=</span> <span class="mf">0.456f</span><span class="o">,</span> <span class="no">M2</span> <span class="o">=</span> <span class="mf">0.406f</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">float</span> <span class="no">S0</span> <span class="o">=</span> <span class="mf">0.229f</span><span class="o">,</span> <span class="no">S1</span> <span class="o">=</span> <span class="mf">0.224f</span><span class="o">,</span> <span class="no">S2</span> <span class="o">=</span> <span class="mf">0.225f</span><span class="o">;</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="nc">NDList</span> <span class="nf">processInput</span><span class="o">(</span><span class="nc">TranslatorContext</span> <span class="n">ctx</span><span class="o">,</span> <span class="kt">byte</span><span class="o">[]</span> <span class="n">input</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">ByteBuffer</span> <span class="n">encoded</span> <span class="o">=</span> <span class="nc">ByteBuffer</span><span class="o">.</span><span class="na">allocateDirect</span><span class="o">(</span><span class="n">input</span><span class="o">.</span><span class="na">length</span><span class="o">);</span>
+        <span class="n">encoded</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">input</span><span class="o">).</span><span class="na">flip</span><span class="o">();</span>
+
+        <span class="kt">long</span> <span class="n">t0</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="na">nanoTime</span><span class="o">();</span>
+        <span class="nc">ByteBuffer</span> <span class="n">chw</span> <span class="o">=</span> <span class="nc">NativeImageOps</span><span class="o">.</span><span class="na">preprocessToCHW</span><span class="o">(</span>
+                <span class="n">encoded</span><span class="o">,</span> <span class="no">SIZE</span><span class="o">,</span> <span class="no">SIZE</span><span class="o">,</span> <span class="no">M0</span><span class="o">,</span> <span class="no">M1</span><span class="o">,</span> <span class="no">M2</span><span class="o">,</span> <span class="no">S0</span><span class="o">,</span> <span class="no">S1</span><span class="o">,</span> <span class="no">S2</span><span class="o">);</span>
+        <span class="kt">long</span> <span class="n">t1</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="na">nanoTime</span><span class="o">();</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">chw</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IOException</span><span class="o">(</span><span class="s">"JNI preprocessToCHW returned null"</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">printf</span><span class="o">(</span><span class="s">"[JNI] preprocess: %.2f ms, bytes=%d%n"</span><span class="o">,</span>
+                <span class="o">(</span><span class="n">t1</span> <span class="o">-</span> <span class="n">t0</span><span class="o">)</span> <span class="o">/</span> <span class="mi">1</span><span class="n">e6</span><span class="o">,</span> <span class="n">chw</span><span class="o">.</span><span class="na">remaining</span><span class="o">());</span>
+
+        <span class="nc">NDManager</span> <span class="n">manager</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="na">getNDManager</span><span class="o">();</span>
+        <span class="n">chw</span><span class="o">.</span><span class="na">rewind</span><span class="o">();</span>
+        <span class="nc">NDArray</span> <span class="n">x</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="n">chw</span><span class="o">,</span> <span class="k">new</span> <span class="nc">Shape</span><span class="o">(</span><span class="mi">3</span><span class="o">,</span> <span class="no">SIZE</span><span class="o">,</span> <span class="no">SIZE</span><span class="o">),</span> <span class="nc">DataType</span><span class="o">.</span><span class="na">FLOAT32</span><span class="o">);</span>
+
+        <span class="nc">NativeImageOps</span><span class="o">.</span><span class="na">freeBuffer</span><span class="o">(</span><span class="n">chw</span><span class="o">);</span>
+
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">NDList</span><span class="o">(</span><span class="n">x</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="nc">Classifications</span> <span class="nf">processOutput</span><span class="o">(</span><span class="nc">TranslatorContext</span> <span class="n">ctx</span><span class="o">,</span> <span class="nc">NDList</span> <span class="n">list</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">NDArray</span> <span class="n">logits</span> <span class="o">=</span> <span class="n">list</span><span class="o">.</span><span class="na">singletonOrThrow</span><span class="o">();</span>
+
+        <span class="nc">NDArray</span> <span class="n">probs</span><span class="o">;</span>
+        <span class="nc">Shape</span> <span class="n">sh</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="na">getShape</span><span class="o">();</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">sh</span><span class="o">.</span><span class="na">dimension</span><span class="o">()</span> <span class="o">==</span> <span class="mi">2</span> <span class="o">&amp;&amp;</span> <span class="n">sh</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span> <span class="o">==</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">probs</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="na">softmax</span><span class="o">(</span><span class="mi">1</span><span class="o">).</span><span class="na">squeeze</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>   <span class="c1">// [1,1000] -&gt; [1000]</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">sh</span><span class="o">.</span><span class="na">dimension</span><span class="o">()</span> <span class="o">==</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">probs</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="na">softmax</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>              <span class="c1">// [1000]</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="kt">int</span> <span class="n">last</span> <span class="o">=</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="n">sh</span><span class="o">.</span><span class="na">dimension</span><span class="o">()</span> <span class="o">-</span> <span class="mi">1</span><span class="o">;</span>
+            <span class="n">probs</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="na">softmax</span><span class="o">(</span><span class="n">last</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">probs</span><span class="o">.</span><span class="na">getShape</span><span class="o">().</span><span class="na">dimension</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">probs</span> <span class="o">=</span> <span class="n">probs</span><span class="o">.</span><span class="na">flatten</span><span class="o">();</span>           
+            <span class="o">}</span>
+        <span class="o">}</span>
+
+        <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">synset</span> <span class="o">=</span> <span class="n">loadSynset</span><span class="o">(</span><span class="n">ctx</span><span class="o">,</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="n">probs</span><span class="o">.</span><span class="na">getShape</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="mi">0</span><span class="o">));</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">Classifications</span><span class="o">(</span><span class="n">synset</span><span class="o">,</span> <span class="n">probs</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="nc">Batchifier</span> <span class="nf">getBatchifier</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="nc">Batchifier</span><span class="o">.</span><span class="na">STACK</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">private</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="nf">loadSynset</span><span class="o">(</span><span class="nc">TranslatorContext</span> <span class="n">ctx</span><span class="o">,</span> <span class="kt">int</span> <span class="n">nClasses</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="na">getModel</span><span class="o">().</span><span class="na">getArtifact</span><span class="o">(</span><span class="s">"synset.txt"</span><span class="o">,</span> <span class="nl">Utils:</span><span class="o">:</span><span class="n">readLines</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">labels</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">labels</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="k">return</span> <span class="n">labels</span><span class="o">;</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">ignore</span><span class="o">)</span> <span class="o">{</span> <span class="cm">/* fallthrough */</span> <span class="o">}</span>
+
+        <span class="nc">Path</span> <span class="n">local</span> <span class="o">=</span> <span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"path/to/your/synset.txt"</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="nc">Files</span><span class="o">.</span><span class="na">exists</span><span class="o">(</span><span class="n">local</span><span class="o">))</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="nc">Files</span><span class="o">.</span><span class="na">readAllLines</span><span class="o">(</span><span class="n">local</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="k">try</span> <span class="o">(</span><span class="nc">InputStream</span> <span class="n">is</span> <span class="o">=</span> <span class="nc">ResNetJniTranslator</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getResourceAsStream</span><span class="o">(</span><span class="s">"path/to/your.txt"</span><span class="o">))</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">is</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">return</span> <span class="nc">Utils</span><span class="o">.</span><span class="na">readLines</span><span class="o">(</span><span class="n">is</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+
+        <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">fallback</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;(</span><span class="n">nClasses</span><span class="o">);</span>
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">nClasses</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="n">fallback</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="nc">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">i</span><span class="o">));</span>
+        <span class="k">return</span> <span class="n">fallback</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="6-switch-between-jni-and-stock-djl-translators">6) Switch Between JNI and Stock DJL Translators</h3>
+<ul>
+  <li>In IntelliJ VM options:
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-Djava.library.path=$PROJECT_DIR$/native/build -DuseJni=true
+</code></pre></div>    </div>
+  </li>
+  <li>Or via CLI:
+    <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">-Dexec</span>.jvmArgs<span class="o">=</span><span class="s2">"-Djava.library.path=</span><span class="si">$(</span><span class="nb">pwd</span><span class="si">)</span><span class="s2">/native/build"</span>
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<p><code class="language-plaintext highlighter-rouge">App.java</code>(key lines):</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="o">(</span><span class="n">useJni</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// JNI Translator </span>
+    <span class="kt">byte</span><span class="o">[]</span> <span class="n">imgBytes</span> <span class="o">=</span> <span class="nc">Files</span><span class="o">.</span><span class="na">readAllBytes</span><span class="o">(</span><span class="n">imgPath</span><span class="o">);</span>
+
+    <span class="nc">Translator</span><span class="o">&lt;</span><span class="kt">byte</span><span class="o">[],</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">translator</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ResNetJniTranslator</span><span class="o">();</span>
+
+    <span class="nc">Criteria</span><span class="o">&lt;</span><span class="kt">byte</span><span class="o">[],</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">criteria</span> <span class="o">=</span> <span class="nc">Criteria</span><span class="o">.</span><span class="na">builder</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">optEngine</span><span class="o">(</span><span class="s">"PyTorch"</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">optApplication</span><span class="o">(</span><span class="nc">Application</span><span class="o">.</span><span class="na">CV</span><span class="o">.</span><span class="na">IMAGE_CLASSIFICATION</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">setTypes</span><span class="o">(</span><span class="kt">byte</span><span class="o">[].</span><span class="na">class</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">optModelPath</span><span class="o">(</span><span class="n">modelDir</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">optModelName</span><span class="o">(</span><span class="s">"traced_resnet18"</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">optTranslator</span><span class="o">(</span><span class="n">translator</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">optProgress</span><span class="o">(</span><span class="k">new</span> <span class="nc">ProgressBar</span><span class="o">())</span>
+        <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+
+    <span class="k">try</span> <span class="o">(</span><span class="nc">ZooModel</span><span class="o">&lt;</span><span class="kt">byte</span><span class="o">[],</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">model</span> <span class="o">=</span> <span class="nc">ModelZoo</span><span class="o">.</span><span class="na">loadModel</span><span class="o">(</span><span class="n">criteria</span><span class="o">);</span>
+        <span class="nc">Predictor</span><span class="o">&lt;</span><span class="kt">byte</span><span class="o">[],</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">predictor</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="na">newPredictor</span><span class="o">())</span> <span class="o">{</span>
+
+        <span class="kt">long</span> <span class="n">t0</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="na">nanoTime</span><span class="o">();</span>
+        <span class="nc">Classifications</span> <span class="n">result</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="na">predict</span><span class="o">(</span><span class="n">imgBytes</span><span class="o">);</span>
+        <span class="kt">long</span> <span class="n">t1</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="na">nanoTime</span><span class="o">();</span>
+
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">printf</span><span class="o">(</span><span class="s">"Predict total (JNI): %.2f ms%n"</span><span class="o">,</span> <span class="o">(</span><span class="n">t1</span> <span class="o">-</span> <span class="n">t0</span><span class="o">)</span> <span class="o">/</span> <span class="mi">1</span><span class="n">e6</span><span class="o">);</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"== Top-5 =="</span><span class="o">);</span>
+        <span class="n">result</span><span class="o">.</span><span class="na">topK</span><span class="o">(</span><span class="mi">5</span><span class="o">).</span><span class="na">forEach</span><span class="o">(</span><span class="n">c</span> <span class="o">-&gt;</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">printf</span><span class="o">(</span><span class="s">"%-25s %.5f%n"</span><span class="o">,</span> <span class="n">c</span><span class="o">.</span><span class="na">getClassName</span><span class="o">(),</span> <span class="n">c</span><span class="o">.</span><span class="na">getProbability</span><span class="o">()));</span>
+    <span class="o">}</span>
+<span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+    <span class="c1">// Java DJL Translator</span>
+    <span class="nc">Image</span> <span class="n">img</span> <span class="o">=</span> <span class="nc">ImageFactory</span><span class="o">.</span><span class="na">getInstance</span><span class="o">().</span><span class="na">fromFile</span><span class="o">(</span><span class="n">imgPath</span><span class="o">);</span>
+
+    <span class="nc">Translator</span><span class="o">&lt;</span><span class="nc">Image</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">translator</span> <span class="o">=</span>
+        <span class="n">ai</span><span class="o">.</span><span class="na">djl</span><span class="o">.</span><span class="na">modality</span><span class="o">.</span><span class="na">cv</span><span class="o">.</span><span class="na">translator</span><span class="o">.</span><span class="na">ImageClassificationTranslator</span><span class="o">.</span><span class="na">builder</span><span class="o">()</span>
+            <span class="o">.</span><span class="na">addTransform</span><span class="o">(</span><span class="k">new</span> <span class="nc">Resize</span><span class="o">(</span><span class="mi">256</span><span class="o">))</span>
+            <span class="o">.</span><span class="na">addTransform</span><span class="o">(</span><span class="k">new</span> <span class="nc">CenterCrop</span><span class="o">(</span><span class="mi">224</span><span class="o">,</span> <span class="mi">224</span><span class="o">))</span>
+            <span class="o">.</span><span class="na">addTransform</span><span class="o">(</span><span class="k">new</span> <span class="nc">ToTensor</span><span class="o">())</span>
+            <span class="o">.</span><span class="na">addTransform</span><span class="o">(</span><span class="k">new</span> <span class="nc">Normalize</span><span class="o">(</span>
+                <span class="k">new</span> <span class="kt">float</span><span class="o">[]{</span><span class="mf">0.485f</span><span class="o">,</span> <span class="mf">0.456f</span><span class="o">,</span> <span class="mf">0.406f</span><span class="o">},</span>
+                <span class="k">new</span> <span class="kt">float</span><span class="o">[]{</span><span class="mf">0.229f</span><span class="o">,</span> <span class="mf">0.224f</span><span class="o">,</span> <span class="mf">0.225f</span><span class="o">}))</span>
+            <span class="o">.</span><span class="na">optApplySoftmax</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">optSynsetUrl</span><span class="o">(</span><span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"path/to/your/synset.txt"</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">toUri</span><span class="o">().</span><span class="na">toString</span><span class="o">())</span>
+            <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+
+    <span class="nc">Criteria</span><span class="o">&lt;</span><span class="nc">Image</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">criteria</span> <span class="o">=</span> <span class="nc">Criteria</span><span class="o">.</span><span class="na">builder</span><span class="o">()</span>
+            <span class="o">.</span><span class="na">optEngine</span><span class="o">(</span><span class="s">"PyTorch"</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">optApplication</span><span class="o">(</span><span class="nc">Application</span><span class="o">.</span><span class="na">CV</span><span class="o">.</span><span class="na">IMAGE_CLASSIFICATION</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">setTypes</span><span class="o">(</span><span class="nc">Image</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">optModelPath</span><span class="o">(</span><span class="n">modelDir</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">optModelName</span><span class="o">(</span><span class="s">"traced_resnet18"</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">optTranslator</span><span class="o">(</span><span class="n">translator</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">optProgress</span><span class="o">(</span><span class="k">new</span> <span class="nc">ProgressBar</span><span class="o">())</span>
+            <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+
+    <span class="k">try</span> <span class="o">(</span><span class="nc">ZooModel</span><span class="o">&lt;</span><span class="nc">Image</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">model</span> <span class="o">=</span> <span class="nc">ModelZoo</span><span class="o">.</span><span class="na">loadModel</span><span class="o">(</span><span class="n">criteria</span><span class="o">);</span>
+        <span class="nc">Predictor</span><span class="o">&lt;</span><span class="nc">Image</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">predictor</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="na">newPredictor</span><span class="o">())</span> <span class="o">{</span>
+
+        <span class="kt">long</span> <span class="n">t0</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="na">nanoTime</span><span class="o">();</span>
+        <span class="nc">Classifications</span> <span class="n">result</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="na">predict</span><span class="o">(</span><span class="n">img</span><span class="o">);</span>
+        <span class="kt">long</span> <span class="n">t1</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="na">nanoTime</span><span class="o">();</span>
+
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">printf</span><span class="o">(</span><span class="s">"Predict total (DJL): %.2f ms%n"</span><span class="o">,</span> <span class="o">(</span><span class="n">t1</span> <span class="o">-</span> <span class="n">t0</span><span class="o">)</span> <span class="o">/</span> <span class="mi">1</span><span class="n">e6</span><span class="o">);</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"== Top-5 =="</span><span class="o">);</span>
+        <span class="n">result</span><span class="o">.</span><span class="na">topK</span><span class="o">(</span><span class="mi">5</span><span class="o">).</span><span class="na">forEach</span><span class="o">(</span><span class="n">c</span> <span class="o">-&gt;</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">printf</span><span class="o">(</span><span class="s">"%-25s %.5f%n"</span><span class="o">,</span> <span class="n">c</span><span class="o">.</span><span class="na">getClassName</span><span class="o">(),</span> <span class="n">c</span><span class="o">.</span><span class="na">getProbability</span><span class="o">()));</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="how-java-and-c-fit-together-with-jni">How Java and C++ Fit Together with JNI</h2>
+<p><strong>Build time</strong></p>
+<ol>
+  <li>Java declares <code class="language-plaintext highlighter-rouge">native</code> methods in <code class="language-plaintext highlighter-rouge">NativeImageOps</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">javac -h</code> generates JNI headers (e.g.,<code class="language-plaintext highlighter-rouge">org_estech_NativeImageOps.h</code>).</li>
+  <li>C++ implements the JNI functions.</li>
+  <li>CMake builds <code class="language-plaintext highlighter-rouge">libimageops.dylib</code>.</li>
+</ol>
+
+<p><strong>Runtime</strong></p>
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">System.loadLibrary("imageops")</code> loads the shared JNI library.</li>
+  <li>JVM binds <code class="language-plaintext highlighter-rouge">Java_org_estech_NativeImageOps_preprocessToCHW</code> to Java.</li>
+  <li>JNI pipeline preprocesses images in <strong>C++</strong>, returning a direct buffer.</li>
+  <li>DJL wraps this buffer as an <code class="language-plaintext highlighter-rouge">NDArray</code> and performs <strong>ResNet inference</strong>.</li>
+</ol>
+
+<hr />
+
+<h2 id="experimental-results-jni-vs-stock-djl-preprocessing">Experimental Results: JNI vs Stock DJL Preprocessing</h2>
+<h3 id="stock-djl-java-preprocessing">Stock DJL (Java Preprocessing)</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Image 1
+Predict total (DJL): 356.75 ms
+Top-1: giant panda (0.99993)
+
+# Image 2
+Predict total (DJL): 381.30 ms
+Top-1: brown bear (0.99910)
+
+# Image 3
+Predict total (DJL): 417.40 ms
+Top-1: tiger (0.77952)
+</code></pre></div></div>
+
+<h3 id="jni-preprocessing-cc">JNI preprocessing (C/C++)</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Image 1
+[JNI] preprocess: 30.56 ms, bytes=602112
+Predict total (JNI): 356.18 ms
+Top-1: giant panda (0.99986)
+
+# Image 2
+[JNI] preprocess: 33.78 ms, bytes=602112
+Predict total (JNI): 340.08 ms
+Top-1: brown bear (0.99909)
+
+# Image 3
+[JNI] preprocess: 65.49 ms, bytes=602112
+Predict total (JNI): 391.52 ms
+Top-1: tiger (0.84426)
+</code></pre></div></div>
+
+<p><strong>Takeaways</strong></p>
+<ul>
+  <li><strong>Accuracy</strong>: Top‑1/Top‑5 match the stock DJL path (tiny probability differences are normal).</li>
+  <li><strong>Latency</strong>: Overall <strong>JNI ≤ DJL</strong>. Images 2 and 3 are ~41 ms and ~26 ms faster end‑to‑end; image 1 is roughly the same.</li>
+  <li><strong>JNI preprocess time</strong>: 30–65 ms per image (varies by image size/content; image 3 is heavier). For better efficiency, try batching multiple images in one JNI call.</li>
+</ul>
+
+<p>JNI image preprocessing in Java with DJL significantly reduces preprocessing latency compared to pure Java pipelines.</p>
+
+<hr />
+
+<h2 id="appendix-quick-qa">Appendix: Quick Q&amp;A</h2>
+<ul>
+  <li>
+    <p><strong>What’s a Java “shell class”?</strong><br />
+Answers: A class that only declares <code class="language-plaintext highlighter-rouge">native</code> methods. It’s the Java side of the interface; the body lives in C/C++.</p>
+  </li>
+  <li>
+    <p><strong>Why does <code class="language-plaintext highlighter-rouge">javac -h</code> generate a C header?</strong><br />
+Answers: The compiler reads your <code class="language-plaintext highlighter-rouge">native</code> signatures and emits the exact JNI prototypes (with the right mangled names) so C/C++ can implement them safely.</p>
+  </li>
+  <li>
+    <p><strong>Why does <code class="language-plaintext highlighter-rouge">loadLibrary("imageops")</code> look for <code class="language-plaintext highlighter-rouge">libimageops.dylib</code>?</strong> 
+Answers: The JVM calls <code class="language-plaintext highlighter-rouge">System.mapLibraryName("imageops")</code>: macOS → <code class="language-plaintext highlighter-rouge">libimageops.dylib</code>, Linux → <code class="language-plaintext highlighter-rouge">libimageops.so</code>, Windows → <code class="language-plaintext highlighter-rouge">imageops.dll</code>.</p>
+  </li>
+  <li>
+    <p><strong>What exactly does <code class="language-plaintext highlighter-rouge">CMakeLists.txt</code> do?</strong><br />
+Answers: It’s the build recipe. It declares a <strong>shared</strong> library target, points to sources and headers, pulls in JNI include paths, and produces <code class="language-plaintext highlighter-rouge">libimageops.dylib</code>.</p>
+  </li>
+</ul>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+<ul>
+  <li>Related post: <a href="/ai/2025/08/16/python-inference-service-fastapi-grpc.html">Implementing a Python Inference Service with FastAPI &amp; gRPC</a></li>
+  <li>Related post: <a href="/ai/2025/08/14/deploy-resnet-java-djl-tutorial.html">Deploying ResNet Models with Java DJL – From Zero to Hero</a></li>
+  <li><a href="https://grpc.io/docs/languages/java/">gRPC Java Documentation</a></li>
+  <li><a href="https://docs.oracle.com/javase/8/docs/technotes/guides/jni/">JNI Official Guide</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

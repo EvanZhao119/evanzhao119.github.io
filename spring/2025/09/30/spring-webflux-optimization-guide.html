@@ -1,0 +1,165 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="spring-webflux-optimization-guide">Spring WebFlux Optimization Guide</h1>
+<p>Spring WebFlux is a <strong>reactive, non-blocking web framework</strong> introduced in Spring 5.<br />
+It is designed for high-concurrency systems, but if you don’t use it properly, performance can actually get worse.<br />
+This guide will walk you through <strong>practical optimizations for WebFlux</strong> so you can unlock its full potential.</p>
+
+<hr />
+
+<h2 id="1-why-optimize-webflux">1. Why Optimize WebFlux?</h2>
+<ul>
+  <li>WebFlux uses <strong>reactive streams + non-blocking I/O</strong>.</li>
+  <li>It’s great for high traffic and concurrent apps.</li>
+  <li>But introducing <strong>blocking APIs</strong> or misusing schedulers can easily hurt performance.</li>
+</ul>
+
+<p><strong>Key takeaway:</strong> Optimization ensures WebFlux stays <strong>truly non-blocking</strong>.</p>
+
+<hr />
+
+<h2 id="2-avoid-blocking-calls">2. Avoid Blocking Calls</h2>
+<p><strong>Common mistakes:</strong></p>
+<ul>
+  <li>Using <code class="language-plaintext highlighter-rouge">JdbcTemplate</code>, <code class="language-plaintext highlighter-rouge">RestTemplate</code>, or traditional file I/O inside WebFlux.</li>
+  <li>These block the event loop threads and lead to reduced throughput.</li>
+</ul>
+
+<p><strong>Better approach:</strong></p>
+<ul>
+  <li>Use <strong>R2DBC</strong> instead of JDBC.</li>
+  <li>Use <strong>WebClient</strong> instead of RestTemplate.</li>
+  <li>For unavoidable blocking tasks, use <code class="language-plaintext highlighter-rouge">Schedulers.boundedElastic()</code>.</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Mono</span><span class="o">.</span><span class="na">fromCallable</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="n">jdbcTemplate</span><span class="o">.</span><span class="na">queryForObject</span><span class="o">(</span><span class="s">"SELECT ..."</span><span class="o">,</span> <span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">))</span>
+    <span class="o">.</span><span class="na">subscribeOn</span><span class="o">(</span><span class="nc">Schedulers</span><span class="o">.</span><span class="na">boundedElastic</span><span class="o">());</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="3-use-schedulers-wisely">3. Use Schedulers Wisely</h2>
+<ul>
+  <li>Reactor has only a <strong>small number of event loop threads</strong> (usually one per CPU core).</li>
+  <li>For <strong>CPU-heavy work</strong>, use <code class="language-plaintext highlighter-rouge">parallel()</code>.</li>
+  <li>For <strong>blocking I/O tasks</strong>, use <code class="language-plaintext highlighter-rouge">boundedElastic()</code>.</li>
+  <li>Avoid too many <code class="language-plaintext highlighter-rouge">publishOn</code> / <code class="language-plaintext highlighter-rouge">subscribeOn</code> calls, because thread switching is expensive.</li>
+</ul>
+
+<hr />
+
+<h2 id="4-handle-backpressure">4. Handle Backpressure</h2>
+<ul>
+  <li>Backpressure: <strong>consumer controls data flow from producer</strong>.</li>
+  <li>Flux supports backpressure out of the box.</li>
+  <li>If the source (like a message queue) doesn’t, you must handle it manually.</li>
+  <li><strong>Strategies:</strong>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">onBackpressureBuffer()</code>: buffer extra data.</li>
+      <li><code class="language-plaintext highlighter-rouge">onBackpressureDrop()</code>: drop when overloaded.</li>
+      <li><code class="language-plaintext highlighter-rouge">limitRate()</code>: limit how fast to consume.</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+
+<h2 id="5-optimize-json--serialization">5. Optimize JSON &amp; Serialization</h2>
+<ul>
+  <li>WebFlux uses <strong>Jackson</strong> by default, which can become a bottleneck.</li>
+  <li>Options to optimize:
+    <ul>
+      <li>Use <strong>Kotlinx Serialization</strong> or <strong>Json-B</strong>.</li>
+      <li>Enable <strong>Jackson streaming</strong> for large data.</li>
+      <li>Stream with <code class="language-plaintext highlighter-rouge">DataBuffer</code> instead of loading entire objects.</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+
+<h2 id="6-connection-pool--resource-tuning">6. Connection Pool &amp; Resource Tuning</h2>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">WebClient</code> uses <strong>Reactor Netty</strong> with connection pooling.</li>
+  <li>Tips:
+    <ul>
+      <li>Tune pool size with <code class="language-plaintext highlighter-rouge">maxConnections</code>.</li>
+      <li>Set proper <code class="language-plaintext highlighter-rouge">responseTimeout</code>.</li>
+      <li>Reuse <code class="language-plaintext highlighter-rouge">WebClient</code> instances instead of creating new ones.</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+
+<h2 id="7-monitoring--debugging">7. Monitoring &amp; Debugging</h2>
+
+<ul>
+  <li>Use <strong>BlockHound</strong> to detect accidental blocking calls.</li>
+  <li>Add <strong>Micrometer + Prometheus + Grafana</strong> for latency &amp; throughput monitoring.</li>
+  <li>Debug streams with Reactor’s built-in logger:</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">flux</span><span class="o">.</span><span class="na">log</span><span class="o">(</span><span class="s">"my-debug"</span><span class="o">)</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="8-practical-optimization-steps">8. Practical Optimization Steps</h2>
+<ol>
+  <li>Eliminate blocking APIs.</li>
+  <li>Use schedulers correctly (parallel vs boundedElastic).</li>
+  <li>Apply backpressure strategies.</li>
+  <li>Tune JSON serialization &amp; connection pools.</li>
+  <li>Add monitoring &amp; debugging tools.</li>
+</ol>
+
+<hr />
+
+<h2 id="final-takeaway">Final Takeaway</h2>
+<p><strong>WebFlux optimization: keeping it truly non-blocking.</strong></p>
+
+<p>With careful tuning of APIs, schedulers, backpressure, and monitoring, your apps can scale smoothly to handle massive traffic.</p>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+<ul>
+  <li><a href="https://projectreactor.io/docs/core/release/reference/">Project Reactor Reference Guide</a></li>
+  <li><a href="https://www.reactive-streams.org/">Reactive Streams Specification</a></li>
+  <li><a href="https://docs.spring.io/spring-framework/reference/web/webflux.html">Spring WebFlux Documentation</a></li>
+  <li><a href="https://docs.spring.io/spring-framework/reference/web/webflux-webclient.html">Spring WebClient Guide</a></li>
+  <li>Related post: <a href="/spring/2025/09/22/reactive-spring-webflux.html">Reactive Spring: Reactive Web Explained</a></li>
+  <li>Related post: <a href="/concurrency/2025/09/26/project-reactor-explained.html">Project Reactor Guide: Explained with Examples</a></li>
+  <li>Related post: <a href="/ai/2025/08/25/spring-mvc-vs-webflux-performance-comparison.html">Spring MVC vs WebFlux: A Practical Look at Concurrency and Performance</a></li>
+  <li>Related post: <a href="/ai/2025/08/27/spring-webflux-ai-nsfw-moderation-api.html">Building a High-Concurrency AI Moderation Service with Spring WebFlux — From Concept to Production</a></li>
+  <li>Related post: <a href="/ai/2025/08/31/spring-webflux-monitoring-prometheus-grafana.html">Monitoring Spring WebFlux with Prometheus and Grafana</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

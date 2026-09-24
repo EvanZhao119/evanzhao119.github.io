@@ -1,0 +1,138 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="unsafe-in-java-enabling-low-level-cc-style-operations">Unsafe in Java: Enabling Low-Level, C/C++-Style Operations</h1>
+<p>The <code class="language-plaintext highlighter-rouge">Unsafe</code> class, found in the <code class="language-plaintext highlighter-rouge">sun.misc</code> package, provides a powerful—yet dangerous—set of low-level operations. It bypasses standard Java access checks and memory safety mechanisms, making it a favorite tool for performance-critical libraries like <strong>Netty</strong>, <strong>Kafka</strong>, and <strong>Disruptor</strong>.</p>
+
+<p>The name <code class="language-plaintext highlighter-rouge">Unsafe</code> is intentionally chosen to highlight the risks. While it opens the door to operations reminiscent of C/C++, misuse can lead to crashes, memory leaks, or unpredictable behavior. Use only when absolutely necessary and with a deep understanding.</p>
+
+<h2 id="how-to-access-unsafe">How to Access <code class="language-plaintext highlighter-rouge">Unsafe</code></h2>
+<p>This code uses Java reflection to access the private <code class="language-plaintext highlighter-rouge">theUnsafe</code> instance from the <code class="language-plaintext highlighter-rouge">Unsafe</code> class. Since direct access is restricted, <code class="language-plaintext highlighter-rouge">setAccessible(true)</code>` is used to bypass the access check.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Field</span> <span class="n">f</span> <span class="o">=</span> <span class="nc">Unsafe</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getDeclaredField</span><span class="o">(</span><span class="s">"theUnsafe"</span><span class="o">);</span>
+<span class="n">f</span><span class="o">.</span><span class="na">setAccessible</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+<span class="nc">Unsafe</span> <span class="n">unsafe</span> <span class="o">=</span> <span class="o">(</span><span class="nc">Unsafe</span><span class="o">)</span> <span class="n">f</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+</code></pre></div></div>
+<blockquote>
+  <p><em>Note</em>: In Java 17 and later, you may need to add the <code class="language-plaintext highlighter-rouge">--add-opens</code> JVM argument to allow access to internal packages like <code class="language-plaintext highlighter-rouge">sun.misc</code>.&lt;/br&gt;
+Java 17+: use <code class="language-plaintext highlighter-rouge">--add-opens java.base/sun.misc=ALL-UNNAMED</code> if needed</p>
+</blockquote>
+
+<h2 id="common-functionalities-of-unsafe">Common Functionalities of <code class="language-plaintext highlighter-rouge">Unsafe</code></h2>
+<h3 id="1-direct-memory-management">1. Direct Memory Management</h3>
+<p>This code snippet demonstrates how to manually allocate, write to, read from, and free off-heap memory using the <code class="language-plaintext highlighter-rouge">Unsafe</code> class—similar to <code class="language-plaintext highlighter-rouge">malloc</code> and <code class="language-plaintext highlighter-rouge">free</code> in C.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">long</span> <span class="n">address</span> <span class="o">=</span> <span class="n">unsafe</span><span class="o">.</span><span class="na">allocateMemory</span><span class="o">(</span><span class="mi">1024L</span><span class="o">);</span> <span class="c1">// Allocate 1024 bytes of off-heap memory</span>
+<span class="n">unsafe</span><span class="o">.</span><span class="na">putByte</span><span class="o">(</span><span class="n">address</span><span class="o">,</span> <span class="o">(</span><span class="kt">byte</span><span class="o">)</span> <span class="mi">1</span><span class="o">);</span>           <span class="c1">// Write the byte value 1 to the allocated memory</span>
+<span class="kt">byte</span> <span class="n">value</span> <span class="o">=</span> <span class="n">unsafe</span><span class="o">.</span><span class="na">getByte</span><span class="o">(</span><span class="n">address</span><span class="o">);</span>        <span class="c1">// Read the byte value from the allocated memory</span>
+<span class="n">unsafe</span><span class="o">.</span><span class="na">freeMemory</span><span class="o">(</span><span class="n">address</span><span class="o">);</span>                  <span class="c1">// Free the previously allocated memory</span>
+</code></pre></div></div>
+<blockquote>
+  <p>Use <code class="language-plaintext highlighter-rouge">MemorySegment</code> from the Foreign Memory API (Java 19+)</p>
+</blockquote>
+
+<h3 id="2-create-object-without-constructor">2. Create Object Without Constructor</h3>
+<p>This snippet shows how to create an object instance without invoking its constructor using Unsafe.allocateInstance(). This technique is often used in serialization frameworks or advanced libraries where object instantiation needs to bypass constructor logic.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">User</span> <span class="n">user</span> <span class="o">=</span> <span class="o">(</span><span class="nc">User</span><span class="o">)</span> <span class="n">unsafe</span><span class="o">.</span><span class="na">allocateInstance</span><span class="o">(</span><span class="nc">User</span><span class="o">.</span><span class="na">class</span><span class="o">);</span> <span class="c1">// Create an instance of User without calling its constructor</span>
+<span class="n">user</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">"John"</span><span class="o">);</span>                                   <span class="c1">// Set the name property of the User object</span>
+</code></pre></div></div>
+<blockquote>
+  <p>Prefer <code class="language-plaintext highlighter-rouge">ObjectInputStream.newInstance()</code> in Java 17+</p>
+</blockquote>
+
+<h3 id="3-raw-array-access">3. Raw Array Access</h3>
+<p>This code demonstrates how to use <code class="language-plaintext highlighter-rouge">Unsafe</code> to retrieve low-level memory layout information of an array—specifically, the base memory offset and the index scale (element size). These values can be used to perform manual memory access on array elements, similar to pointer in C/C++.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">String</span><span class="o">[]</span> <span class="n">names</span> <span class="o">=</span> <span class="o">{</span><span class="s">"Alice"</span><span class="o">,</span> <span class="s">"Bob"</span><span class="o">,</span> <span class="s">"Charlie"</span><span class="o">};</span>           <span class="c1">// Declare and initialize a String array</span>
+<span class="kt">long</span> <span class="n">base</span> <span class="o">=</span> <span class="n">unsafe</span><span class="o">.</span><span class="na">arrayBaseOffset</span><span class="o">(</span><span class="nc">String</span><span class="o">[].</span><span class="na">class</span><span class="o">);</span>     <span class="c1">// Get the starting memory offset of the first element in the array</span>
+<span class="kt">long</span> <span class="n">scale</span> <span class="o">=</span> <span class="n">unsafe</span><span class="o">.</span><span class="na">arrayIndexScale</span><span class="o">(</span><span class="nc">String</span><span class="o">[].</span><span class="na">class</span><span class="o">);</span>    <span class="c1">// Get the size (in bytes) of each array element step</span>
+</code></pre></div></div>
+<blockquote>
+  <p>No bounds checks — may crash JVM</p>
+</blockquote>
+
+<h3 id="4-cas-compare-and-swap-operations">4. CAS (Compare-And-Swap) Operations</h3>
+<p>This line performs an atomic <strong>Compare-And-Swap (CAS)</strong> operation using Unsafe. It checks whether the integer at a specific memory offset equals an expected value, and if so, updates it to a new value. CAS is a fundamental building block for implementing non-blocking concurrency in Java.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">unsafe</span><span class="o">.</span><span class="na">compareAndSwapInt</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">stateOffset</span><span class="o">,</span> <span class="n">expect</span><span class="o">,</span> <span class="n">update</span><span class="o">);</span> 
+<span class="c1">// Atomically sets the int value at the memory offset 'stateOffset' of the current object (this) </span>
+<span class="c1">// to 'update' if the current value equals 'expect'</span>
+</code></pre></div></div>
+<blockquote>
+  <p>Use <code class="language-plaintext highlighter-rouge">VarHandle.compareAndSet()</code> (Java 9+)</p>
+</blockquote>
+
+<h3 id="5-thread-suspension-and-resumption">5. Thread Suspension and Resumption</h3>
+<p>This code demonstrates how to suspend and resume threads using <code class="language-plaintext highlighter-rouge">Unsafe</code>. The <code class="language-plaintext highlighter-rouge">park</code> method blocks the current thread, while <code class="language-plaintext highlighter-rouge">unpark</code> allows another thread to resume execution. These are low-level primitives used in concurrency utilities like <code class="language-plaintext highlighter-rouge">LockSupport</code>.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="no">UNSAFE</span><span class="o">.</span><span class="na">park</span><span class="o">(</span><span class="kc">false</span><span class="o">,</span> <span class="mi">0L</span><span class="o">);</span><span class="c1">// Suspends the current thread indefinitely until it's unparked or interrupted</span>
+<span class="no">UNSAFE</span><span class="o">.</span><span class="na">unpark</span><span class="o">(</span><span class="n">thread</span><span class="o">);</span><span class="c1">// Wakes up (unparks) the specified thread if it's currently parked</span>
+</code></pre></div></div>
+
+<h3 id="6-memory-fences-barriers">6. Memory Fences (Barriers)</h3>
+<p>This code uses memory fences to prevent reordering of memory operations. <code class="language-plaintext highlighter-rouge">loadFence()</code>, <code class="language-plaintext highlighter-rouge">storeFence()</code>, and <code class="language-plaintext highlighter-rouge">fullFence()</code> enforce ordering guarantees for read, write, or all memory operations respectively. These are used in concurrent programming to maintain visibility and ordering without using locks.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">unsafe</span><span class="o">.</span><span class="na">loadFence</span><span class="o">();</span>   <span class="c1">// Ensures all load (read) operations before this call are completed before any subsequent loads</span>
+<span class="n">unsafe</span><span class="o">.</span><span class="na">storeFence</span><span class="o">();</span>  <span class="c1">// Ensures all store (write) operations before this call are completed before any subsequent stores</span>
+<span class="n">unsafe</span><span class="o">.</span><span class="na">fullFence</span><span class="o">();</span>   <span class="c1">// Ensures all prior loads and stores are completed before any subsequent loads or stores</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>Use <code class="language-plaintext highlighter-rouge">VarHandle.acquireFence()</code> etc. (Java 9+)</p>
+</blockquote>
+
+<h2 id="future-trends-and-recommended-alternatives">Future Trends and Recommended Alternatives</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Unsafe Capability</th>
+      <th>Modern Alternative</th>
+      <th>Since</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Memory access</td>
+      <td><code class="language-plaintext highlighter-rouge">MemorySegment</code> (Foreign Memory API)</td>
+      <td>Java 19+</td>
+    </tr>
+    <tr>
+      <td>CAS / atomic updates</td>
+      <td><code class="language-plaintext highlighter-rouge">VarHandle.compareAndSet()</code></td>
+      <td>Java 9+</td>
+    </tr>
+    <tr>
+      <td>Memory fences</td>
+      <td><code class="language-plaintext highlighter-rouge">VarHandle.acquireFence()</code> etc.</td>
+      <td>Java 9+</td>
+    </tr>
+    <tr>
+      <td>Object instantiation</td>
+      <td><code class="language-plaintext highlighter-rouge">ObjectInputStream.newInstance()</code></td>
+      <td>Java 17+</td>
+    </tr>
+  </tbody>
+</table>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

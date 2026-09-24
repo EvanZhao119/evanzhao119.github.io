@@ -1,0 +1,104 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="understanding-jvm-garbage-collection-principles-and-mechanisms">Understanding JVM Garbage Collection: Principles and Mechanisms</h1>
+
+<p>According to the memory structure of the Java Virtual Machine (JVM), the <strong>Program Counter</strong>, <strong>Java Virtual Machine Stack</strong>, and <strong>Native Method Stack</strong> are <strong>thread-private</strong>. They are created when a thread is created and destroyed when the thread ends. Therefore, they do not require garbage collection, as their lifecycle is tied directly to the thread.</p>
+
+<p>In contrast, the <strong>Hea</strong>p and the <strong>Method Area</strong> (also referred to as the <strong>Metaspace</strong> in modern JVMs) are shared among all threads. All object instances and arrays are allocated in the heap space, which is the <strong>primary area collected by garbage collection (GC)</strong>.</p>
+
+<h2 id="how-does-the-jvm-determine-whether-an-object-can-be-reclaimed">How Does the JVM Determine Whether an Object Can Be Reclaimed?</h2>
+
+<h3 id="1-reference-counting">1. Reference Counting</h3>
+
+<p>This method keeps track of how many references each object has. When an object’s reference count drops to zero, it is considered unreachable and can be reclaimed.</p>
+
+<p>However, this method has a significant drawback — it <strong>cannot handle circular references</strong>. 
+For instance, if object A references object B and object B references A, both will have non-zero reference counts even if they are no longer accessible from anywhere else in the program.</p>
+
+<blockquote>
+  <p><strong>Note:</strong> Modern JVMs do <strong>not</strong> use reference counting as the primary garbage collection strategy due to this limitation.</p>
+</blockquote>
+
+<h3 id="2-reachability-analysis-graph-based-approach">2. Reachability Analysis (Graph-Based Approach)</h3>
+
+<p>The JVM uses <strong>reachability analysis</strong> to determine whether an object is still in use. It starts from a set of well-known objects called <strong>GC Roots</strong> and traverses the object graph along reference paths. Any object <strong>not reachable</strong> from the GC Roots is considered ‘garbage’ and is eligible for collection.</p>
+
+<h2 id="what-are-gc-roots">What Are GC Roots?</h2>
+
+<p><strong>GC Roots</strong> are special references that act as starting points for the garbage collector to explore object reachability.</p>
+
+<h3 id="gc-roots-include">GC Roots include:</h3>
+<ul>
+  <li><strong>Local variables</strong> in the virtual machine stack of active threads.</li>
+  <li><strong>JNI references</strong> in the native method stack.</li>
+  <li><strong>Static variables</strong> in the Method Area (Metaspace).</li>
+  <li><strong>Constants</strong> stored in the runtime constant pool (e.g., string literals).</li>
+  <li>Objects referenced by <strong>locks or monitors</strong>, i.e., objects held by <code class="language-plaintext highlighter-rouge">synchronized</code> blocks.</li>
+  <li>Internal references maintained by the JVM, such as:
+    <ul>
+      <li><strong>Class objects</strong>, <strong>class loaders</strong>, <strong>exception objects</strong>,</li>
+      <li><strong>JMXBeans</strong>, <strong>JVMTI callbacks</strong>, and</li>
+      <li><strong>JIT compiler code cache</strong>.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>Additionally, some garbage collectors (like G1 or ZGC) may designate <strong>temporary GC Roots</strong> during specific phases of garbage collection (e.g., Minor GC or incremental GC).</p>
+
+<blockquote>
+  <p><strong>Note:</strong> Starting with <strong>Java 8</strong>, the Method Area has been replaced by <strong>Metaspace</strong>, which resides in <strong>native memory</strong> rather than the JVM heap.</p>
+</blockquote>
+
+<h2 id="summary">Summary</h2>
+<ul>
+  <li>Thread-private memory areas (PC, VM Stack, Native Method Stack) do not require GC.</li>
+  <li>The Heap and Metaspace are shared and require GC management.</li>
+  <li><strong>Reachability analysis</strong> is the modern approach used in the JVM to determine if an object is garbage.</li>
+  <li>GC Roots serve as entry points to identify all live objects.</li>
+</ul>
+
+<h2 id="a-final-note-garbage-collection-in-the-method-area">A Final Note: Garbage Collection in the Method Area</h2>
+
+<p>Compared to the heap, <strong>garbage collection in the method area (also known as Metaspace in modern JVMs)</strong> is less efficient. This is primarily because the method area contains class metadata, which seldom changes and is rarely discarded once loaded.</p>
+
+<p>With the growing use of <strong>hot-swapping, reflection, and dynamic proxies</strong>, the JVM is increasingly expected to support garbage collection in the method area to help free up memory occupied by obsolete class metadata.</p>
+
+<blockquote>
+  <p><strong>Note:</strong> According to the JVM specification, <strong>implementations are not required to support garbage collection or compaction in the method area</strong>. As shown in the excerpt below:</p>
+
+  <blockquote>
+    <p><em>“Although the method area is logically part of the heap, simple implementations may choose not to either garbage collect or compact it.”</em></p>
+  </blockquote>
+
+  <p>This means it is left to the discretion of the JVM implementation whether to manage memory reclamation in the method area.</p>
+</blockquote>
+
+<p>In real-world scenarios, modern JVMs like <strong>HotSpot</strong> provide <strong>conditional support for class unloading through garbage collection</strong>, particularly in situations involving <strong>class redefinition</strong>, <strong>runtime-generated classes</strong>, or frameworks such as <strong>Spring</strong> and <strong>OSGi</strong> that dynamically manipulate the classloader.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

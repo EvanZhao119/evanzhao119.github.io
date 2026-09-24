@@ -1,0 +1,149 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="how-java-handles-method-invocation">How Java Handles Method Invocation</h1>
+<p>In Java, method invocation is categorized into <strong>resolution</strong>, <strong>static dispatch</strong>, and <strong>dynamic dispatch</strong>. These categories differ based on the <strong>timing and criteria</strong> used to select the method.</p>
+
+<h2 id="1-resolution-static-resolution">1. Resolution (Static Resolution)</h2>
+
+<p><strong>Resolution</strong> occurs at <strong>compile time</strong>, which means the target method for invocation is determined during the program’s source code writing and compilation.</p>
+
+<ul>
+  <li><strong>Static Process</strong>: Resolution is a static process, meaning the compiler can fully determine the method call target at compile time, eliminating the need to wait until runtime.</li>
+  <li><strong>Symbolic Reference to Direct Reference</strong>: During the class loading phase, all symbolic references are resolved into direct references. For example, static methods, private methods, constructors, parent class methods, and <code class="language-plaintext highlighter-rouge">final</code> methods are determined at compile time.</li>
+  <li><strong>Non-Virtual Methods</strong>: These methods are typically referred to as “non-virtual methods” because there is no polymorphic behavior at runtime.</li>
+</ul>
+
+<p><strong>Applicable Situations</strong>:</p>
+<ul>
+  <li><strong>Static Methods</strong>: The invocation of static methods is related to the class itself, not the object.</li>
+  <li><strong>Private Methods</strong>: Private methods can only be accessed within the class, and the target is determined statically.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">final</code> Methods</strong>: Since <code class="language-plaintext highlighter-rouge">final</code> methods cannot be overridden, the method call target is fixed at compile time.</li>
+  <li><strong>Constructors and Parent Class Methods</strong>: These are also resolved at compile time.</li>
+</ul>
+
+<h2 id="2-static-dispatch">2. Static Dispatch</h2>
+<p><strong>Static dispatch</strong> refers to the dispatch process where the method version is determined based on the static type of the reference at <strong>compile time</strong>.</p>
+
+<ul>
+  <li><strong>Method Overloading</strong>: Method overloading is a form of static dispatch. The compiler selects which method to invoke based on the method signature, such as the number and type of arguments.</li>
+  <li><strong>Compile-Time Decision</strong>: The dispatch happens at compile time, and the JVM does not play a role in this decision-making process.</li>
+</ul>
+
+<p><strong>Example</strong>: When multiple overloaded methods with the same name but different parameter types exist, the compiler determines the correct method based on the arguments passed.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">class</span> <span class="nc">Printer</span> <span class="o">{</span>
+    <span class="kt">void</span> <span class="nf">print</span><span class="o">(</span><span class="nc">String</span> <span class="n">s</span><span class="o">)</span> <span class="o">{</span> <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Printing String: "</span> <span class="o">+</span> <span class="n">s</span><span class="o">);</span> <span class="o">}</span>
+    <span class="kt">void</span> <span class="nf">print</span><span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">)</span> <span class="o">{</span> <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Printing int: "</span> <span class="o">+</span> <span class="n">i</span><span class="o">);</span> <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Main</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Printer</span> <span class="n">printer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Printer</span><span class="o">();</span>
+        <span class="n">printer</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">"Hello"</span><span class="o">);</span>  <span class="c1">// Static dispatch: prints the print(String s) method</span>
+        <span class="n">printer</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="mi">5</span><span class="o">);</span>        <span class="c1">// Static dispatch: prints the print(int i) method</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="3-dynamic-dispatch">3. Dynamic Dispatch</h2>
+<p><strong>Dynamic dispatch</strong> occurs at <strong>runtime</strong> when the JVM selects the method to invoke based on the actual object type. This process is commonly associated with <strong>polymorphism</strong>.</p>
+
+<ul>
+  <li><strong>Method Overriding</strong>: Method overriding is the classic example of dynamic dispatch. The JVM decides which method to call based on the actual object type, not the reference type.</li>
+  <li><strong>Polymorphism</strong>: In a polymorphic situation, if a parent class reference points to a subclass object, the method invoked will be the one in the subclass.</li>
+</ul>
+
+<p><strong>Example</strong>:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">class</span> <span class="nc">Animal</span> <span class="o">{</span>
+    <span class="kt">void</span> <span class="nf">sound</span><span class="o">()</span> <span class="o">{</span> <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Animal makes a sound"</span><span class="o">);</span> <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kd">class</span> <span class="nc">Dog</span> <span class="kd">extends</span> <span class="nc">Animal</span> <span class="o">{</span>
+    <span class="nd">@Override</span>
+    <span class="kt">void</span> <span class="nf">sound</span><span class="o">()</span> <span class="o">{</span> <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Dog barks"</span><span class="o">);</span> <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Main</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Animal</span> <span class="n">animal</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Dog</span><span class="o">();</span> <span class="c1">// Dynamic dispatch</span>
+        <span class="n">animal</span><span class="o">.</span><span class="na">sound</span><span class="o">();</span>  <span class="c1">// Outputs "Dog barks"</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p><strong>Important Note</strong>:</p>
+<ul>
+  <li><strong>Fields Do Not Participate in Polymorphism</strong>: Fields are always selected based on the reference type. If a subclass declares a field with the same name as the one in the parent class, both fields exist in the subclass, but the subclass field hides the parent class’s field.</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">class</span> <span class="nc">Parent</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">field</span> <span class="o">=</span> <span class="mi">10</span><span class="o">;</span>
+<span class="o">}</span>
+
+<span class="kd">class</span> <span class="nc">Child</span> <span class="kd">extends</span> <span class="nc">Parent</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">field</span> <span class="o">=</span> <span class="mi">20</span><span class="o">;</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Main</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Parent</span> <span class="n">p</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Child</span><span class="o">();</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">p</span><span class="o">.</span><span class="na">field</span><span class="o">);</span>  <span class="c1">// Outputs 10, field does not participate in dynamic dispatch</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="4-some-improvments">4. Some Improvments</h2>
+
+<ul>
+  <li>
+    <p><strong>JVM Optimizations</strong>: Modern JVMs (e.g., OpenJDK, GraalVM) offer advanced optimizations for method invocation, such as <strong>Just-In-Time (JIT) compilation</strong>. This allows dynamic dispatch to be further optimized during runtime, improving performance in hot code paths.</p>
+  </li>
+  <li>
+    <p><strong>Lambda Expressions and Method References</strong>: Java 8 introduced <strong>Lambda expressions</strong> and <strong>method references</strong>, which added new forms of dynamic dispatch. For example, when using a lambda expression, the JVM must choose the correct method implementation based on the actual type of the lambda, which is a form of dynamic dispatch.</p>
+  </li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.util.function.Function</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Main</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Function</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">function</span> <span class="o">=</span> <span class="o">(</span><span class="n">s</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">s</span><span class="o">.</span><span class="na">toUpperCase</span><span class="o">();</span> <span class="c1">// Dynamic dispatch</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">function</span><span class="o">.</span><span class="na">apply</span><span class="o">(</span><span class="s">"hello"</span><span class="o">));</span> <span class="c1">// Outputs "HELLO"</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="5-summary">5. Summary</h2>
+<p>The Java method invocation process is determined by <strong>resolution, static dispatch, and dynamic dispatch</strong>.</p>
+
+<p>Resolution happens at compile time, static dispatch depends on static types, and dynamic dispatch relies on actual object types at runtime.</p>
+
+<p>With advancements in Java technologies, particularly JVM optimizations and new features like lambda expressions, method invocation performance and flexibility have significantly improved.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

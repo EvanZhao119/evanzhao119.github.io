@@ -1,0 +1,74 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="rag-vs-fine-tuning-what-is-the-difference">RAG vs Fine-Tuning: What Is the Difference?</h1>
+
+<p>When prompt engineering is no longer enough, an LLM application may need access to information the model has never seen or require the model to behave consistently for a particular task.</p>
+
+<p><strong>RAG</strong> and <strong>fine-tuning</strong> are two common approaches, but they solve different problems.</p>
+
+<p>The core distinction is:</p>
+
+<p><strong>RAG changes what information the model can access.</strong></p>
+
+<p><strong>Fine-tuning changes how the model behaves.</strong></p>
+
+<h2 id="what-the-article-covers">What the Article Covers</h2>
+
+<ul>
+  <li>The core difference between RAG and fine-tuning</li>
+  <li>How RAG provides an LLM with missing external knowledge</li>
+  <li>Why RAG is useful for private or frequently updated information</li>
+  <li>How fine-tuning teaches a model task-specific patterns</li>
+  <li>Why labeled examples are important for fine-tuning</li>
+  <li>How to identify whether an application is missing knowledge or behavior</li>
+  <li>Why some real-world systems use both approaches</li>
+</ul>
+
+<p>For example, an internal company assistant may need to answer questions about the latest reimbursement policy. Because the base model does not know that private and current information, RAG can retrieve the appropriate policy document and provide it to the model when needed.</p>
+
+<p>Fine-tuning addresses a different requirement. If a model needs to perform a specialized task consistently, it can learn the required patterns from many examples. A system that classifies clinical notes, for instance, could be fine-tuned using examples that have been written and labeled by medical experts.</p>
+
+<p>A simple decision rule is:</p>
+
+<pre>
+Is the model missing knowledge?
+              ↓
+             RAG
+
+Does the model need to learn a behavior
+or a specific task pattern?
+              ↓
+         Fine-Tuning
+</pre>
+
+<p>The two approaches are not mutually exclusive. A system can use RAG to supply relevant information and fine-tuning to improve how the model performs a particular task.</p>
+
+<p><a href="https://macstuforum.top/d/27-rag-vs-fine-tuning-what-is-the-difference">Read the full article and join the discussion →</a></p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

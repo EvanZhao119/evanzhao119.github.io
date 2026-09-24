@@ -1,0 +1,191 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="java-jni-optimization-guide-improve-native-code-performance-with-examples">Java JNI Optimization Guide: Improve Native Code Performance with Examples</h1>
+
+<blockquote>
+  <p>We’ll walk through what JNI (Java Native Interface) is, why it’s both powerful and tricky, and how to use it efficiently. Along the way, I’ll show you some bits of code examples to demonstrate both bad and optimized JNI usage.</p>
+</blockquote>
+
+<h2 id="1-what-is-jni">1. What is JNI?</h2>
+
+<p>JNI (Java Native Interface) is the bridge between Java and native code (usually C or C++).</p>
+
+<p>It allows Java applications to call into high-performance native libraries, GPU APIs, or OS-level functions that aren’t directly accessible from Java.</p>
+
+<ul>
+  <li><strong>Pros</strong>
+    <ul>
+      <li>Access to high-performance native libraries</li>
+      <li>Direct access to low-level system resources</li>
+      <li>Better raw performance in compute-intensive tasks</li>
+    </ul>
+  </li>
+  <li><strong>Cons</strong>
+    <ul>
+      <li><strong>High overhead</strong>: every call crosses the Java and Native boundary</li>
+      <li><strong>Manual memory management</strong>: risk of leaks or crashes</li>
+      <li><strong>Poor portability</strong>: you may need to recompile for each platform</li>
+      <li><strong>Harder debugging</strong>: native crashes are less transparent</li>
+    </ul>
+  </li>
+</ul>
+
+<p>Rule of thumb: <strong>don’t overuse JNI</strong>. Use it only where performance really matters.</p>
+
+<hr />
+
+<h2 id="2-five-key-ideas-for-optimizing-jni-calls">2. Five Key Ideas for Optimizing JNI Calls</h2>
+
+<h3 id="1-reduce-the-number-of-jni-calls">1. <strong>Reduce the number of JNI calls</strong></h3>
+<ul>
+  <li>Instead of calling native code for each single element, pass the entire array and handle it in one call</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">JNIDemo</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kd">native</span> <span class="kt">int</span> <span class="nf">square</span><span class="o">(</span><span class="kt">int</span> <span class="n">x</span><span class="o">);</span> <span class="c1">// bad examples</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kd">native</span> <span class="kt">int</span> <span class="nf">sumOfSquares</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">);</span> <span class="c1">// good examples</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="2-avoid-unnecessary-data-copying">2. <strong>Avoid unnecessary data copying</strong></h3>
+<ul>
+  <li>Use <code class="language-plaintext highlighter-rouge">DirectByteBuffer</code> for zero-copy memory access</li>
+  <li>Or use <code class="language-plaintext highlighter-rouge">GetPrimitiveArrayCritical</code> / <code class="language-plaintext highlighter-rouge">ReleasePrimitiveArrayCritical</code> carefully</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">JNIDemoBuffer</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kd">native</span> <span class="kt">long</span> <span class="nf">sumOfSquaresBuffer</span><span class="o">(</span><span class="nc">ByteBuffer</span> <span class="n">buf</span><span class="o">,</span> <span class="kt">int</span> <span class="n">len</span><span class="o">);</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="c1">// Allocate off-heap memory (not in Java heap)</span>
+        <span class="nc">ByteBuffer</span> <span class="n">buf</span> <span class="o">=</span> <span class="nc">ByteBuffer</span><span class="o">.</span><span class="na">allocateDirect</span><span class="o">(</span><span class="n">n</span> <span class="o">*</span> <span class="mi">4</span><span class="o">);</span>
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="n">buf</span><span class="o">.</span><span class="na">putInt</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+        <span class="n">buf</span><span class="o">.</span><span class="na">flip</span><span class="o">();</span>
+
+        <span class="kt">long</span> <span class="n">sum</span> <span class="o">=</span> <span class="n">sumOfSquaresBuffer</span><span class="o">(</span><span class="n">buf</span><span class="o">,</span> <span class="n">n</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="3-optimize-string-handling">3. <strong>Optimize string handling</strong></h3>
+<ul>
+  <li>Avoid frequent <code class="language-plaintext highlighter-rouge">GetStringUTFChars</code> (creates copies)</li>
+  <li>Prefer <code class="language-plaintext highlighter-rouge">GetStringUTFRegion</code> for substring access</li>
+</ul>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">JNIEXPORT</span> <span class="kt">void</span> <span class="n">JNICALL</span> <span class="nf">Java_JNIDemoString_printSubstring</span>
+  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jclass</span> <span class="n">cls</span><span class="p">,</span> <span class="n">jstring</span> <span class="n">input</span><span class="p">,</span> <span class="n">jint</span> <span class="n">start</span><span class="p">,</span> <span class="n">jint</span> <span class="n">len</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="mi">64</span><span class="p">];</span>
+    <span class="c1">// Directly copy the substring [start, start+len) into buf</span>
+    <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">GetStringUTFRegion</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">input</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">len</span><span class="p">,</span> <span class="n">buf</span><span class="p">);</span>
+
+    <span class="n">buf</span><span class="p">[</span><span class="n">len</span><span class="p">]</span> <span class="o">=</span> <span class="sc">'\0'</span><span class="p">;</span> <span class="c1">// Null-terminate the string</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="4-minimize-temporary-object-allocations">4. <strong>Minimize temporary object allocations</strong></h3>
+<ul>
+  <li>Create objects on the Java side when possible</li>
+  <li>Cache <code class="language-plaintext highlighter-rouge">methodID</code> / <code class="language-plaintext highlighter-rouge">fieldID</code> instead of looking them up repeatedly</li>
+</ul>
+
+<h3 id="5-cache-and-static-binding">5. <strong>Cache and static binding</strong></h3>
+<ul>
+  <li>Use <code class="language-plaintext highlighter-rouge">RegisterNatives</code> to pre-register methods</li>
+  <li>Use <code class="language-plaintext highlighter-rouge">static native</code> methods to skip virtual dispatch</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">JNIDemoCache</span> <span class="o">{</span>
+    <span class="c1">// Use static native method to avoid virtual dispatch</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kd">native</span> <span class="kt">void</span> <span class="nf">callCached</span><span class="o">();</span>
+
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">sayHello</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Hello from Java instance method!"</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Global variables to cache methodID and class reference</span>
+<span class="k">static</span> <span class="n">jmethodID</span> <span class="n">mid_sayHello</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="k">static</span> <span class="n">jclass</span> <span class="n">cls_cache</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+
+<span class="n">JNIEXPORT</span> <span class="kt">void</span> <span class="n">JNICALL</span> <span class="nf">Java_JNIDemoCache_callCached</span>
+  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jclass</span> <span class="n">cls</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// Allocate an object without calling its constructor</span>
+    <span class="n">jobject</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">AllocObject</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">cls_cache</span><span class="p">);</span>
+
+    <span class="c1">// Call the cached Java method "sayHello"</span>
+    <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">CallVoidMethod</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">mid_sayHello</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="c1">// Cache methodID and class reference when the library is loaded</span>
+<span class="n">JNIEXPORT</span> <span class="n">jint</span> <span class="n">JNICALL</span> <span class="nf">JNI_OnLoad</span><span class="p">(</span><span class="n">JavaVM</span> <span class="o">*</span><span class="n">vm</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">reserved</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">;</span>
+    <span class="p">(</span><span class="o">*</span><span class="n">vm</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">GetEnv</span><span class="p">(</span><span class="n">vm</span><span class="p">,</span> <span class="p">(</span><span class="kt">void</span><span class="o">**</span><span class="p">)</span><span class="o">&amp;</span><span class="n">env</span><span class="p">,</span> <span class="n">JNI_VERSION_1_8</span><span class="p">);</span>
+
+    <span class="c1">// Find the Java class and create a global reference</span>
+    <span class="n">jclass</span> <span class="n">localCls</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">FindClass</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="s">"JNIDemoCache"</span><span class="p">);</span>
+    <span class="n">cls_cache</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">NewGlobalRef</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">localCls</span><span class="p">);</span>
+
+    <span class="c1">// Cache the methodID of "sayHello"</span>
+    <span class="n">mid_sayHello</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">GetMethodID</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">cls_cache</span><span class="p">,</span> <span class="s">"sayHello"</span><span class="p">,</span> <span class="s">"()V"</span><span class="p">);</span>
+
+    <span class="c1">// Return the JNI version</span>
+    <span class="k">return</span> <span class="n">JNI_VERSION_1_8</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="3-whats-next">3. What’s Next?</h2>
+<p>JNI is powerful but tricky. Modern JVMs are introducing safer alternatives.</p>
+
+<ul>
+  <li><a href="https://openjdk.org/projects/panama/">Project Panama</a></li>
+  <li><a href="https://openjdk.org/jeps/454">JEP 454: Foreign Function &amp; Memory API</a> (stable since Java 22)</li>
+</ul>
+
+<p>These new APIs aim to replace JNI with a safer, more ergonomic, and more performant way to call native code.</p>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+<ul>
+  <li><a href="https://docs.oracle.com/javase/8/docs/technotes/guides/jni/">Java Native Interface (JNI) Specification</a></li>
+  <li><a href="https://openjdk.org/jeps/454">JEP 454: Foreign Function &amp; Memory API</a></li>
+  <li><a href="https://openjdk.org/projects/panama/">Project Panama: Interfacing with Native Code</a></li>
+  <li><a href="https://docs.oracle.com/javase/8/docs/technotes/guides/vm/performance-enhancements-7.html">Java Performance Tuning Guide</a></li>
+  <li>Related post: <a href="/java/2025/09/09/java-21-virtual-threads-explained-project-loom.html">Java 21 Feature: Virtual Threads Explained with Examples - Project Loom Guide</a></li>
+  <li>Related post: <a href="/concurrency/2025/09/12/java21-virtual-threads-vs-fixedthreadpool.html">Java 21 Virtual Threads vs FixedThreadPool: Performance Comparison with 10,000 Tasks</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

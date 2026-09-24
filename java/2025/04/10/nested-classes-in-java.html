@@ -1,0 +1,178 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="introduction-to-nested-classes-in-java">Introduction to Nested Classes in Java</h1>
+
+<p>In Java, <strong>nested classes</strong> are classes defined within the body of another class. This feature is primarily used to logically group classes that are only relevant to their enclosing class, thereby improving encapsulation and code clarity. <strong>Nested classes are commonly used when one class is tightly bound to another and is not intended to be used independently.</strong></p>
+
+<p>There are <strong>four main types of nested classes</strong> in Java: <strong>Static Nested Classes, Non-static Nested Classes (Inner Classes), Local Classes and Anonymous Classes.</strong></p>
+
+<h2 id="1-static-nested-classes">1. Static Nested Classes</h2>
+<p>These are defined with the <code class="language-plaintext highlighter-rouge">static</code> keyword and do not have access to instance variables or methods of the enclosing class. They are used when the nested class does not need a reference to the outer class. Static nested classes behave much like regular top-level classes but are scoped within their outer class.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//Define a Static Nested Class</span>
+<span class="kd">class</span> <span class="nc">Outer</span> <span class="o">{</span>
+    <span class="kd">static</span> <span class="kd">class</span> <span class="nc">StaticNested</span> <span class="o">{</span>
+        <span class="kt">void</span> <span class="nf">display</span><span class="o">()</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Inside static nested class"</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+<span class="c1">//Create an Instance of a Static Nested Class</span>
+<span class="nc">Outer</span><span class="o">.</span><span class="na">StaticNested</span> <span class="n">nested</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Outer</span><span class="o">.</span><span class="na">StaticNested</span><span class="o">();</span>
+<span class="n">nested</span><span class="o">.</span><span class="na">display</span><span class="o">();</span>
+</code></pre></div></div>
+
+<h2 id="2-non-static-nested-classes-inner-classes">2. Non-static Nested Classes (Inner Classes)</h2>
+<p>These classes have access to all members (including private) of their enclosing class. They are associated with an instance of the outer class and can be used when the nested class logically requires access to the outer class’s members.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//Define a Non-static (Inner) Class</span>
+<span class="kd">class</span> <span class="nc">Outer</span> <span class="o">{</span>
+    <span class="kd">class</span> <span class="nc">Inner</span> <span class="o">{</span>
+        <span class="kt">void</span> <span class="nf">show</span><span class="o">()</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Inside inner class"</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+<span class="c1">//Instantiate an Inner Class</span>
+<span class="nc">Outer</span> <span class="n">outer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Outer</span><span class="o">();</span>
+<span class="nc">Outer</span><span class="o">.</span><span class="na">Inner</span> <span class="n">inner</span> <span class="o">=</span> <span class="n">outer</span><span class="o">.</span><span class="na">new</span> <span class="nf">Inner</span><span class="o">();</span>
+<span class="n">inner</span><span class="o">.</span><span class="na">show</span><span class="o">();</span>
+</code></pre></div></div>
+
+<h2 id="3-local-classes">3. Local Classes</h2>
+<p>These are inner classes declared within a method or a block of code. They are only visible within the scope they are defined in and are often used for simple, short-lived tasks, such as implementing a listener or performing calculations.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LocalClassExample</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">printMessage</span><span class="o">()</span> <span class="o">{</span>
+        <span class="kd">class</span> <span class="nc">LocalPrinter</span> <span class="o">{</span>
+            <span class="kt">void</span> <span class="nf">print</span><span class="o">()</span> <span class="o">{</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Hello from the Local Class!"</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+
+        <span class="nc">LocalPrinter</span> <span class="n">printer</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">LocalPrinter</span><span class="o">();</span>
+        <span class="n">printer</span><span class="o">.</span><span class="na">print</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">LocalClassExample</span> <span class="n">example</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">LocalClassExample</span><span class="o">();</span>
+        <span class="n">example</span><span class="o">.</span><span class="na">printMessage</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="4-anonymous-classes">4. Anonymous Classes</h2>
+<p>These are local classes without a name, usually used to instantiate objects with certain behaviors, typically for interfaces or abstract classes. They are often passed as arguments to methods or used in GUI event handling.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">AnonymousClassExample</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Runnable</span> <span class="n">task</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Runnable</span><span class="o">()</span> <span class="o">{</span>
+            <span class="nd">@Override</span>
+            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Running from Anonymous Class!"</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">};</span>
+
+        <span class="nc">Thread</span> <span class="n">thread</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Thread</span><span class="o">(</span><span class="n">task</span><span class="o">);</span>
+        <span class="n">thread</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="5-best-practices">5. Best Practices</h2>
+
+<ul>
+  <li>Use <strong>static nested classes</strong> when the nested class does not need to access instance members of the outer class.</li>
+  <li>Use <strong>inner classes</strong> when the nested class requires access to the outer class’s members.</li>
+  <li>Use <strong>local or anonymous classes</strong> for one-time use cases or for quick, localized implementations like event listeners or simple threads.</li>
+  <li><strong>Avoid overusing nested classes, as excessive nesting can make code harder to understand and maintain.</strong></li>
+</ul>
+
+<h2 id="6-define-my-own-map-structure-inspired-by-javautilhashmap">6. Define My Own Map Structure Inspired by <code class="language-plaintext highlighter-rouge">java.util.HashMap</code></h2>
+<p>In this example, I define a simplified custom map structure that mimics the basic behavior of Java’s <code class="language-plaintext highlighter-rouge">HashMap</code>. I use <strong>a static nested class</strong> called <code class="language-plaintext highlighter-rouge">Entry</code> to represent key-value pairs, just like <code class="language-plaintext highlighter-rouge">HashMap</code> uses its internal <code class="language-plaintext highlighter-rouge">Node&lt;K,V&gt;</code> class.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">Entry&lt;K, V&gt;</code> class is used to hold key-value pairs and is defined as a static nested class because it does not need access to the outer <code class="language-plaintext highlighter-rouge">MySimpleMap</code> instance.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.util.ArrayList</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">MySimpleMap</span><span class="o">&lt;</span><span class="no">K</span><span class="o">,</span> <span class="no">V</span><span class="o">&gt;</span> <span class="o">{</span>
+
+    <span class="c1">// Static nested class representing a key-value pair (Entry)</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">Entry</span><span class="o">&lt;</span><span class="no">K</span><span class="o">,</span> <span class="no">V</span><span class="o">&gt;</span> <span class="o">{</span>
+        <span class="no">K</span> <span class="n">key</span><span class="o">;</span>
+        <span class="no">V</span> <span class="n">value</span><span class="o">;</span>
+
+        <span class="nc">Entry</span><span class="o">(</span><span class="no">K</span> <span class="n">key</span><span class="o">,</span> <span class="no">V</span> <span class="n">value</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">key</span> <span class="o">=</span> <span class="n">key</span><span class="o">;</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="c1">// List to store all entries</span>
+    <span class="kd">private</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Entry</span><span class="o">&lt;</span><span class="no">K</span><span class="o">,</span> <span class="no">V</span><span class="o">&gt;&gt;</span> <span class="n">entries</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="nf">MySimpleMap</span><span class="o">()</span> <span class="o">{</span>
+        <span class="n">entries</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;();</span>
+    <span class="o">}</span>
+
+    <span class="c1">// Method to add or update a key-value pair</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">put</span><span class="o">(</span><span class="no">K</span> <span class="n">key</span><span class="o">,</span> <span class="no">V</span> <span class="n">value</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">for</span> <span class="o">(</span><span class="nc">Entry</span><span class="o">&lt;</span><span class="no">K</span><span class="o">,</span> <span class="no">V</span><span class="o">&gt;</span> <span class="n">entry</span> <span class="o">:</span> <span class="n">entries</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">entry</span><span class="o">.</span><span class="na">key</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">key</span><span class="o">))</span> <span class="o">{</span>
+                <span class="n">entry</span><span class="o">.</span><span class="na">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">;</span> <span class="c1">// Update value if key already exists</span>
+                <span class="k">return</span><span class="o">;</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="n">entries</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">Entry</span><span class="o">&lt;&gt;(</span><span class="n">key</span><span class="o">,</span> <span class="n">value</span><span class="o">));</span> <span class="c1">// Otherwise, add new entry</span>
+    <span class="o">}</span>
+
+    <span class="c1">// Method to retrieve the value by key</span>
+    <span class="kd">public</span> <span class="no">V</span> <span class="nf">get</span><span class="o">(</span><span class="no">K</span> <span class="n">key</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">for</span> <span class="o">(</span><span class="nc">Entry</span><span class="o">&lt;</span><span class="no">K</span><span class="o">,</span> <span class="no">V</span><span class="o">&gt;</span> <span class="n">entry</span> <span class="o">:</span> <span class="n">entries</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">entry</span><span class="o">.</span><span class="na">key</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">key</span><span class="o">))</span> <span class="o">{</span>
+                <span class="k">return</span> <span class="n">entry</span><span class="o">.</span><span class="na">value</span><span class="o">;</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="kc">null</span><span class="o">;</span> <span class="c1">// Return null if key is not found</span>
+    <span class="o">}</span>
+
+    <span class="c1">// Check if a key exists in the map</span>
+    <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">containsKey</span><span class="o">(</span><span class="no">K</span> <span class="n">key</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">for</span> <span class="o">(</span><span class="nc">Entry</span><span class="o">&lt;</span><span class="no">K</span><span class="o">,</span> <span class="no">V</span><span class="o">&gt;</span> <span class="n">entry</span> <span class="o">:</span> <span class="n">entries</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">entry</span><span class="o">.</span><span class="na">key</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">key</span><span class="o">))</span> <span class="o">{</span>
+                <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

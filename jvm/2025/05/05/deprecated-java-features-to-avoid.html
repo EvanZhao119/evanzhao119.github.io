@@ -1,0 +1,98 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="once-popular-now-deprecated-java-features-you-should-avoid">Once Popular, Now Deprecated: Java Features You Should Avoid</h1>
+<p>As Java evolves, some features that were once widely used have now been deprecated or are no longer recommended.</p>
+
+<p>This is a natural part of the language’s progression, as newer, safer, and more efficient alternatives emerge.</p>
+
+<h2 id="1-threadstop-method">1. <strong><code class="language-plaintext highlighter-rouge">Thread.stop()</code> Method</strong></h2>
+<ul>
+  <li>
+    <p><strong>Explanation</strong>: The <code class="language-plaintext highlighter-rouge">Thread.stop()</code> method was used to stop a thread’s execution. However, it is unsafe as it can terminate a thread at an inappropriate time, leading to resource leakage or data inconsistency. Java 9 marked this method as deprecated, and it is no longer recommended for use.</p>
+  </li>
+  <li>
+    <p><strong>Recommendation</strong>: Instead of using <code class="language-plaintext highlighter-rouge">Thread.stop()</code>, consider using <code class="language-plaintext highlighter-rouge">Thread.interrupt()</code> or a flag to safely signal a thread to stop its execution.</p>
+  </li>
+</ul>
+
+<h2 id="2-threadsuspend-and-threadresume-methods">2. <strong><code class="language-plaintext highlighter-rouge">Thread.suspend()</code> and <code class="language-plaintext highlighter-rouge">Thread.resume()</code> Methods</strong></h2>
+<ul>
+  <li>
+    <p><strong>Explanation</strong>: The <code class="language-plaintext highlighter-rouge">Thread.suspend()</code> and <code class="language-plaintext highlighter-rouge">Thread.resume()</code> methods were used to pause and resume threads, but they introduced serious safety issues, such as causing deadlocks and leaving shared data in inconsistent states. These methods have been deprecated and are no longer recommended.</p>
+  </li>
+  <li>
+    <p><strong>Recommendation</strong>: For controlling thread execution, use synchronized blocks, <code class="language-plaintext highlighter-rouge">wait()</code>, and <code class="language-plaintext highlighter-rouge">notify()</code>, or higher-level concurrency utilities like <code class="language-plaintext highlighter-rouge">ExecutorService</code>.</p>
+  </li>
+</ul>
+
+<h2 id="3-finalize-method">3. <strong><code class="language-plaintext highlighter-rouge">finalize()</code> Method</strong></h2>
+<ul>
+  <li>
+    <p><strong>Explanation</strong>: The <code class="language-plaintext highlighter-rouge">finalize()</code> method was intended to allow objects to clean up resources before garbage collection. However, it is unreliable because its execution time is uncontrollable, leading to potential delays in resource cleanup, memory leaks, and other issues. Java 9 recommends using <code class="language-plaintext highlighter-rouge">try-with-resources</code> and the <code class="language-plaintext highlighter-rouge">AutoCloseable</code> interface as more reliable alternatives.</p>
+  </li>
+  <li>
+    <p><strong>Recommendation</strong>: Use <code class="language-plaintext highlighter-rouge">try-with-resources</code> for resource management and explicitly define cleanup methods, such as <code class="language-plaintext highlighter-rouge">close()</code>, for resource management.</p>
+  </li>
+</ul>
+
+<h2 id="4-vector-and-stack-classes">4. <strong><code class="language-plaintext highlighter-rouge">Vector</code> and <code class="language-plaintext highlighter-rouge">Stack</code> Classes</strong></h2>
+<ul>
+  <li>
+    <p><strong>Explanation</strong>: The <code class="language-plaintext highlighter-rouge">Vector</code> and <code class="language-plaintext highlighter-rouge">Stack</code> classes are legacy classes that were part of the original Java API. While they are still available, they are not recommended for modern Java development due to their synchronization overhead and limited flexibility. In particular, <code class="language-plaintext highlighter-rouge">Stack</code> is no longer considered the best choice for stack-like behavior, especially in concurrent environments.</p>
+  </li>
+  <li>
+    <p><strong>Recommendation</strong>: Use <code class="language-plaintext highlighter-rouge">ArrayList</code> for general-purpose collections and <code class="language-plaintext highlighter-rouge">Deque</code> for stack-like functionality, as these classes offer better performance and flexibility.</p>
+  </li>
+</ul>
+
+<h2 id="5-hashtable-class">5. <strong><code class="language-plaintext highlighter-rouge">Hashtable</code> Class</strong></h2>
+<ul>
+  <li>
+    <p><strong>Explanation</strong>: The <code class="language-plaintext highlighter-rouge">Hashtable</code> class was a commonly used implementation of a hash map. However, it has been replaced by <code class="language-plaintext highlighter-rouge">HashMap</code>, which is more flexible and better suited for modern development. <code class="language-plaintext highlighter-rouge">Hashtable</code> does not support <code class="language-plaintext highlighter-rouge">null</code> keys or values, and its methods are synchronized, which can lead to performance bottlenecks in multi-threaded environments.</p>
+  </li>
+  <li>
+    <p><strong>Recommendation</strong>: Use <code class="language-plaintext highlighter-rouge">HashMap</code> for more flexible key-value pair storage, as it allows <code class="language-plaintext highlighter-rouge">null</code> keys and values and does not have the synchronization overhead.</p>
+  </li>
+</ul>
+
+<h2 id="6-old-javautildate-and-javatextdateformat-classes">6. <strong>Old <code class="language-plaintext highlighter-rouge">java.util.Date</code> and <code class="language-plaintext highlighter-rouge">java.text.DateFormat</code> Classes</strong></h2>
+<ul>
+  <li>
+    <p><strong>Explanation</strong>: The <code class="language-plaintext highlighter-rouge">java.util.Date</code> and <code class="language-plaintext highlighter-rouge">java.text.DateFormat</code> classes have several design flaws, such as mutable state and difficulty in handling time zones. These classes have been replaced by the more modern <code class="language-plaintext highlighter-rouge">java.time</code> package introduced in Java 8. The new <code class="language-plaintext highlighter-rouge">LocalDate</code>, <code class="language-plaintext highlighter-rouge">LocalTime</code>, and <code class="language-plaintext highlighter-rouge">LocalDateTime</code> classes provide clearer, more reliable, and immutable APIs for working with dates and times.</p>
+  </li>
+  <li>
+    <p><strong>Recommendation</strong>: Use the new <code class="language-plaintext highlighter-rouge">java.time</code> classes, such as <code class="language-plaintext highlighter-rouge">LocalDate</code>, <code class="language-plaintext highlighter-rouge">LocalTime</code>, and <code class="language-plaintext highlighter-rouge">LocalDateTime</code>, for more accurate, thread-safe, and flexible date and time management.</p>
+  </li>
+</ul>
+
+<p>With Java continually advancing, it’s important to stay aware of these deprecated features, ensuring your code remains current and aligned with best practices.</p>
+
+<p><strong>Which of these deprecated features have you used in your past Java projects?</strong></p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

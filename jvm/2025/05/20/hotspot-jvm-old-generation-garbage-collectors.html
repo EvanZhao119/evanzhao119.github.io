@@ -1,0 +1,98 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="hotspot-jvm---old-generation-garbage-collectors">HotSpot JVM - Old Generation Garbage Collectors</h1>
+
+<p>In the HotSpot JVM, the <strong>old generation</strong> is where long-lived objects reside. Garbage collection in this space is generally more expensive and less frequent than in the young generation.</p>
+
+<blockquote>
+  <p>Many old generation collectors listed below are now deprecated or legacy. While they are useful for foundational learning, <strong>modern applications should prefer collectors like G1, ZGC, or Shenandoah</strong>, which manage both young and old generations efficiently.</p>
+</blockquote>
+
+<h2 id="serial-old-collector">Serial Old Collector</h2>
+<ul>
+  <li>The old generation version of the <strong>Serial collector</strong>.</li>
+  <li><strong>Single-threaded</strong> garbage collection.</li>
+  <li>Uses the <strong>Mark-Compact algorithm</strong> (Mark-Sweep-Compact).</li>
+  <li>Causes a <strong>Stop-The-World (STW)</strong> pause for the entire collection process.</li>
+  <li>Suitable for single-core or memory-constrained environments.</li>
+</ul>
+
+<blockquote>
+  <p>Still available but only recommended for testing, educational purposes, or very small applications.</p>
+</blockquote>
+
+<h2 id="parallel-old-collector">Parallel Old Collector</h2>
+<ul>
+  <li>The old generation counterpart of the <strong>Parallel Scavenge</strong> collector.</li>
+  <li>A <strong>multi-threaded collector</strong>.</li>
+  <li>Also uses the <strong>Mark-Compact algorithm</strong>.</li>
+  <li>Causes <strong>Stop-The-World (STW)</strong> pauses during collection.</li>
+  <li>Optimized for <strong>throughput</strong>, making it ideal for batch processing or CPU-constrained environments.</li>
+</ul>
+
+<blockquote>
+  <p>Best used in combination with <strong>Parallel Scavenge</strong> for <strong>throughput-first</strong> applications.</p>
+</blockquote>
+
+<h2 id="cms-concurrent-mark-sweep-collector">CMS (Concurrent Mark Sweep) Collector</h2>
+<ul>
+  <li>A low-pause collector designed to <strong>minimize GC pause times</strong>.</li>
+  <li>Uses the <strong>Mark-Sweep algorithm</strong> and includes four phases:
+    <ol>
+      <li><strong>Initial Mark (STW)</strong>: Marks objects directly reachable from GC Roots. Requires all application threads to pause.</li>
+      <li><strong>Concurrent Mark</strong>: Traverses the object graph starting from GC Roots. Runs <strong>concurrently</strong> with application threads.</li>
+      <li><strong>Remark (STW)</strong>: Fixes any changes made by the application during the concurrent phase. Also a pause phase.</li>
+      <li><strong>Concurrent Sweep</strong>: Reclaims memory of unreachable objects, allowing <strong>concurrent execution</strong> with application threads.</li>
+    </ol>
+  </li>
+  <li>Advantages:
+    <ul>
+      <li><strong>Low pause times</strong>: Only the initial and remark phases require pausing application threads.</li>
+      <li><strong>Concurrent marking and sweeping</strong> reduces overall GC latency.</li>
+    </ul>
+  </li>
+  <li>Disadvantages
+    <ul>
+      <li><strong>CPU-intensive</strong>: Concurrent threads compete with application threads.</li>
+      <li><strong>Floating garbage</strong>: Objects allocated during the concurrent mark may not be collected in the current cycle.</li>
+      <li><strong>Concurrent Mode Failure</strong>: If memory is exhausted before GC completes, a fallback <strong>Serial Old GC</strong> is triggered, causing a full STW pause.</li>
+      <li><strong>Fragmentation</strong>: Since memory is not compacted, CMS can lead to <strong>memory fragmentation</strong> over time.</li>
+    </ul>
+  </li>
+</ul>
+
+<blockquote>
+  <p><strong>Deprecated Notice:</strong><br />
+<strong>CMS was officially removed in JDK 14</strong>.<br />
+Modern applications should use <strong>G1 GC</strong>, <strong>ZGC</strong>, or <strong>Shenandoah</strong> as alternatives for low-pause requirements.</p>
+</blockquote>
+
+<p>Understanding Serial, Parallel, and CMS collectors helps build a strong foundation, but when working on real-world Java systems today, it’s recommended to prioritize <strong>G1, ZGC, or Shenandoah</strong> for better performance and scalability.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

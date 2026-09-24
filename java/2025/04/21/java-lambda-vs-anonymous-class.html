@@ -1,0 +1,159 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="comparison-java-lambda-expressions-vs-anonymous-interface-implementations">Comparison: Java Lambda Expressions vs. Anonymous Interface Implementations</h1>
+
+<h2 id="1-comparison-summary">1. Comparison Summary</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>Lambda Expression</th>
+      <th>Anonymous Interface Implementation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Syntax</td>
+      <td>More concise</td>
+      <td>Verbose</td>
+    </tr>
+    <tr>
+      <td>Readability</td>
+      <td>Clearer, especially for functional interfaces</td>
+      <td>Less readable with nested logic</td>
+    </tr>
+    <tr>
+      <td>Scope of <code class="language-plaintext highlighter-rouge">this</code></td>
+      <td>Refers to the outer class instance</td>
+      <td>Refers to the anonymous inner class instance</td>
+    </tr>
+    <tr>
+      <td>Applicable To</td>
+      <td>Only functional interfaces (one abstract method)</td>
+      <td>Any interface or class</td>
+    </tr>
+    <tr>
+      <td>Compilation</td>
+      <td>Compiles to a private static method</td>
+      <td>Compiles to a separate .class file</td>
+    </tr>
+    <tr>
+      <td>Performance</td>
+      <td>More efficient (compile-time optimization)</td>
+      <td>Slightly slower (runtime instantiation)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="2-example-runnable-interface">2. Example: <code class="language-plaintext highlighter-rouge">Runnable</code> Interface</h2>
+
+<h3 id="1-using-anonymous-inner-class">1. Using Anonymous Inner Class</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">RunnableExample</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Runnable</span> <span class="n">runnable</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Runnable</span><span class="o">()</span> <span class="o">{</span>
+            <span class="nd">@Override</span>
+            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Running from Anonymous Class"</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">};</span>
+
+        <span class="nc">Thread</span> <span class="n">thread</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Thread</span><span class="o">(</span><span class="n">runnable</span><span class="o">);</span>
+        <span class="n">thread</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="2-using-lambda-expression">2. Using Lambda Expression</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">RunnableExample</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Runnable</span> <span class="n">runnable</span> <span class="o">=</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Running from Lambda"</span><span class="o">);</span>
+
+        <span class="nc">Thread</span> <span class="n">thread</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Thread</span><span class="o">(</span><span class="n">runnable</span><span class="o">);</span>
+        <span class="n">thread</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="3-most-concise-form">3. Most Concise Form</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">RunnableExample</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">new</span> <span class="nf">Thread</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Running directly from Lambda"</span><span class="o">)).</span><span class="na">start</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="3-important-differences">3. Important Differences</h2>
+
+<h3 id="1-the-meaning-of-this">1. The Meaning of <code class="language-plaintext highlighter-rouge">this</code></h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Main</span> <span class="o">{</span>
+    <span class="nc">String</span> <span class="n">name</span> <span class="o">=</span> <span class="s">"OuterClass"</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">test</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">Runnable</span> <span class="n">anon</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Runnable</span><span class="o">()</span> <span class="o">{</span>
+            <span class="nc">String</span> <span class="n">name</span> <span class="o">=</span> <span class="s">"InnerClass"</span><span class="o">;</span>
+
+            <span class="nd">@Override</span>
+            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">name</span><span class="o">);</span> <span class="c1">// Refers to InnerClass</span>
+            <span class="o">}</span>
+        <span class="o">};</span>
+
+        <span class="nc">Runnable</span> <span class="n">lambda</span> <span class="o">=</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">name</span><span class="o">);</span> <span class="c1">// Refers to OuterClass</span>
+        <span class="o">};</span>
+
+        <span class="n">anon</span><span class="o">.</span><span class="na">run</span><span class="o">();</span>
+        <span class="n">lambda</span><span class="o">.</span><span class="na">run</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">new</span> <span class="nf">Main</span><span class="o">().</span><span class="na">test</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="2-functional-interface-limitation">2. Functional Interface Limitation</h3>
+
+<p>Lambda expressions only work with interfaces that contain <strong>exactly one abstract method</strong>.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">interface</span> <span class="nc">NotFunctional</span> <span class="o">{</span>
+    <span class="kt">void</span> <span class="nf">method1</span><span class="o">();</span>
+    <span class="kt">void</span> <span class="nf">method2</span><span class="o">();</span>
+<span class="o">}</span>
+
+<span class="c1">// This will cause an error:</span>
+<span class="c1">// NotFunctional nf = () -&gt; System.out.println("Invalid");</span>
+</code></pre></div></div>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

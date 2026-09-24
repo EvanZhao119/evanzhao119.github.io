@@ -1,0 +1,134 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="hotspot-jvm-non-generational-garbage-collectors---g1-gc-garbage-first-collector">HotSpot JVM Non-Generational Garbage Collectors - G1 GC (Garbage First Collector)</h1>
+
+<p>Modern garbage collectors like <strong>G1</strong>, <strong>Shenandoah</strong>, and <strong>ZGC</strong> are designed to address the challenges of large heaps, low-latency requirements, and scalability. Unlike traditional generational collectors, these collectors <strong>do not strictly separate the heap into young and old generations</strong>, but rather operate on <strong>region-based memory layouts</strong> for more flexibility and performance.</p>
+
+<blockquote>
+  <p><strong><em>Note</em></strong>: While G1 is still technically generational, its region-based and incremental nature blurs the line. Shenandoah and ZGC, however, are <strong>truly non-generational</strong>.</p>
+</blockquote>
+
+<h2 id="key-concepts">Key Concepts</h2>
+
+<ul>
+  <li><strong>Region-based memory layout</strong>: The Java heap is divided into many equally-sized regions.</li>
+  <li>Each <strong>Region</strong> is the <strong>smallest unit of collection</strong>. GC reclaims memory in <strong>region multiples</strong>, not full-heap sweeps.</li>
+  <li><strong>Prioritizes regions</strong> with the <strong>highest garbage-to-live ratio</strong> to maximize collection efficiency.</li>
+  <li><strong>Remembered sets (RSet)</strong> are maintained per region to track cross-region references.</li>
+  <li><strong>Humongous objects</strong> (larger than 50% of a region) are stored across multiple contiguous regions, collectively referred to as a Humongous area.</li>
+</ul>
+
+<blockquote>
+  <p>G1 aims to balance throughput and low pause times, making it the default collector since <strong>JDK 9</strong>.</p>
+</blockquote>
+
+<h2 id="gc-phases-in-g1">GC Phases in G1</h2>
+
+<ol>
+  <li><strong>Initial Mark</strong>
+    <ul>
+      <li>Marks objects directly reachable from GC Roots.</li>
+      <li><strong>Requires Stop-The-World (STW) pause</strong>.</li>
+    </ul>
+  </li>
+  <li><strong>Concurrent Mark</strong>
+    <ul>
+      <li>Traverses the heap graph to identify live objects.</li>
+      <li>Runs <strong>concurrently</strong> with application threads.</li>
+    </ul>
+  </li>
+  <li><strong>Final Mark (Remark)</strong>
+    <ul>
+      <li>Fixes changes made during concurrent marking.</li>
+      <li><strong>STW pause required</strong>.</li>
+    </ul>
+  </li>
+  <li><strong>Cleanup &amp; Evacuation</strong>
+    <ul>
+      <li>Calculates <strong>region-wise live data</strong> and selects high-garbage regions for evacuation.</li>
+      <li><strong>Moves live objects</strong> to empty regions and reclaims old ones.</li>
+      <li>Requires <strong>STW pause</strong>, but runs with <strong>multiple GC threads in parallel</strong>.</li>
+    </ul>
+  </li>
+</ol>
+
+<h2 id="comparison-with-cms">Comparison with CMS</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Aspect</th>
+      <th>G1 GC</th>
+      <th>CMS GC</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Memory Layout</td>
+      <td>Region-based</td>
+      <td>Contiguous old generation</td>
+    </tr>
+    <tr>
+      <td>Fragmentation</td>
+      <td>No fragmentation</td>
+      <td>Causes fragmentation</td>
+    </tr>
+    <tr>
+      <td>Compaction</td>
+      <td>Compacts live data</td>
+      <td>No compaction</td>
+    </tr>
+    <tr>
+      <td>Pause Time</td>
+      <td>Lower than CMS</td>
+      <td>Short but unpredictable</td>
+    </tr>
+    <tr>
+      <td>Memory Overhead</td>
+      <td>Higher (due to per-region RSet)</td>
+      <td>Lower</td>
+    </tr>
+    <tr>
+      <td>Concurrency Complexity</td>
+      <td>Higher</td>
+      <td>Moderate</td>
+    </tr>
+    <tr>
+      <td>Status</td>
+      <td>Active (Default in JDK 9+)</td>
+      <td>Removed (JDK 14+)</td>
+    </tr>
+  </tbody>
+</table>
+
+<blockquote>
+  <p>G1 is more suitable for <strong>large heaps</strong> and modern hardware, while <strong>CMS</strong> was better for <strong>smaller heaps</strong> but is now deprecated.</p>
+</blockquote>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

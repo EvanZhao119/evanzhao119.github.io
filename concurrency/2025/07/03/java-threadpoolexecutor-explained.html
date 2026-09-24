@@ -1,0 +1,280 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="the-secret-sauce-behind-threadpoolexecutor-in-java">The Secret Sauce Behind <code class="language-plaintext highlighter-rouge">ThreadPoolExecutor</code> in Java</h1>
+
+<h2 id="1-thread-pool-usage-example">1. Thread Pool Usage Example</h2>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="n">nThreads</span> <span class="o">=</span> <span class="mi">10</span><span class="o">;</span>
+<span class="nc">ExecutorService</span> <span class="n">exec</span> <span class="o">=</span> <span class="nc">Executors</span><span class="o">.</span><span class="na">newFixedThreadPool</span><span class="o">(</span><span class="n">nThreads</span><span class="o">);</span>
+<span class="nc">Runnable</span> <span class="n">task</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Runnable</span><span class="o">()</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+        <span class="c1">// do something</span>
+    <span class="o">}</span>
+<span class="o">};</span>
+<span class="n">exec</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="n">task</span><span class="o">);</span>
+</code></pre></div></div>
+
+<h3 id="explanation">Explanation</h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">Executors.newFixedThreadPool()</code> returns a <code class="language-plaintext highlighter-rouge">ThreadPoolExecutor</code> backed by a <code class="language-plaintext highlighter-rouge">LinkedBlockingQueue</code>.</li>
+  <li>Similarly, <code class="language-plaintext highlighter-rouge">Executors.newSingleThreadExecutor()</code> also uses <code class="language-plaintext highlighter-rouge">LinkedBlockingQueue</code>.</li>
+  <li>In contrast, <code class="language-plaintext highlighter-rouge">Executors.newCachedThreadPool()</code> uses a <code class="language-plaintext highlighter-rouge">SynchronousQueue</code> instead.</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="nc">ExecutorService</span> <span class="nf">newFixedThreadPool</span><span class="o">(</span><span class="kt">int</span> <span class="n">nThreads</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="nf">ThreadPoolExecutor</span><span class="o">(</span><span class="n">nThreads</span><span class="o">,</span> <span class="n">nThreads</span><span class="o">,</span>
+                                  <span class="mi">0L</span><span class="o">,</span> <span class="nc">TimeUnit</span><span class="o">.</span><span class="na">MILLISECONDS</span><span class="o">,</span>
+                                  <span class="k">new</span> <span class="nc">LinkedBlockingQueue</span><span class="o">&lt;</span><span class="nc">Runnable</span><span class="o">&gt;());</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="2-threadpoolexecutorexecute-workflow">2. <code class="language-plaintext highlighter-rouge">ThreadPoolExecutor.execute()</code> Workflow</h2>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kt">void</span> <span class="nf">execute</span><span class="o">(</span><span class="nc">Runnable</span> <span class="n">command</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">command</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="nf">NullPointerException</span><span class="o">();</span>
+    <span class="kt">int</span> <span class="n">c</span> <span class="o">=</span> <span class="n">ctl</span><span class="o">.</span><span class="na">get</span><span class="o">();</span>
+
+    <span class="c1">// Step ①: Create a new thread if below corePoolSize</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">workerCountOf</span><span class="o">(</span><span class="n">c</span><span class="o">)</span> <span class="o">&lt;</span> <span class="n">corePoolSize</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">addWorker</span><span class="o">(</span><span class="n">command</span><span class="o">,</span> <span class="kc">true</span><span class="o">))</span>
+            <span class="k">return</span><span class="o">;</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">ctl</span><span class="o">.</span><span class="na">get</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="c1">// Step ②: Try queuing the task</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">isRunning</span><span class="o">(</span><span class="n">c</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">workQueue</span><span class="o">.</span><span class="na">offer</span><span class="o">(</span><span class="n">command</span><span class="o">))</span> <span class="o">{</span>
+        <span class="kt">int</span> <span class="n">recheck</span> <span class="o">=</span> <span class="n">ctl</span><span class="o">.</span><span class="na">get</span><span class="o">();</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">isRunning</span><span class="o">(</span><span class="n">recheck</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">remove</span><span class="o">(</span><span class="n">command</span><span class="o">))</span>
+            <span class="n">reject</span><span class="o">(</span><span class="n">command</span><span class="o">);</span>
+        <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">workerCountOf</span><span class="o">(</span><span class="n">recheck</span><span class="o">)</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span>
+            <span class="n">addWorker</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="c1">// Step ③: Reject or attempt to add thread again</span>
+    <span class="k">else</span> <span class="nf">if</span> <span class="o">(!</span><span class="n">addWorker</span><span class="o">(</span><span class="n">command</span><span class="o">,</span> <span class="kc">false</span><span class="o">))</span>
+        <span class="n">reject</span><span class="o">(</span><span class="n">command</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="3-task-execution-with-addworker-and-workerrun">3. Task Execution with <code class="language-plaintext highlighter-rouge">addWorker()</code> and <code class="language-plaintext highlighter-rouge">Worker.run()</code></h2>
+<h3 id="workflow-summary">Workflow Summary</h3>
+<ol>
+  <li>The task is wrapped in a <code class="language-plaintext highlighter-rouge">Worker</code> object.</li>
+  <li>A thread is created from the <code class="language-plaintext highlighter-rouge">Worker</code>.</li>
+  <li>The thread is started and executes the task.
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Worker</span> <span class="n">w</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Worker</span><span class="o">(</span><span class="n">firstTask</span><span class="o">);</span> <span class="c1">// Wrap the task</span>
+<span class="kd">final</span> <span class="nc">Thread</span> <span class="n">t</span> <span class="o">=</span> <span class="n">w</span><span class="o">.</span><span class="na">thread</span><span class="o">;</span>
+<span class="n">mainLock</span><span class="o">.</span><span class="na">lock</span><span class="o">();</span> <span class="c1">// Ensure thread safety</span>
+<span class="o">...</span>
+<span class="n">t</span><span class="o">.</span><span class="na">start</span><span class="o">();</span> <span class="c1">// Launch the thread</span>
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h3 id="worker-constructor">Worker Constructor</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Worker</span><span class="o">(</span><span class="nc">Runnable</span> <span class="n">firstTask</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">setState</span><span class="o">(-</span><span class="mi">1</span><span class="o">);</span> 
+    <span class="k">this</span><span class="o">.</span><span class="na">firstTask</span> <span class="o">=</span> <span class="n">firstTask</span><span class="o">;</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">thread</span> <span class="o">=</span> <span class="n">getThreadFactory</span><span class="o">().</span><span class="na">newThread</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Upon calling <code class="language-plaintext highlighter-rouge">t.start()</code>, the thread’s <code class="language-plaintext highlighter-rouge">run()</code> method calls <code class="language-plaintext highlighter-rouge">runWorker()</code>.</p>
+
+<h2 id="4-main-execution-loop-runworker">4. Main Execution Loop: <code class="language-plaintext highlighter-rouge">runWorker()</code></h2>
+<p>The <code class="language-plaintext highlighter-rouge">runWorker()</code> method is the core execution loop for a worker thread in <code class="language-plaintext highlighter-rouge">ThreadPoolExecutor</code>.</p>
+<ul>
+  <li><strong>Runs the first task</strong> if present.</li>
+  <li><strong>Continuously retrieves tasks</strong> from the queue using <code class="language-plaintext highlighter-rouge">getTask()</code>
+    <ul>
+      <li>If a task is found, it locks the worker, runs the task, then unlocks.</li>
+      <li>If no task is available, the thread blocks or times out, depending on <code class="language-plaintext highlighter-rouge">keepAliveTime</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Handles shutdowns</strong> by checking pool state and interrupting the thread if needed.</li>
+  <li><strong>Calls hooks</strong> (<code class="language-plaintext highlighter-rouge">beforeExecute</code> and <code class="language-plaintext highlighter-rouge">afterExecute</code>) before and after each task for monitoring or customization.</li>
+  <li><strong>Exits</strong> when no tasks are available or the pool is shutting down, and calls <code class="language-plaintext highlighter-rouge">processWorkerExit()</code> for cleanup.</li>
+</ul>
+
+<blockquote>
+  <p>This loop allows thread reuse by keeping workers alive and waiting for tasks, reducing thread creation overhead.</p>
+</blockquote>
+
+<blockquote>
+  <p>Sometimes we can hook into the thread pool by overriding beforeExecute() and afterExecute() methods to log or record metrics about task execution — such as task start time, end time, duration, or exceptions.</p>
+</blockquote>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kt">void</span> <span class="nf">runWorker</span><span class="o">(</span><span class="nc">Worker</span> <span class="n">w</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">Thread</span> <span class="n">wt</span> <span class="o">=</span> <span class="nc">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">();</span>
+    <span class="nc">Runnable</span> <span class="n">task</span> <span class="o">=</span> <span class="n">w</span><span class="o">.</span><span class="na">firstTask</span><span class="o">;</span>
+    <span class="n">w</span><span class="o">.</span><span class="na">firstTask</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="n">w</span><span class="o">.</span><span class="na">unlock</span><span class="o">();</span>
+    <span class="kt">boolean</span> <span class="n">completedAbruptly</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="k">while</span> <span class="o">(</span><span class="n">task</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">||</span> <span class="o">(</span><span class="n">task</span> <span class="o">=</span> <span class="n">getTask</span><span class="o">())</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">w</span><span class="o">.</span><span class="na">lock</span><span class="o">();</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="n">beforeExecute</span><span class="o">(</span><span class="n">wt</span><span class="o">,</span> <span class="n">task</span><span class="o">);</span>
+                <span class="n">task</span><span class="o">.</span><span class="na">run</span><span class="o">();</span>
+                <span class="n">afterExecute</span><span class="o">(</span><span class="n">task</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+                <span class="n">task</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+                <span class="n">w</span><span class="o">.</span><span class="na">completedTasks</span><span class="o">++;</span>
+                <span class="n">w</span><span class="o">.</span><span class="na">unlock</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="n">completedAbruptly</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+    <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+        <span class="n">processWorkerExit</span><span class="o">(</span><span class="n">w</span><span class="o">,</span> <span class="n">completedAbruptly</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="5-task-retrieval-gettask">5. Task Retrieval: <code class="language-plaintext highlighter-rouge">getTask()</code></h2>
+<p>This mechanism ensures worker threads block when no task is available, enabling efficient thread reuse.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Runnable</span> <span class="n">r</span> <span class="o">=</span> <span class="n">timed</span> <span class="o">?</span>
+        <span class="n">workQueue</span><span class="o">.</span><span class="na">poll</span><span class="o">(</span><span class="n">keepAliveTime</span><span class="o">,</span> <span class="nc">TimeUnit</span><span class="o">.</span><span class="na">NANOSECONDS</span><span class="o">)</span> <span class="o">:</span>
+        <span class="n">workQueue</span><span class="o">.</span><span class="na">take</span><span class="o">();</span>
+
+<span class="kt">boolean</span> <span class="n">timed</span> <span class="o">=</span> <span class="n">allowCoreThreadTimeOut</span> <span class="o">||</span> <span class="n">wc</span> <span class="o">&gt;</span> <span class="n">corePoolSize</span><span class="o">;</span>
+
+<span class="k">if</span> <span class="o">((</span><span class="n">wc</span> <span class="o">&gt;</span> <span class="n">maximumPoolSize</span> <span class="o">||</span> <span class="o">(</span><span class="n">timed</span> <span class="o">&amp;&amp;</span> <span class="n">timedOut</span><span class="o">))</span> <span class="o">&amp;&amp;</span> <span class="o">(</span><span class="n">wc</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="o">||</span> <span class="n">workQueue</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">()))</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">compareAndDecrementWorkerCount</span><span class="o">(</span><span class="n">c</span><span class="o">))</span>
+        <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="6-key-threadpoolexecutor-parameters">6. Key ThreadPoolExecutor Parameters</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">corePoolSize</code></td>
+      <td>Minimum number of threads to keep alive (even when idle)</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">maximumPoolSize</code></td>
+      <td>Maximum number of concurrently active threads</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">keepAliveTime</code></td>
+      <td>Idle time before terminating excess threads</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">allowCoreThreadTimeOut</code></td>
+      <td>If <code class="language-plaintext highlighter-rouge">true</code>, allows core threads to time out as well</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="7-rejection-policies-rejectedexecutionhandler">7. Rejection Policies (<code class="language-plaintext highlighter-rouge">RejectedExecutionHandler</code>)</h2>
+<p>When the thread pool and its queue are full, the <code class="language-plaintext highlighter-rouge">RejectedExecutionHandler</code> defines how new tasks are handled.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Policy</th>
+      <th>Behavior</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">AbortPolicy</code></td>
+      <td>Rejects the task and throws <code class="language-plaintext highlighter-rouge">RejectedExecutionException</code> <em>(default)</em></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">DiscardPolicy</code></td>
+      <td>Silently discards the task</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">DiscardOldestPolicy</code></td>
+      <td>Discards the oldest task in the queue, then retries the new task</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">CallerRunsPolicy</code></td>
+      <td>Runs the task in the thread of the caller (the one that invoked <code class="language-plaintext highlighter-rouge">execute()</code>)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="example">Example</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">executor</span><span class="o">.</span><span class="na">setRejectedExecutionHandler</span><span class="o">(</span><span class="k">new</span> <span class="nc">ThreadPoolExecutor</span><span class="o">.</span><span class="na">CallerRunsPolicy</span><span class="o">());</span>
+</code></pre></div></div>
+
+<h2 id="8-how-to-set-thread-pool-size">8. How to Set Thread Pool Size</h2>
+<p>Choosing the right thread pool size depends on the nature of tasks.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Scenario</th>
+      <th>Recommended Thread Count</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>CPU-intensive</td>
+      <td><code class="language-plaintext highlighter-rouge">CPU core count + 1</code></td>
+    </tr>
+    <tr>
+      <td>IO-intensive</td>
+      <td><code class="language-plaintext highlighter-rouge">CPU core count * (1 + wait time / compute time)</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<blockquote>
+  <p>CPU-bound tasks require fewer threads to keep all cores busy without overhead.</p>
+</blockquote>
+
+<blockquote>
+  <p>IO-bound tasks can use more threads to compensate for idle waiting time.</p>
+</blockquote>
+
+<blockquote>
+  <p>Maybe use benchmarking tools like <strong><a href="https://openjdk.org/projects/code-tools/jmh/">JMH (Java Microbenchmark Harness)</a></strong> to measure actual workload performance and fine-tune the thread pool size.</p>
+</blockquote>
+
+<h2 id="9-latest">9. Latest</h2>
+<p>JDK 21 introduces <strong>virtual threads</strong> for lightweight concurrency. We can use the blow code instead.
+```java
+ExecutorService vExecutor = Executors.newVirtualThreadPerTaskExecutor();
+vExecutor.submit(() -&gt; {
+    // Run logic in a virtual thread
+});</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

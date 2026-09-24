@@ -1,0 +1,70 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="what-is-rag-a-simple-explanation">What Is RAG? A Simple Explanation</h1>
+
+<p>Imagine a company has 10,000 documents containing product manuals, company policies, research reports, customer support documents, and other internal knowledge.</p>
+
+<p>When a user asks a question, the answer may already exist somewhere in those documents. However, sending every document to the LLM would not be practical. Instead, the system first finds the information related to the question and then provides that information to the model.</p>
+
+<p>This is the basic idea behind <strong>Retrieval-Augmented Generation</strong>, or <strong>RAG</strong>.</p>
+
+<h2 id="what-the-article-covers">What the Article Covers</h2>
+
+<ul>
+  <li>What Retrieval-Augmented Generation means</li>
+  <li>Why RAG follows a “search first, generate second” process</li>
+  <li>How retrieved information is added to the prompt</li>
+  <li>How embeddings convert text into numerical vectors</li>
+  <li>How embeddings identify semantically related text</li>
+  <li>How vector databases store and search embeddings</li>
+</ul>
+
+<p>A simplified RAG process looks like this:</p>
+
+<pre>
+User Question
+      ↓
+Search the Knowledge Base
+      ↓
+Retrieve Relevant Information
+      ↓
+Add the Information to the Prompt
+      ↓
+Send the Augmented Prompt to the LLM
+      ↓
+Generate the Answer
+</pre>
+
+<p>An embedding converts text into a numerical representation called a vector. Because the vector represents the meaning of the text, the system can recognize that questions such as “How can I return my order?” and “What is your refund process?” are related even though they use different words.</p>
+
+<p>These embeddings can be stored in a <strong>vector database</strong>. When a user submits a question, the system converts it into an embedding and searches for similar vectors. The retrieved information is then provided to the LLM so it can generate an answer based on content related to the user’s question.</p>
+
+<p><a href="https://macstuforum.top/d/23-what-is-rag-a-simple-explanation">Read the full article and join the discussion →</a></p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

@@ -1,0 +1,173 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="project-reactor-explained-with-examples">Project Reactor: Explained with Examples</h1>
+<p>I will give you a clear, beginner-friendly explanation of <strong>Project Reactor</strong>, based on the official documentation. We’ll cover the basics, core types, common operators, and advanced features — all with practical examples.</p>
+
+<hr />
+
+<h2 id="1-what-is-project-reactor">1. What is Project Reactor?</h2>
+<ul>
+  <li><strong>Reactor</strong> is a <strong>JVM reactive programming library</strong> based on the <a href="https://www.reactive-streams.org/">Reactive Streams Specification</a>.</li>
+  <li>Key features:
+    <ul>
+      <li><strong>Asynchronous</strong> and non-blocking.</li>
+      <li><strong>Backpressure support</strong>: downstream tells upstream how much data it can handle.</li>
+      <li><strong>Functional API</strong>: similar to Java Streams, but works with <strong>asynchronous data flow</strong>.</li>
+      <li>The foundation of <strong>Spring WebFlux</strong>.</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+
+<h2 id="2-core-types">2. Core Types</h2>
+<p>Reactor provides two main <code class="language-plaintext highlighter-rouge">Publisher</code> types.</p>
+
+<h3 id="mono">Mono</h3>
+<p>Represents a stream with <strong>0 or 1 element</strong>.
+Common use cases: HTTP responses, database lookups.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Mono</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">mono</span> <span class="o">=</span> <span class="nc">Mono</span><span class="o">.</span><span class="na">just</span><span class="o">(</span><span class="s">"Hello Reactor"</span><span class="o">);</span>
+<span class="n">mono</span><span class="o">.</span><span class="na">subscribe</span><span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">::</span><span class="n">println</span><span class="o">);</span>
+</code></pre></div></div>
+
+<h3 id="flux">Flux</h3>
+<p>Represents a stream with <strong>0 to N elements</strong>.
+Common use cases: event streams, message queues.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Flux</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">flux</span> <span class="o">=</span> <span class="nc">Flux</span><span class="o">.</span><span class="na">range</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">5</span><span class="o">);</span>
+<span class="n">flux</span><span class="o">.</span><span class="na">subscribe</span><span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">::</span><span class="n">println</span><span class="o">);</span>
+</code></pre></div></div>
+
+<h3 id="subscription-model">Subscription Model</h3>
+<p>Data only flows after you call <code class="language-plaintext highlighter-rouge">subscribe()</code>.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Flux</span><span class="o">.</span><span class="na">range</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">3</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">map</span><span class="o">(</span><span class="n">i</span> <span class="o">-&gt;</span> <span class="n">i</span> <span class="o">*</span> <span class="mi">2</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">subscribe</span><span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">::</span><span class="n">println</span><span class="o">);</span> <span class="c1">// Output: 2, 4, 6</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="3-operators">3. Operators</h2>
+<p>Reactor comes with many operators, like SQL + Java Stream combined.</p>
+
+<h3 id="transforming">Transforming</h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">map</code>: one-to-one transformation</li>
+  <li><code class="language-plaintext highlighter-rouge">flatMap</code>: flatten async streams</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Flux</span><span class="o">.</span><span class="na">just</span><span class="o">(</span><span class="s">"a"</span><span class="o">,</span> <span class="s">"b"</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">flatMap</span><span class="o">(</span><span class="n">s</span> <span class="o">-&gt;</span> <span class="nc">Mono</span><span class="o">.</span><span class="na">just</span><span class="o">(</span><span class="n">s</span><span class="o">.</span><span class="na">toUpperCase</span><span class="o">()))</span>
+    <span class="o">.</span><span class="na">subscribe</span><span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">::</span><span class="n">println</span><span class="o">);</span>
+</code></pre></div></div>
+
+<h3 id="filtering">Filtering</h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">filter</code>: keep matching elements</li>
+  <li><code class="language-plaintext highlighter-rouge">take</code>: take first N elements</li>
+  <li><code class="language-plaintext highlighter-rouge">skip</code>: skip first N elements</li>
+</ul>
+
+<h3 id="combining">Combining</h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">merge</code>: merge multiple streams (concurrent)</li>
+  <li><code class="language-plaintext highlighter-rouge">concat</code>: concatenate streams in order</li>
+  <li><code class="language-plaintext highlighter-rouge">zip</code>: pair elements</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Flux</span><span class="o">.</span><span class="na">zip</span><span class="o">(</span><span class="nc">Flux</span><span class="o">.</span><span class="na">just</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">),</span> <span class="nc">Flux</span><span class="o">.</span><span class="na">just</span><span class="o">(</span><span class="s">"A"</span><span class="o">,</span> <span class="s">"B"</span><span class="o">))</span>
+    <span class="o">.</span><span class="na">subscribe</span><span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">::</span><span class="n">println</span><span class="o">);</span> 
+<span class="c1">// Output: (1,A) (2,B)</span>
+</code></pre></div></div>
+
+<h3 id="error-handling">Error Handling</h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">onErrorReturn</code>: fallback value</li>
+  <li><code class="language-plaintext highlighter-rouge">onErrorResume</code>: fallback stream</li>
+  <li><code class="language-plaintext highlighter-rouge">retry</code>: retry operation</li>
+</ul>
+
+<hr />
+
+<h2 id="4-advanced-features">4. Advanced Features</h2>
+<h3 id="backpressure">Backpressure</h3>
+<ul>
+  <li>A core Reactive Streams concept: <strong>downstream controls demand</strong>.</li>
+  <li><code class="language-plaintext highlighter-rouge">Flux</code> and <code class="language-plaintext highlighter-rouge">Mono</code> handle this automatically, preventing overload.</li>
+</ul>
+
+<h3 id="schedulers">Schedulers</h3>
+<p>By default, Reactor runs in the current thread.<br />
+Use <code class="language-plaintext highlighter-rouge">publishOn</code> or <code class="language-plaintext highlighter-rouge">subscribeOn</code> to switch thread pools.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Flux</span><span class="o">.</span><span class="na">range</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">10</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">publishOn</span><span class="o">(</span><span class="nc">Schedulers</span><span class="o">.</span><span class="na">boundedElastic</span><span class="o">())</span>
+    <span class="o">.</span><span class="na">map</span><span class="o">(</span><span class="n">i</span> <span class="o">-&gt;</span> <span class="n">i</span> <span class="o">*</span> <span class="mi">2</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">subscribe</span><span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">::</span><span class="n">println</span><span class="o">);</span>
+</code></pre></div></div>
+
+<p>Common schedulers:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">immediate()</code>: current thread</li>
+  <li><code class="language-plaintext highlighter-rouge">single()</code>: single-threaded</li>
+  <li><code class="language-plaintext highlighter-rouge">boundedElastic()</code>: elastic thread pool (good for blocking tasks)</li>
+  <li><code class="language-plaintext highlighter-rouge">parallel()</code>: parallel thread pool (CPU-intensive tasks)</li>
+</ul>
+
+<h3 id="cold-vs-hot-publishers">Cold vs Hot Publishers</h3>
+<ul>
+  <li><strong>Cold publisher</strong>: each subscriber gets a fresh stream (e.g., <code class="language-plaintext highlighter-rouge">Flux.range</code>).</li>
+  <li><strong>Hot publisher</strong>: data is emitted regardless of subscribers (e.g., <code class="language-plaintext highlighter-rouge">ConnectableFlux</code>).</li>
+</ul>
+
+<hr />
+
+<h2 id="5-summary">5. Summary</h2>
+<ul>
+  <li><strong>Mono</strong>: async single value.</li>
+  <li><strong>Flux</strong>: async stream of many values.</li>
+  <li><strong>Operators</strong>: SQL/Stream-like tools for data flow.</li>
+  <li><strong>Backpressure &amp; Schedulers</strong>: handle performance and resource management.</li>
+  <li>Reactor is the foundation of <strong>Spring WebFlux</strong> and modern Java reactive programming.</li>
+</ul>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+<ul>
+  <li><a href="https://projectreactor.io/docs/core/release/reference/">Project Reactor Reference Guide</a></li>
+  <li><a href="https://www.reactive-streams.org/">Reactive Streams Specification</a></li>
+  <li><a href="https://docs.spring.io/spring-framework/reference/web/webflux.html">Spring WebFlux Documentation</a></li>
+  <li><a href="https://docs.spring.io/spring-framework/reference/web/webflux-webclient.html">Spring WebClient Guide</a></li>
+  <li>Related post: <a href="/spring/2025/09/22/reactive-spring-webflux.html">Reactive Spring: Reactive Web Explained</a></li>
+  <li>Related post: <a href="/ai/2025/08/25/spring-mvc-vs-webflux-performance-comparison.html">Spring MVC vs WebFlux: A Practical Look at Concurrency and Performance</a></li>
+  <li>Related post: <a href="/ai/2025/08/27/spring-webflux-ai-nsfw-moderation-api.html">Building a High-Concurrency AI Moderation Service with Spring WebFlux — From Concept to Production</a></li>
+  <li>Related post: <a href="/ai/2025/08/31/spring-webflux-monitoring-prometheus-grafana.html">Monitoring Spring WebFlux with Prometheus and Grafana</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

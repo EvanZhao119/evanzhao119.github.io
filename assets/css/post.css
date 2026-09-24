@@ -1,0 +1,156 @@
+/* 文章主体样式 */
+.post-content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.8;
+    color: #333;
+}
+
+/* 标题样式 */
+.post-content h1 {
+    font-size: 2.5em;
+    margin-bottom: 1em;
+    color: #2c3e50;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.3em;
+}
+
+.post-content h2 {
+    font-size: 2em;
+    margin: 1.5em 0 1em;
+    color: #34495e;
+}
+
+.post-content h3 {
+    font-size: 1.5em;
+    margin: 1.2em 0 0.8em;
+    color: #455a64;
+}
+
+/* 段落样式 */
+.post-content p {
+    margin-bottom: 1.5em;
+    text-align: justify;
+}
+
+/* 链接样式 */
+.post-content a {
+    color: #3498db;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.post-content a:hover {
+    border-bottom-color: #3498db;
+}
+
+/* 代码块样式 */
+.post-content pre {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 0.6em 1em 1em 0.8em; /* 修正第一行偏移 */
+    overflow-x: auto;
+    margin: 1.5em 0;
+}
+
+.post-content code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    font-size: 0.95em;
+    padding: 0.15em 0.3em;
+    background-color: #f8f9fa;
+    border-radius: 3px;
+}
+
+/* pre 内部的 code 元素：强制对齐块状显示，避免缩进 */
+.post-content pre code {
+  display: block;
+  padding: 0;
+  margin: 0;
+  background: none; /* 避免双背景 */
+}
+
+/* 引用样式 */
+.post-content blockquote {
+    border-left: 4px solid #42b983;
+    margin: 1.5em 0;
+    padding: 0.5em 1em;
+    background-color: #f8f9fa;
+    color: #666;
+}
+
+/* 列表样式 */
+.post-content ul, 
+.post-content ol {
+    padding-left: 2em;
+    margin-bottom: 1.5em;
+}
+
+.post-content li {
+    margin-bottom: 0.5em;
+}
+
+/* 图片样式 */
+.post-content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 2em auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 表格样式 */
+.post-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5em 0;
+}
+
+.post-content th,
+.post-content td {
+    padding: 0.75em;
+    border: 1px solid #ddd;
+}
+
+.post-content th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+/* 水平分割线样式 */
+.post-content hr {
+    border: none;
+    border-top: 2px solid #eee;
+    margin: 2em 0;
+} 
+
+/* Return to Home Button */
+.home-button-container {
+  position: fixed;
+  right: 15%;  /* 调整为右侧空白区域靠左位置 */
+  top: 100px;
+  z-index: 999;
+}
+.home-button {
+  display: block;
+  padding: 12px 20px;
+  background-color: rgba(255, 255, 255, 0.7); /* 白色半透明背景 */
+  color: #2d3748; /* 深蓝灰色文本 */
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  border: none;
+  text-align: center;
+}
+.home-button:hover {
+  background-color: rgba(255, 255, 255, 0.9); /* 悬停时白色更不透明 */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}

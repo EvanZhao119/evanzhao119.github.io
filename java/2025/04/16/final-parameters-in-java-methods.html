@@ -1,0 +1,96 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="understanding-final-parameters-in-java-methods-what-why-and-how">Understanding Final Parameters in Java Methods: What, Why, and How</h1>
+
+<h2 id="introduction">Introduction</h2>
+
+<p>In Java, the <code class="language-plaintext highlighter-rouge">final</code> keyword can be applied to <strong>method parameters</strong> to indicate that the parameter <strong>cannot be reassigned</strong> within the method body.</p>
+
+<p>This is useful for writing safer and more readable code, especially when you want to ensure that the parameter passed into the method remains unchanged.</p>
+
+<h3 id="syntax">Syntax</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kt">void</span> <span class="nf">exampleMethod</span><span class="o">(</span><span class="kd">final</span> <span class="kt">int</span> <span class="n">value</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// value = 10; // This will cause a compilation error</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="benefits-of-using-final-parameters">Benefits of Using Final Parameters</h2>
+
+<h3 id="improved-code-safety">Improved code safety</h3>
+<ul>
+  <li>Prevents accidental modification of parameters.</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Calculator</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="kt">int</span> <span class="nf">add</span><span class="o">(</span><span class="kd">final</span> <span class="kt">int</span> <span class="n">a</span><span class="o">,</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">b</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">// a = a + 1; // Uncommenting this will cause a compile-time error</span>
+        <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Calculator</span> <span class="n">calc</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Calculator</span><span class="o">();</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">calc</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="mi">5</span><span class="o">,</span> <span class="mi">3</span><span class="o">));</span> <span class="c1">// Output: 8</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<h3 id="better-readability">Better readability</h3>
+<ul>
+  <li>Signals to the reader that the variable should not be changed.</li>
+</ul>
+
+<h3 id="good-practice-in-anonymous-inner-classeslambdas">Good practice in anonymous inner classes/lambdas</h3>
+<ul>
+  <li>Final or effectively final parameters are required to be accessed from within anonymous classes or lambdas.</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ButtonHandler</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">handleClick</span><span class="o">(</span><span class="kd">final</span> <span class="nc">String</span> <span class="n">message</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Runnable</span> <span class="n">r</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Runnable</span><span class="o">()</span> <span class="o">{</span>
+            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Handling click: "</span> <span class="o">+</span> <span class="n">message</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">};</span>
+        <span class="k">new</span> <span class="nf">Thread</span><span class="o">(</span><span class="n">r</span><span class="o">).</span><span class="na">start</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">ButtonHandler</span> <span class="n">handler</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ButtonHandler</span><span class="o">();</span>
+        <span class="n">handler</span><span class="o">.</span><span class="na">handleClick</span><span class="o">(</span><span class="s">"Button clicked!"</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p><strong><em>Note</em></strong>: Prior to Java 8, variables used in inner classes had to be explicitly final. From Java 8 onward, they can also be effectively final, i.e., not reassigned after initialization.</p>
+
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

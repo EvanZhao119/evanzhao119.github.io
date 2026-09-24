@@ -1,0 +1,84 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="when-should-you-use-rag-fine-tuning-or-both">When Should You Use RAG, Fine-Tuning, or Both?</h1>
+
+<p>RAG and fine-tuning are sometimes presented as competing approaches, but they often solve different parts of the same problem.</p>
+
+<p>The right question is not which approach is universally better. The important question is <strong>what problem the application needs to solve</strong>.</p>
+
+<h2 id="what-the-article-covers">What the Article Covers</h2>
+
+<ul>
+  <li>When RAG is appropriate for external or frequently changing information</li>
+  <li>Why a RAG knowledge base can be updated without retraining the model</li>
+  <li>When fine-tuning is useful for learning consistent task-specific behavior</li>
+  <li>Why fine-tuning is not primarily a way to store facts</li>
+  <li>Why prompt engineering should usually be considered before fine-tuning</li>
+  <li>How RAG and fine-tuning can work together in a production system</li>
+  <li>How to avoid adding unnecessary complexity to an LLM application</li>
+</ul>
+
+<h2 id="when-to-use-each-approach">When to Use Each Approach</h2>
+
+<h3 id="prompt-engineering">Prompt Engineering</h3>
+
+<p>Prompt engineering is useful when the model needs clearer instructions, guidance, or a specific output format. For many straightforward tasks, a well-designed prompt may already be sufficient.</p>
+
+<h3 id="rag">RAG</h3>
+
+<p>RAG is useful when an application depends on external, private, or frequently changing information. The knowledge remains outside the model and is retrieved when the user asks a question.</p>
+
+<p>Because the documents are stored separately, the knowledge base can be updated without retraining the model.</p>
+
+<h3 id="fine-tuning">Fine-Tuning</h3>
+
+<p>Fine-tuning is useful when the model needs to perform a task in a more consistent way. Given enough high-quality examples, it can help the model learn task-specific patterns, such as classifying customer reviews as positive, negative, or neutral.</p>
+
+<h3 id="rag-and-fine-tuning-together">RAG and Fine-Tuning Together</h3>
+
+<p>A system can also combine both approaches. For example, a customer support assistant could use fine-tuning to learn how to classify requests and structure responses, while RAG supplies current policies and other relevant information.</p>
+
+<p>A simple way to understand the responsibilities is:</p>
+
+<pre>
+Prompt Engineering
+Controls the current instructions and context
+
+RAG
+Provides relevant knowledge
+
+Fine-Tuning
+Shapes task-specific behavior
+</pre>
+
+<p>Not every LLM application problem should be solved by changing the model. Sometimes the model needs better instructions, sometimes it needs access to better information, and sometimes it needs to learn specialized behavior.</p>
+
+<p><a href="https://macstuforum.top/d/28-when-should-you-use-rag-fine-tuning-or-both">Read the full article and join the discussion →</a></p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

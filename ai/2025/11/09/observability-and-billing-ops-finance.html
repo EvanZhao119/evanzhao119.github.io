@@ -1,0 +1,254 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="observability-and-billing-building-unified-dashboards-for-operations-and-finance">Observability and Billing: Building Unified Dashboards for Operations and Finance</h1>
+<p>In modern AI and data systems, observability and financial transparency must go hand in hand. Every request should not only deliver results but also record its full lifecycle, including latency, reliability, quality, and cost. By treating each request as a measurable business event, teams can connect what happens in operations with what appears in finance. This creates one clear, trustworthy view of how the system performs and how much it truly costs to run. Finally, this enables real-time dashboards, accurate cost tracking, and faster decision-making across both engineering and finance.</p>
+
+<p>This guide explains how to design per-request metrics, build two complementary dashboards (Operational and Financial), compute cost-per-1k, detect abnormal cost behavior, and automate reporting.</p>
+
+<hr />
+
+<h2 id="1-per-request-instrumentation">1. Per-Request Instrumentation</h2>
+<p>A single request should capture enough data to answer three questions,</p>
+<ol>
+  <li><strong>Is it working correctly?</strong> (performance &amp; errors)</li>
+  <li><strong>Is it producing good results?</strong> (quality)</li>
+  <li><strong>How much did it cost?</strong> (usage &amp; billing)</li>
+</ol>
+
+<h3 id="core-fields-to-log">Core Fields to Log</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Category</th>
+      <th>Key Fields</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Basic Info</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">ts</code>, <code class="language-plaintext highlighter-rouge">trace_id</code>, <code class="language-plaintext highlighter-rouge">tags.dept/project/task</code>, <code class="language-plaintext highlighter-rouge">model</code>, <code class="language-plaintext highlighter-rouge">provider</code>, <code class="language-plaintext highlighter-rouge">route</code>, <code class="language-plaintext highlighter-rouge">region</code></td>
+      <td>Identify the request and assign ownership</td>
+    </tr>
+    <tr>
+      <td><strong>Performance &amp; Quality</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">latency_ms</code>, <code class="language-plaintext highlighter-rouge">error</code>, <code class="language-plaintext highlighter-rouge">cache_hit</code>, <code class="language-plaintext highlighter-rouge">citation_rate</code>, <code class="language-plaintext highlighter-rouge">human_reviewed</code></td>
+      <td>Measure stability and correctness</td>
+    </tr>
+    <tr>
+      <td><strong>Usage &amp; Cost</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">input_tokens</code>, <code class="language-plaintext highlighter-rouge">output_tokens</code>, <code class="language-plaintext highlighter-rouge">total_tokens</code>, <code class="language-plaintext highlighter-rouge">cost_per_1k</code>, <code class="language-plaintext highlighter-rouge">cost_actual</code>, <code class="language-plaintext highlighter-rouge">currency</code></td>
+      <td>Capture billing-related data</td>
+    </tr>
+  </tbody>
+</table>
+
+<blockquote>
+  <p><strong>Implementation tip:</strong><br />
+Use <strong>OpenTelemetry</strong> to attach these fields as span attributes, and export them in structured JSON logs.<br />
+Enrich department/project/task tags as early as possible (ideally at the gateway), and sanitize sensitive data before storage.</p>
+</blockquote>
+
+<hr />
+
+<h2 id="2-dashboards-operations-and-finance">2. Dashboards: Operations and Finance</h2>
+<p>To make data useful, you need two distinct but connected dashboards, one for system health, one for financial visibility.</p>
+
+<h3 id="21-operational-dashboard">2.1 Operational Dashboard</h3>
+<p>Focus on stability, latency, and quality.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Formula</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>QPS</strong></td>
+      <td>requests per second/minute</td>
+      <td>Traffic volume</td>
+    </tr>
+    <tr>
+      <td><strong>Error Rate</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">error=true</code> / total requests</td>
+      <td>Reliability</td>
+    </tr>
+    <tr>
+      <td><strong>Latency p95</strong></td>
+      <td>95th percentile of <code class="language-plaintext highlighter-rouge">latency_ms</code></td>
+      <td>Performance tail</td>
+    </tr>
+    <tr>
+      <td><strong>Cache Hit Rate</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">cache_hit=true</code> / total requests</td>
+      <td>Efficiency</td>
+    </tr>
+    <tr>
+      <td><strong>Citation Rate</strong></td>
+      <td>mean of <code class="language-plaintext highlighter-rouge">citation_rate</code></td>
+      <td>Quality</td>
+    </tr>
+    <tr>
+      <td><strong>Human Review Pass Rate</strong></td>
+      <td>approved / reviewed</td>
+      <td>Human-in-the-loop accuracy</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Some Examples about Alert thresholds</strong></p>
+<ul>
+  <li>Error rate &gt; 2% for more than 5 minutes</li>
+  <li>p95 latency increases by 30%</li>
+  <li>Cache hit rate drops by 20 points</li>
+  <li>Human review pass rate &lt; 80%</li>
+</ul>
+
+<h3 id="22-financial-dashboard">2.2 Financial Dashboard</h3>
+<p>Focus on cost transparency and accountability.</p>
+<ul>
+  <li>Total cost (daily, weekly, monthly)</li>
+  <li>Cost breakdown by <code class="language-plaintext highlighter-rouge">dept/project/task</code></li>
+  <li>Cost distribution by model or vendor</li>
+  <li>Unit cost trends (cost per 1k requests/tokens)</li>
+  <li>Top N most expensive projects/tasks</li>
+  <li>Cache savings estimates</li>
+</ul>
+
+<hr />
+
+<h2 id="3-standardizing-cost-cost-per-1k">3. Standardizing Cost: “Cost per 1k”</h2>
+<p>Different vendors, currencies, and models require a unified baseline. We normalize everything into <strong>USD per 1k tokens</strong>.</p>
+
+<h3 id="31-price-table">3.1 Price Table</h3>
+<p>Each <code class="language-plaintext highlighter-rouge">(provider, model)</code> pair should have <code class="language-plaintext highlighter-rouge">input_usd_per_1k</code>, <code class="language-plaintext highlighter-rouge">output_usd_per_1k</code>, and <code class="language-plaintext highlighter-rouge">valid_from</code> / <code class="language-plaintext highlighter-rouge">valid_to</code> (version control). This ensures historical replay uses the correct price.</p>
+
+<h3 id="32-request-level-cost-calculation">3.2 Request-Level Cost Calculation</h3>
+
+<ul>
+  <li><strong>Token-based models</strong>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cost_actual = (input_tokens/1000)*input_price + (output_tokens/1000)*output_price
+</code></pre></div>    </div>
+  </li>
+  <li><strong>Call-based models</strong>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cost_actual = call_price
+</code></pre></div>    </div>
+  </li>
+  <li><strong>Cache savings (optional)</strong>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cost_saving = cost_without_cache - cost_actual
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<h3 id="33-derived-metrics">3.3 Derived Metrics</h3>
+
+<ul>
+  <li><strong>Cost per 1k requests</strong>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cost_per_1k_requests = (sum(cost_actual) / total_requests) * 1000
+</code></pre></div>    </div>
+  </li>
+  <li><strong>Cost per 1k tokens</strong>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cost_per_1k_tokens = sum(cost_actual) / (sum(total_tokens)/1000)
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<blockquote>
+  <p><strong>Good practices</strong></p>
+  <ul>
+    <li>Convert all currencies to USD at the billing-day exchange rate.</li>
+    <li>Version-control all price tables.</li>
+    <li>Reconcile a few samples daily with vendor invoices.</li>
+  </ul>
+</blockquote>
+
+<hr />
+
+<h2 id="4-detecting-cost-anomalies">4. Detecting Cost Anomalies</h2>
+<p>Unexpected cost spikes usually come from,</p>
+<ul>
+  <li>Pricing errors or model switches</li>
+  <li>Retry loops or traffic storms</li>
+  <li>Cache misconfiguration or failure</li>
+</ul>
+
+<h3 id="41-detection-methods">4.1 Detection Methods</h3>
+<ul>
+  <li>
+    <p><strong>Threshold rule (simple and effective)</strong>
+If the <strong>average cost per 1k requests</strong> suddenly becomes much higher than usual, for example, more than the <strong>7-day average plus three times the normal variation (3σ)</strong>, or more than <strong>30% higher than the normal baseline</strong> for over 15 minutes, that’s a clear warning signal.</p>
+  </li>
+  <li>
+    <p><strong>EWMA (Exponential Weighted Moving Average)</strong><br />
+Instead of reacting to every small change, EWMA smooths the data to highlight real trends. It helps you tell the difference between short-term noise and a true increase in cost.</p>
+  </li>
+  <li>
+    <p><strong>Hierarchical detection</strong>
+Start from the <strong>overall system</strong>, then drill down to <strong>each department, project, or task</strong>. This helps you quickly locate which group or service is causing the cost increase.</p>
+  </li>
+  <li>
+    <p><strong>Cross-metric correlation</strong><br />
+Compare cost trends with other indicators like <strong>cache hit rate or latency</strong>. For example, if costs go up while the cache hit rate drops, it likely means <strong>the cache stopped working or was misconfigured</strong>.</p>
+  </li>
+</ul>
+
+<h3 id="42-response-workflow">4.2 Response Workflow</h3>
+<ol>
+  <li>Mark the <strong>anomaly window</strong> and snapshot the configuration (pricing, routing, cache).</li>
+  <li>Auto-create an <strong>incident ticket</strong> with relevant traces.</li>
+  <li>Roll back or reroute traffic to a cheaper model if possible.</li>
+  <li>Complete a <strong>Root Cause Analysis (RCA)</strong> within 24 hours.</li>
+</ol>
+
+<hr />
+
+<h2 id="5-final-summary">5. Final Summary</h2>
+<p>Building observability and billing together turns your system into more than just a black box that “runs”. It becomes a measurable, accountable, and optimizable platform.<br />
+Real-time dashboards let you monitor system health and user experience, while daily cost reports ensure financial accuracy and transparency. When metrics, logs, and price data share a common schema, both sides, Ops and Finance, can speak the same language.<br />
+The result is a culture of data-driven reliability and cost awareness: issues are caught early, budgets are predictable, and every improvement can be traced, measured, and justified with evidence.<br />
+With daily validation and anomaly detection, your platform becomes not only <strong>stable and reliable</strong>, but also <strong>financially transparent</strong>.</p>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+<ul>
+  <li><a href="/ai/2025/11/05/hitl-review-idempotent-writeback.html">Human-in-the-Loop Review and Idempotent Write-Back: From <code class="language-plaintext highlighter-rouge">/review</code> to Auditable System Updates</a></li>
+  <li><a href="/ai/2025/10/31/eval-canary-redlines.html">Evaluation and Redlines: Offline Baseline + Production Replay + Automatic Rollback</a></li>
+  <li><a href="/ai/2025/10/27/rag-query-citations.html">Building a Trustworthy RAG System: Make AI Answers Traceable with Source Citations</a></li>
+  <li><a href="/ai/2025/10/21/versioned-prompts-and-tool-contracts.html">Versioned Prompts and Tool Contracts: Building a Safe, Auditable, and Rollback-Ready AI System</a></li>
+  <li><a href="/ai/2025/10/15/llm-gateway.html">LLM Gateway: One Endpoint for Safety, Cost Control, and Observability</a></li>
+  <li><a href="/ai/2025/10/12/stable-names-task-contracts-json-schema.html">Stable Names + Task Contracts: Keep Callers Stable While You Evolve Internals</a></li>
+  <li><a href="/ai/2025/10/07/capability-pool-simple-guide.html">The Reuse Layer: Governing AI as a Capability, Not a Credential</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

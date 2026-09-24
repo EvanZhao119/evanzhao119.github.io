@@ -1,0 +1,80 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="jvm-memory-management-the-theory-and-practice-of-generations">JVM Memory Management: The Theory and Practice of Generations</h1>
+
+<h2 id="generational-hypotheses">Generational Hypotheses</h2>
+<p>There are three key hypotheses behind the generational design of the Java Virtual Machine (JVM).</p>
+
+<h3 id="1-weak-generational-hypothesis">1. Weak Generational Hypothesis</h3>
+<blockquote>
+  <p>Most objects die young.</p>
+</blockquote>
+
+<p>This hypothesis suggests that a large number of Java objects have a very short lifespan and become unreachable shortly after allocation.</p>
+
+<h3 id="2-strong-generational-hypothesis">2. Strong Generational Hypothesis</h3>
+<blockquote>
+  <p>The longer an object has survived, the more likely it is to continue surviving.</p>
+</blockquote>
+
+<p>This implies that objects which have survived multiple garbage collection (GC) cycles are likely to remain in memory for a long time.</p>
+
+<h3 id="3-cross-generational-reference-hypothesis">3. Cross-Generational Reference Hypothesis</h3>
+<blockquote>
+  <p>References from older generations to younger generations are relatively rare.</p>
+</blockquote>
+
+<p>This assumption is crucial for optimizing GC performance. Since references from the old generation to the young generation are infrequent, <strong>the garbage collector does not need to scan the entire old generation when collecting the young generation</strong>.</p>
+
+<p><strong>Implementation in JVM:</strong><br />
+To support this hypothesis, the HotSpot JVM uses a structure called the <strong>card table</strong>, maintained by a technique known as <strong>write barrier</strong>. This mechanism records cross-generational references efficiently.</p>
+
+<h2 id="jvm-memory-generation-in-practice">JVM Memory Generation in Practice</h2>
+
+<h3 id="heap-space-generations">Heap Space Generations</h3>
+
+<p>The Java heap is divided into <strong>Young Generation</strong> and <strong>Old Generation</strong>. Based on these, the method area used to be referred to as the <strong>Permanent Generation (PermGen)</strong> in earlier Java versions.</p>
+
+<p>Since <strong>Java 8</strong>, <strong>PermGen has been removed</strong> and replaced with <strong>Metaspace</strong>, which resides in native memory rather than the heap.</p>
+
+<h3 id="appel-style-garbage-collection">Appel-style Garbage Collection</h3>
+
+<p>The <strong>Young Generation</strong> is further divided into:</p>
+<ul>
+  <li><strong>Eden Space</strong></li>
+  <li><strong>Two Survivor Spaces (From and To)</strong></li>
+</ul>
+
+<p>In collectors like <strong>Serial</strong>, <strong>ParNew</strong>, and <strong>Parallel Scavenge</strong>, the default space ratio between Eden and a single Survivor space is <strong>8:1</strong>.</p>
+
+<p>Most new objects are allocated in Eden, and during GC, surviving objects are copied between Survivor spaces before being promoted to the Old Generation.</p>
+
+<p><strong><em>Java 8+ Note</em></strong>: Always keep in mind that PermGen is obsolete. Metaspace is now the standard for class metadata storage, and its size is dynamically managed in native memory.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

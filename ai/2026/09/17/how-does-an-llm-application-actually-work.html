@@ -1,0 +1,69 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="how-does-an-llm-application-actually-work">How Does an LLM Application Actually Work?</h1>
+
+<p>An LLM application is often pictured as a simple flow:</p>
+
+<p><strong>User → LLM → Answer</strong></p>
+
+<p>That model may be enough for a basic chatbot, but real-world AI applications usually involve several components working together. The LLM is only one part of a broader system that may also include an application layer, prompts, external tools, retrieval-augmented generation (RAG), and function calling.</p>
+
+<p>This article introduces the high-level architecture of a modern LLM application and explains the role of each component.</p>
+
+<h2 id="what-the-article-covers">What the Article Covers</h2>
+
+<ul>
+  <li>How the application connects the user, the LLM, and other system components</li>
+  <li>Why the LLM acts as the language and reasoning engine rather than the entire application</li>
+  <li>How prompts tell the model what to do and how to respond</li>
+  <li>Why prompting alone cannot provide private or up-to-date information</li>
+  <li>How RAG supplies relevant knowledge to the model</li>
+  <li>How tools connect an LLM to APIs, databases, and external systems</li>
+</ul>
+
+<p>A simplified architecture looks like this:</p>
+
+<pre>
+              Application
+                   |
+                 Prompt
+                   ↓
+                  LLM
+                /     \
+               /       \
+            Tools      RAG
+              |         |
+          APIs / DBs   Knowledge
+</pre>
+
+<p>The key idea is that a modern AI application is a complete system: the prompt provides instructions, RAG provides knowledge, tools provide access to other systems, and the application coordinates everything.</p>
+
+<p><a href="https://macstuforum.top/d/21-how-does-an-llm-application-actually-work">Read the full article and join the discussion →</a></p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

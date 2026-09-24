@@ -1,0 +1,300 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="in-depth-analysis-of-javas-reentrantreadwritelock-with-modern-enhancements">In-Depth Analysis of Java’s ReentrantReadWriteLock with Modern Enhancements</h1>
+<p>In multi-threaded applications, it’s common for read operations to outnumber write operations. While traditional mutual exclusion locks (e.g., <code class="language-plaintext highlighter-rouge">ReentrantLock</code>) ensure thread safety, they do so at the expense of performance, blocking all operations regardless of type. This results in unnecessary blocking between read-read operations, which are inherently safe to execute concurrently.</p>
+
+<p>Java’s <code class="language-plaintext highlighter-rouge">ReadWriteLock</code> interface and its primary implementation, <code class="language-plaintext highlighter-rouge">ReentrantReadWriteLock</code>, offer a better solution by allowing concurrent reads and exclusive writes.</p>
+
+<h2 id="1-overview-of-reentrantreadwritelock">1. Overview of ReentrantReadWriteLock</h2>
+<p><code class="language-plaintext highlighter-rouge">ReentrantReadWriteLock</code> provides two distinct lock views:</p>
+<ul>
+  <li><strong>Read Lock (<code class="language-plaintext highlighter-rouge">readLock()</code>)</strong>: Shared lock allowing multiple threads to read concurrently.</li>
+  <li><strong>Write Lock (<code class="language-plaintext highlighter-rouge">writeLock()</code>)</strong>: Exclusive lock allowing only one thread to write.</li>
+</ul>
+
+<p>This design is ideal for applications with mostly read operations.</p>
+
+<h2 id="2-basic-usage-example">2. Basic Usage Example</h2>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">final</span> <span class="nc">ReentrantReadWriteLock</span> <span class="n">rwl</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ReentrantReadWriteLock</span><span class="o">();</span>
+<span class="kd">private</span> <span class="kd">final</span> <span class="nc">Lock</span> <span class="n">r</span> <span class="o">=</span> <span class="n">rwl</span><span class="o">.</span><span class="na">readLock</span><span class="o">();</span>
+<span class="kd">private</span> <span class="kd">final</span> <span class="nc">Lock</span> <span class="n">w</span> <span class="o">=</span> <span class="n">rwl</span><span class="o">.</span><span class="na">writeLock</span><span class="o">();</span>
+
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">read</span><span class="o">()</span> <span class="o">{</span>
+    <span class="n">r</span><span class="o">.</span><span class="na">lock</span><span class="o">();</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="c1">// Perform read</span>
+    <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">unlock</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">write</span><span class="o">()</span> <span class="o">{</span>
+    <span class="n">w</span><span class="o">.</span><span class="na">lock</span><span class="o">();</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="c1">// Perform write</span>
+    <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+        <span class="n">w</span><span class="o">.</span><span class="na">unlock</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="3-internal-implementation-and-source-code-analysis">3. Internal Implementation and Source Code Analysis</h2>
+
+<h3 id="31-lock-construction">3.1 Lock Construction</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="nf">ReentrantReadWriteLock</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">this</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span> <span class="c1">// Default: non-fair lock</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="nf">ReentrantReadWriteLock</span><span class="o">(</span><span class="kt">boolean</span> <span class="n">fair</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">sync</span> <span class="o">=</span> <span class="n">fair</span> <span class="o">?</span> <span class="k">new</span> <span class="nc">FairSync</span><span class="o">()</span> <span class="o">:</span> <span class="k">new</span> <span class="nc">NonfairSync</span><span class="o">();</span>
+    <span class="n">readerLock</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ReadLock</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+    <span class="n">writerLock</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">WriteLock</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>The constructor allows specification of fairness. Internally, it initializes either a <code class="language-plaintext highlighter-rouge">FairSync</code> or <code class="language-plaintext highlighter-rouge">NonfairSync</code> strategy.</p>
+
+<h3 id="32-lock-views">3.2 Lock Views</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="nf">ReadLock</span><span class="o">(</span><span class="nc">ReentrantReadWriteLock</span> <span class="n">lock</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">sync</span> <span class="o">=</span> <span class="n">lock</span><span class="o">.</span><span class="na">sync</span><span class="o">;</span>
+<span class="o">}</span>
+
+<span class="kd">protected</span> <span class="nf">WriteLock</span><span class="o">(</span><span class="nc">ReentrantReadWriteLock</span> <span class="n">lock</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">sync</span> <span class="o">=</span> <span class="n">lock</span><span class="o">.</span><span class="na">sync</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Both read and write locks are interfaces to the same synchronization mechanism.</p>
+
+<h3 id="33-state-variable-design">3.3 State Variable Design</h3>
+<p>The internal <code class="language-plaintext highlighter-rouge">state</code> variable is a 32-bit integer:</p>
+<ul>
+  <li>High 16 bits: read lock count</li>
+  <li>Low 16 bits: write lock count</li>
+</ul>
+
+<p>This division enables atomic updates using CAS operations.</p>
+
+<h3 id="34-threadlocalholdcounter">3.4 ThreadLocalHoldCounter</h3>
+<p><code class="language-plaintext highlighter-rouge">ThreadLocalHoldCounter</code> maintains a separate counter for each thread, tracking the number of read locks it holds. This ensures that each thread can only release the locks it has acquired itself.</p>
+
+<h3 id="35-acquiring-the-read-lock">3.5 Acquiring the Read Lock</h3>
+<p><code class="language-plaintext highlighter-rouge">tryAcquireShared(int unused)</code> attempts to acquire the <strong>shared read lock</strong> without blocking. It is the first checkpoint to determine whether a read lock can be granted immediately.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kd">final</span> <span class="kt">int</span> <span class="nf">tryAcquireShared</span><span class="o">(</span><span class="kt">int</span> <span class="n">unused</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">Thread</span> <span class="n">current</span> <span class="o">=</span> <span class="nc">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">();</span>
+    <span class="kt">int</span> <span class="n">c</span> <span class="o">=</span> <span class="n">getState</span><span class="o">();</span> <span class="c1">//Retrieves the current thread and the lock state. </span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">exclusiveCount</span><span class="o">(</span><span class="n">c</span><span class="o">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">getExclusiveOwnerThread</span><span class="o">()</span> <span class="o">!=</span> <span class="n">current</span><span class="o">)</span>
+    <span class="c1">//If the write lock is held by another thread, </span>
+    <span class="c1">//the current thread cannot proceed with the read lock.</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">r</span> <span class="o">=</span> <span class="n">sharedCount</span><span class="o">(</span><span class="n">c</span><span class="o">);</span><span class="c1">//Extracts the current read lock count from the state.</span>
+    <span class="c1">//The thread doesn't need to block (based on fairness policy)</span>
+    <span class="c1">//The read count is below the limit</span>
+    <span class="c1">//The CAS operation successfully increments the read lock count</span>
+    <span class="k">if</span> <span class="o">(!</span><span class="n">readerShouldBlock</span><span class="o">()</span> <span class="o">&amp;&amp;</span> <span class="n">r</span> <span class="o">&lt;</span> <span class="no">MAX_COUNT</span> <span class="o">&amp;&amp;</span> <span class="n">compareAndSetState</span><span class="o">(</span><span class="n">c</span><span class="o">,</span> <span class="n">c</span> <span class="o">+</span> <span class="no">SHARED_UNIT</span><span class="o">))</span> <span class="o">{</span>
+        <span class="c1">//If the current thread is the first to acquire the read lock, </span>
+        <span class="c1">//or if it's reentering, update its hold count.</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">r</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">firstReader</span> <span class="o">=</span> <span class="n">current</span><span class="o">;</span>
+            <span class="n">firstReaderHoldCount</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">firstReader</span> <span class="o">==</span> <span class="n">current</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">firstReaderHoldCount</span><span class="o">++;</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span><span class="c1">// Use ThreadLocalHoldCounter to track the read lock count for this thread</span>
+            <span class="nc">HoldCounter</span> <span class="n">rh</span> <span class="o">=</span> <span class="n">cachedHoldCounter</span><span class="o">;</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">rh</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">rh</span><span class="o">.</span><span class="na">tid</span> <span class="o">!=</span> <span class="n">getThreadId</span><span class="o">(</span><span class="n">current</span><span class="o">))</span>
+                <span class="n">cachedHoldCounter</span> <span class="o">=</span> <span class="n">rh</span> <span class="o">=</span> <span class="n">readHolds</span><span class="o">.</span><span class="na">get</span><span class="o">();</span>
+            <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">rh</span><span class="o">.</span><span class="na">count</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span>
+                <span class="n">readHolds</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">rh</span><span class="o">);</span>
+            <span class="n">rh</span><span class="o">.</span><span class="na">count</span><span class="o">++;</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="mi">1</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="nf">fullTryAcquireShared</span><span class="o">(</span><span class="n">current</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>If <code class="language-plaintext highlighter-rouge">tryAcquireShared()</code> fails, the thread enters a spin-and-wait state in <code class="language-plaintext highlighter-rouge">doAcquireShared()</code>. It enqueues the current thread and manages the wait until the lock can be granted.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kt">void</span> <span class="nf">doAcquireShared</span><span class="o">(</span><span class="kt">int</span> <span class="n">arg</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">//Adds the current thread to the synchronization queue in shared mode</span>
+    <span class="kd">final</span> <span class="nc">Node</span> <span class="n">node</span> <span class="o">=</span> <span class="n">addWaiter</span><span class="o">(</span><span class="nc">Node</span><span class="o">.</span><span class="na">SHARED</span><span class="o">);</span>
+    <span class="kt">boolean</span> <span class="n">failed</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="kt">boolean</span> <span class="n">interrupted</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+        <span class="k">for</span> <span class="o">(;;)</span> <span class="o">{</span>
+            <span class="kd">final</span> <span class="nc">Node</span> <span class="n">p</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">predecessor</span><span class="o">();</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">p</span> <span class="o">==</span> <span class="n">head</span><span class="o">)</span> <span class="o">{</span>
+                <span class="c1">//If this thread is next in line (directly after the head), </span>
+                <span class="c1">//it reattempts to acquire the read lock.</span>
+                <span class="kt">int</span> <span class="n">r</span> <span class="o">=</span> <span class="n">tryAcquireShared</span><span class="o">(</span><span class="n">arg</span><span class="o">);</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">r</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="c1">//If successful, it promotes itself as the head </span>
+                    <span class="c1">//and potentially wakes up subsequent threads</span>
+                    <span class="n">setHeadAndPropagate</span><span class="o">(</span><span class="n">node</span><span class="o">,</span> <span class="n">r</span><span class="o">);</span>
+                    <span class="n">p</span><span class="o">.</span><span class="na">next</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">interrupted</span><span class="o">)</span>
+                        <span class="n">selfInterrupt</span><span class="o">();</span>
+                    <span class="n">failed</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+                    <span class="k">return</span><span class="o">;</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+            <span class="c1">//If not ready to acquire the lock,</span>
+            <span class="c1">//the thread is parked (i.e., blocked) until it is signaled.</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">shouldParkAfterFailedAcquire</span><span class="o">(</span><span class="n">p</span><span class="o">,</span> <span class="n">node</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">parkAndCheckInterrupt</span><span class="o">())</span>
+                <span class="n">interrupted</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="o">}</span><span class="c1">//for</span>
+    <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">failed</span><span class="o">)</span>
+        <span class="c1">//In case of interruption or failure, </span>
+        <span class="c1">//the node is removed from the queue to avoid blocking other threads.</span>
+            <span class="n">cancelAcquire</span><span class="o">(</span><span class="n">node</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="36-releasing-the-read-lock">3.6 Releasing the Read Lock</h3>
+<p><code class="language-plaintext highlighter-rouge">doReleaseShared()</code> is responsible for <strong>waking up the next thread(s)</strong> in the queue after a shared lock (typically a read lock) has been released. It is part of the shared-mode lock release mechanism in the AbstractQueuedSynchronizer (AQS) framework.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kt">void</span> <span class="nf">doReleaseShared</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">for</span> <span class="o">(;;)</span> <span class="o">{</span>
+        <span class="nc">Node</span> <span class="n">h</span> <span class="o">=</span> <span class="n">head</span><span class="o">;</span>
+        <span class="c1">//Checks if the queue is not empty. </span>
+        <span class="c1">//Only proceeds if there are other waiting threads.</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">h</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">h</span> <span class="o">!=</span> <span class="n">tail</span><span class="o">)</span> <span class="o">{</span>
+            <span class="kt">int</span> <span class="n">ws</span> <span class="o">=</span> <span class="n">h</span><span class="o">.</span><span class="na">waitStatus</span><span class="o">;</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">ws</span> <span class="o">==</span> <span class="nc">Node</span><span class="o">.</span><span class="na">SIGNAL</span><span class="o">)</span> <span class="o">{</span>
+                <span class="c1">//If the head node is in SIGNAL state, it tries to reset the status to 0.</span>
+                <span class="k">if</span> <span class="o">(!</span><span class="n">compareAndSetWaitStatus</span><span class="o">(</span><span class="n">h</span><span class="o">,</span> <span class="nc">Node</span><span class="o">.</span><span class="na">SIGNAL</span><span class="o">,</span> <span class="mi">0</span><span class="o">))</span>
+                    <span class="k">continue</span><span class="o">;</span>
+                <span class="c1">//If successful, </span>
+                <span class="c1">//it wakes up the next node in the queue using unparkSuccessor(h)</span>
+                <span class="n">unparkSuccessor</span><span class="o">(</span><span class="n">h</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">ws</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">compareAndSetWaitStatus</span><span class="o">(</span><span class="n">h</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="nc">Node</span><span class="o">.</span><span class="na">PROPAGATE</span><span class="o">))</span>
+                <span class="c1">//If the status is 0, </span>
+                <span class="c1">//it tries to change it to PROPAGATE to ensure </span>
+                <span class="c1">//that further propagation happens for shared access.</span>
+                <span class="k">continue</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="c1">////If the head has not changed during the loop, the process is complete</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">h</span> <span class="o">==</span> <span class="n">head</span><span class="o">)</span>
+            <span class="k">break</span><span class="o">;</span>
+    <span class="o">}</span><span class="c1">//for</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="37-acquiring-and-releasing-the-write-lock">3.7 Acquiring and Releasing the Write Lock</h3>
+<p><code class="language-plaintext highlighter-rouge">acquire(int arg)</code> is used to acquire a lock in exclusive mode, typically for write operations.</p>
+
+<p><code class="language-plaintext highlighter-rouge">release(int arg)</code> releases an exclusive lock and potentially wakes up the next waiting thread.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kt">void</span> <span class="nf">acquire</span><span class="o">(</span><span class="kt">int</span> <span class="n">arg</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">//First, it calls tryAcquire(arg) to attempt acquiring the lock immediately.</span>
+    <span class="c1">//If successful, the method returns and the lock is acquired.</span>
+    <span class="c1">//If the lock is not immediately available,</span>
+    
+    <span class="c1">//addWaiter(Node.EXCLUSIVE) creates a new node in exclusive mode </span>
+    <span class="c1">//and adds it to the waiting queue.</span>
+    
+    <span class="c1">//acquireQueued() blocks the thread in a queue until the lock becomes available.</span>
+    <span class="k">if</span> <span class="o">(!</span><span class="n">tryAcquire</span><span class="o">(</span><span class="n">arg</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">acquireQueued</span><span class="o">(</span><span class="n">addWaiter</span><span class="o">(</span><span class="nc">Node</span><span class="o">.</span><span class="na">EXCLUSIVE</span><span class="o">),</span> <span class="n">arg</span><span class="o">))</span>
+        <span class="c1">//If the thread is interrupted during this wait, </span>
+        <span class="c1">//selfInterrupt() sets the interrupt flag</span>
+        <span class="n">selfInterrupt</span><span class="o">();</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="kd">final</span> <span class="kt">boolean</span> <span class="nf">release</span><span class="o">(</span><span class="kt">int</span> <span class="n">arg</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">//tryRelease(arg) decreases the lock count </span>
+    <span class="c1">//or fully releases it if this is the last hold.</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">tryRelease</span><span class="o">(</span><span class="n">arg</span><span class="o">))</span> <span class="o">{</span><span class="c1">//If the lock is fully released</span>
+        <span class="nc">Node</span> <span class="n">h</span> <span class="o">=</span> <span class="n">head</span><span class="o">;</span>
+        <span class="c1">//Checks the head of the queue,</span>
+        <span class="c1">//If there are waiting threads (waitStatus != 0)</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">h</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">h</span><span class="o">.</span><span class="na">waitStatus</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span>
+            <span class="c1">//unparkSuccessor(h) wakes up the next node in the queue.</span>
+            <span class="n">unparkSuccessor</span><span class="o">(</span><span class="n">h</span><span class="o">);</span>
+        <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="c1">//Returns true if the lock was released, otherwise false.</span>
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="38-lock-downgrading-and-upgrading">3.8 Lock Downgrading and Upgrading</h3>
+
+<ul>
+  <li><strong>Downgrading</strong> (write → read) is allowed:
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">w</span><span class="o">.</span><span class="na">lock</span><span class="o">();</span>
+<span class="k">try</span> <span class="o">{</span>
+    <span class="c1">// do write</span>
+    <span class="n">r</span><span class="o">.</span><span class="na">lock</span><span class="o">();</span> <span class="c1">// acquire read lock before releasing write</span>
+<span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+    <span class="n">w</span><span class="o">.</span><span class="na">unlock</span><span class="o">();</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li><strong>Upgrading</strong> (read → write) is not allowed directly, as it may cause deadlocks.</li>
+</ul>
+
+<h2 id="4-performance-considerations-and-modern-enhancements">4. Performance Considerations and Modern Enhancements</h2>
+<h3 id="41-writer-starvation">4.1 Writer Starvation</h3>
+<p>When many threads hold the read lock, a write thread may be indefinitely blocked, leading to starvation.</p>
+
+<h3 id="42-java-8-stampedlock">4.2 Java 8: <code class="language-plaintext highlighter-rouge">StampedLock</code></h3>
+<p>Java 8 introduced <code class="language-plaintext highlighter-rouge">StampedLock</code>, which supports:</p>
+<ul>
+  <li>Exclusive write lock</li>
+  <li>Pessimistic read lock</li>
+  <li>Optimistic read mode for maximum concurrency
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">StampedLock</span> <span class="n">lock</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">StampedLock</span><span class="o">();</span>
+<span class="kt">long</span> <span class="n">stamp</span> <span class="o">=</span> <span class="n">lock</span><span class="o">.</span><span class="na">tryOptimisticRead</span><span class="o">();</span>
+<span class="k">try</span> <span class="o">{</span>
+  <span class="c1">// read operations</span>
+<span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+  <span class="k">if</span> <span class="o">(!</span><span class="n">lock</span><span class="o">.</span><span class="na">validate</span><span class="o">(</span><span class="n">stamp</span><span class="o">))</span> <span class="o">{</span>
+      <span class="n">stamp</span> <span class="o">=</span> <span class="n">lock</span><span class="o">.</span><span class="na">readLock</span><span class="o">();</span>
+      <span class="k">try</span> <span class="o">{</span>
+          <span class="c1">// fallback to read lock</span>
+      <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+          <span class="n">lock</span><span class="o">.</span><span class="na">unlockRead</span><span class="o">(</span><span class="n">stamp</span><span class="o">);</span>
+      <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<h3 id="43-java-21-virtual-threads">4.3 Java 21: Virtual Threads</h3>
+<p>With virtual threads (Project Loom), lock contention may seem reduced due to cheaper thread switching. However, <code class="language-plaintext highlighter-rouge">ReentrantReadWriteLock</code> behavior remains unchanged internally and must still be used carefully to avoid starvation.</p>
+
+<h2 id="5-best-practices">5. Best Practices</h2>
+
+<ul>
+  <li>Use <code class="language-plaintext highlighter-rouge">ReentrantReadWriteLock</code> only when read operations greatly outnumber writes.</li>
+  <li>Avoid holding write locks longer than necessary.</li>
+  <li>Use <code class="language-plaintext highlighter-rouge">StampedLock</code> for more scalable read scenarios.</li>
+  <li>Consider fairness for systems requiring strict execution order.</li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

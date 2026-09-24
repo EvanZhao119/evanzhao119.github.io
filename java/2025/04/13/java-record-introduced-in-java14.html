@@ -1,0 +1,158 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="java-record-introduced-in-java-14">Java <code class="language-plaintext highlighter-rouge">record</code> (Introduced in Java 14)</h1>
+
+<p>Java <strong><code class="language-plaintext highlighter-rouge">record</code></strong> is a feature introduced in Java 14, designed to simplify class definitions—especially for Data Transfer Objects (DTOs) or simple data carriers.</p>
+
+<p>A <code class="language-plaintext highlighter-rouge">record</code> is a special type of class that provides a concise way to declare <strong>immutable</strong> data objects and significantly reduces boilerplate code.</p>
+
+<h2 id="1-basic-definition">1. Basic Definition</h2>
+<p>A <code class="language-plaintext highlighter-rouge">record</code> is an <strong>immutable reference type</strong> that functions similarly to a regular class but provides several simplifications.</p>
+
+<p>Java automatically generates:</p>
+<ul>
+  <li>A constructor</li>
+  <li>Getter methods</li>
+  <li><code class="language-plaintext highlighter-rouge">equals()</code>, <code class="language-plaintext highlighter-rouge">hashCode()</code>, and <code class="language-plaintext highlighter-rouge">toString()</code> methods</li>
+</ul>
+
+<h3 id="example">Example</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="n">record</span> <span class="nf">Person</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="kt">int</span> <span class="n">age</span><span class="o">)</span> <span class="o">{</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>This automatically provides:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">public Person(String name, int age)</code></li>
+  <li><code class="language-plaintext highlighter-rouge">name()</code> and <code class="language-plaintext highlighter-rouge">age()</code> accessor methods</li>
+  <li>Implementations of <code class="language-plaintext highlighter-rouge">equals</code>, <code class="language-plaintext highlighter-rouge">hashCode</code>, and <code class="language-plaintext highlighter-rouge">toString</code></li>
+</ul>
+
+<h2 id="2-how-to-use-java-records">2. How to Use Java Records</h2>
+<h3 id="21-creating-a-record-object">2.1 Creating a <code class="language-plaintext highlighter-rouge">record</code> Object</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Main</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Person</span> <span class="n">person</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Person</span><span class="o">(</span><span class="s">"John"</span><span class="o">,</span> <span class="mi">30</span><span class="o">);</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">person</span><span class="o">.</span><span class="na">name</span><span class="o">());</span>  <span class="c1">// Output: John</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">person</span><span class="o">.</span><span class="na">age</span><span class="o">());</span>   <span class="c1">// Output: 30</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">person</span><span class="o">);</span>         <span class="c1">// Output: Person[name=John, age=30]</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="22-immutability">2.2 Immutability</h3>
+<p><code class="language-plaintext highlighter-rouge">record</code> fields are <strong>final</strong> and <strong>cannot be modified</strong> after creation.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// This will cause a compilation error</span>
+<span class="n">person</span><span class="o">.</span><span class="na">name</span> <span class="o">=</span> <span class="s">"Jane"</span><span class="o">;</span>  <span class="c1">// ❌ Error: Cannot assign a value to final variable 'name'</span>
+</code></pre></div></div>
+
+<h3 id="23-auto-generated-equals-hashcode-and-tostring">2.3 Auto-generated <code class="language-plaintext highlighter-rouge">equals</code>, <code class="language-plaintext highlighter-rouge">hashCode</code>, and <code class="language-plaintext highlighter-rouge">toString</code></h3>
+<p>These methods are generated based on all fields.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Person</span> <span class="n">person1</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Person</span><span class="o">(</span><span class="s">"John"</span><span class="o">,</span> <span class="mi">30</span><span class="o">);</span>
+<span class="nc">Person</span> <span class="n">person2</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Person</span><span class="o">(</span><span class="s">"John"</span><span class="o">,</span> <span class="mi">30</span><span class="o">);</span>
+
+<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">person1</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">person2</span><span class="o">));</span>            <span class="c1">// true</span>
+<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">person1</span><span class="o">.</span><span class="na">hashCode</span><span class="o">()</span> <span class="o">==</span> <span class="n">person2</span><span class="o">.</span><span class="na">hashCode</span><span class="o">());</span> <span class="c1">// true</span>
+<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">person1</span><span class="o">);</span>                            <span class="c1">// Output: Person[name=John, age=30]</span>
+</code></pre></div></div>
+
+<h2 id="3-advantages-and-features">3. Advantages and Features</h2>
+
+<ul>
+  <li><strong>Concise</strong>: Reduces boilerplate code</li>
+  <li><strong>Immutable</strong>: Safer in concurrent/multithreaded environments</li>
+  <li><strong>Auto-Generated Methods</strong>: <code class="language-plaintext highlighter-rouge">equals</code>, <code class="language-plaintext highlighter-rouge">hashCode</code>, <code class="language-plaintext highlighter-rouge">toString</code>, and accessors</li>
+</ul>
+
+<h2 id="4-limitations">4. Limitations</h2>
+
+<ul>
+  <li><strong>No Class Inheritance</strong>: Cannot extend other classes (implicitly extends <code class="language-plaintext highlighter-rouge">java.lang.Record</code>)</li>
+  <li><strong>No Setters</strong>: Fields are final, cannot be reassigned</li>
+  <li><strong>Limited Extensibility</strong>: You can add methods but not instance field modifiers</li>
+</ul>
+
+<h2 id="5-using-record-with-interfaces">5. Using <code class="language-plaintext highlighter-rouge">record</code> with Interfaces</h2>
+
+<p><code class="language-plaintext highlighter-rouge">record</code> types can implement interfaces:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">interface</span> <span class="nc">Identifiable</span> <span class="o">{</span>
+    <span class="nc">String</span> <span class="nf">getId</span><span class="o">();</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="n">record</span> <span class="nf">Person</span><span class="o">(</span><span class="nc">String</span> <span class="n">id</span><span class="o">,</span> <span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="kt">int</span> <span class="n">age</span><span class="o">)</span> <span class="kd">implements</span> <span class="nc">Identifiable</span> <span class="o">{</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="nc">String</span> <span class="nf">getId</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="n">id</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="6-summary">6. Summary</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Immutable Fields</strong></td>
+      <td>Fields are final and cannot be changed after creation</td>
+    </tr>
+    <tr>
+      <td><strong>Auto-generated Methods</strong></td>
+      <td>Constructor, accessors, <code class="language-plaintext highlighter-rouge">equals</code>, <code class="language-plaintext highlighter-rouge">hashCode</code>, <code class="language-plaintext highlighter-rouge">toString</code></td>
+    </tr>
+    <tr>
+      <td><strong>No Inheritance</strong></td>
+      <td>Cannot extend classes, but can implement interfaces</td>
+    </tr>
+    <tr>
+      <td><strong>Use Case</strong></td>
+      <td>Great for DTOs and simple data-holding structures</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Java <code class="language-plaintext highlighter-rouge">record</code> is ideal for:</p>
+
+<ul>
+  <li>Data Transfer Objects (DTOs)</li>
+  <li>Lightweight data holders</li>
+  <li>Reducing repetitive code</li>
+  <li>Improving code readability and maintainability</li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

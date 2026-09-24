@@ -1,0 +1,156 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="java-virtual-machine-jvm-memory">Java Virtual Machine (JVM) Memory</h1>
+
+<h2 id="introduction">Introduction</h2>
+<p>Simply put, Java source code is compiled by the Java compiler into <strong>bytecode</strong>.</p>
+
+<p>The JVM loads this compiled bytecode and <strong>executes it</strong>.</p>
+
+<p>This forms the basis of Java’s well-known <strong>“write once, run anywhere”</strong> capability, enabling platform independence by allowing the same compiled bytecode to be executed on any system equipped with a compliant Java Virtual Machine (JVM).</p>
+
+<h2 id="jvm-runtime-memory-areas">JVM Runtime Memory Areas</h2>
+<p>The memory structure of the JVM is divided into <strong><em>FIVE</em></strong> main runtime memory areas.</p>
+
+<h3 id="1-program-counter-pc-register">1. Program Counter (PC) Register</h3>
+<ul>
+  <li>Each thread has its own PC register.</li>
+  <li>It holds the address of the currently executing bytecode instruction.</li>
+  <li>If the thread is executing a native method, the value is undefined.</li>
+</ul>
+
+<h3 id="2-java-virtual-machine-stack">2. Java Virtual Machine Stack</h3>
+<ul>
+  <li>Each thread has its own private instance.</li>
+  <li>Stores <strong>stack frames</strong>, which contain:
+    <ul>
+      <li>Local variables</li>
+      <li>Operand stack</li>
+      <li>Dynamic linking info</li>
+      <li>Return addresses</li>
+    </ul>
+  </li>
+  <li>Used during method invocation and execution.</li>
+</ul>
+
+<p>When the required call stack depth exceeds the maximum allowed by the JVM, a <code class="language-plaintext highlighter-rouge">StackOverflowError</code> will be thrown.</p>
+
+<p>This typically occurs when a recursive function lacks a proper termination condition. One example as shown below.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">JVMStackOverflowError</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">recursiveFunc</span><span class="o">()</span> <span class="o">{</span>
+        <span class="n">recursiveFunc</span><span class="o">();</span> <span class="c1">// No termination condition</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">JVMStackOverflowError</span> <span class="n">example</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">JVMStackOverflowError</span><span class="o">();</span>
+        <span class="n">example</span><span class="o">.</span><span class="na">recursiveFunc</span><span class="o">();</span> <span class="c1">// Triggers StackOverflowError</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>In the example, the <code class="language-plaintext highlighter-rouge">recursiveFunc()</code> method continuously calls itself, resulting in stack frame accumulation until the JVM can no longer allocate more stack memory for the thread. This eventually causes a <code class="language-plaintext highlighter-rouge">StackOverflowError</code>.</p>
+
+<h3 id="3-native-method-stack">3. Native Method Stack</h3>
+<ul>
+  <li>Similar to the JVM stack, but used for native (non-Java) methods.</li>
+  <li>Not all JVMs separate this; for example, HotSpot combines it with the JVM stack.</li>
+</ul>
+
+<p>The Java Virtual Machine stack is used to store frames. The Java Virtual Machine is also free to use one or more stacks to support native methods.</p>
+
+<h3 id="4-heap">4. Heap</h3>
+<ul>
+  <li>Shared across all threads.</li>
+  <li>All class instances and arrays are allocated here.</li>
+  <li>Main area for Garbage Collection (GC). Typically divided into Young Generation (Eden, Survivor spaces), Old Generation and (Optional) Humongous regions in G1 GC.</li>
+</ul>
+
+<p>When new objects are continuously created and all of them remain reachable (i.e., cannot be reclaimed by the garbage collector), the heap may eventually run out of space, resulting in an <code class="language-plaintext highlighter-rouge">OutOfMemoryError</code>.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.util.LinkedList</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">JVMOutOfMemoryError</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Object</span><span class="o">&gt;</span> <span class="n">list</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">LinkedList</span><span class="o">&lt;&gt;();</span>
+        <span class="k">while</span> <span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">list</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">Object</span><span class="o">());</span> <span class="c1">// Keeps consuming heap memory</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>In above code, a <code class="language-plaintext highlighter-rouge">LinkedList</code> keeps growing as new Object instances are continuously added to it. Since all added objects are still referenced by the list, they cannot be garbage collected, which eventually leads to a heap overflow and triggers an <code class="language-plaintext highlighter-rouge">OutOfMemoryError</code>.</p>
+
+<h3 id="5-method-area">5. Method Area</h3>
+<ul>
+  <li>Shared among all threads.</li>
+  <li>Stores class metadata, including:
+    <ul>
+      <li>Class structures (fields, methods)</li>
+      <li>Runtime constant pool</li>
+      <li>Static variables</li>
+      <li>Method bytecodes</li>
+    </ul>
+  </li>
+</ul>
+
+<p>In Java 8 and later, implemented as Metaspace, which uses native memory instead of heap.</p>
+
+<h3 id="6plus-runtime-constant-pool">6Plus. Runtime Constant Pool</h3>
+<p>After introducing the five parts of JVM memory, I would like to highlight the Runtime Constant Pool separately. Although it is technically a part of the Method Area, it plays a critical role during class loading and bytecode execution.</p>
+
+<ul>
+  <li>A per-class runtime representation of the constant pool defined in the .class file.</li>
+  <li>Stores literals, symbolic references, method handles, etc.</li>
+</ul>
+
+<h2 id="further-topic-direct-memory-usage-in-java">Further Topic: Direct Memory Usage in Java</h2>
+
+<p>Direct memory may also be frequently used during program execution. Starting from JDK 1.4, the introduction of the New Input/Output (NIO) package brought a new I/O mechanism based on Channels and Buffers.</p>
+
+<p>This allows Java programs to allocate off-heap memory directly using native libraries, and then operate on it through a <code class="language-plaintext highlighter-rouge">DirectByteBuffer</code> object, <strong>which resides in the Java heap and serves as a reference to that off-heap memory.</strong></p>
+
+<h3 id="one-example">One Example</h3>
+<p>The <code class="language-plaintext highlighter-rouge">ByteBuffer.allocateDirect()</code> method is called repeatedly in a loop to allocate 1MB of direct memory each time. The returned ByteBuffer instances (which are technically DirectByteBuffer objects) are stored in a list without being released, eventually triggering an <code class="language-plaintext highlighter-rouge">OutOfMemoryError: Direct buffer memory</code>.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.nio.ByteBuffer</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.LinkedList</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">DirectMemoryOOMError</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">_1MB</span> <span class="o">=</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">List</span><span class="o">&lt;</span><span class="nc">ByteBuffer</span><span class="o">&gt;</span> <span class="n">list</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">LinkedList</span><span class="o">&lt;&gt;();</span>
+        <span class="k">while</span> <span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">ByteBuffer</span> <span class="n">byteBuffer</span> <span class="o">=</span> <span class="nc">ByteBuffer</span><span class="o">.</span><span class="na">allocateDirect</span><span class="o">(</span><span class="n">_1MB</span><span class="o">);</span>
+            <span class="n">list</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">byteBuffer</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

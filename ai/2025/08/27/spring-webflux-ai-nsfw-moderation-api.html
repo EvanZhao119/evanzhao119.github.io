@@ -1,0 +1,316 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="building-a-high-concurrency-ai-moderation-service-with-spring-webflux--from-concept-to-production">Building a High-Concurrency AI Moderation Service with Spring WebFlux — From Concept to Production</h1>
+<p>As AI applications move from research into real-world production, one of the biggest challenges is <strong>how to wrap model inference into a high-concurrency, low-latency API service</strong>.</p>
+
+<p>In this project, we implemented an <strong>NSFW image moderation API</strong>:</p>
+<ul>
+  <li><strong>Input:</strong> An image uploaded via <code class="language-plaintext highlighter-rouge">multipart/form-data</code></li>
+  <li><strong>Output:</strong> Classification results (porn, sexy, neutral) along with confidence scores</li>
+</ul>
+
+<p>We built it using <strong>Spring Boot + WebFlux + DJL (Deep Java Library)</strong>, creating a moderation service with production-level scalability.</p>
+
+<hr />
+
+<h2 id="1-why-webflux">1. Why WebFlux?</h2>
+
+<h3 id="11-the-limits-of-spring-mvc">1.1 The Limits of Spring MVC</h3>
+<p>Spring MVC is based on the Servlet model, where <strong>each request is tied to a dedicated thread</strong>.</p>
+
+<p>In AI inference scenarios:</p>
+<ul>
+  <li>Each prediction may take <strong>200–500ms</strong></li>
+  <li>During that time, the thread is blocked</li>
+  <li>Under high concurrency, the thread pool is quickly exhausted, and throughput drops</li>
+</ul>
+
+<h3 id="12-the-advantages-of-webflux">1.2 The Advantages of WebFlux</h3>
+<p>Spring WebFlux is built on <strong>Reactor’s reactive programming model</strong> and <strong>Netty’s non-blocking I/O</strong>.</p>
+
+<p>Key benefits:</p>
+<ul>
+  <li>Requests don’t block while waiting for inference</li>
+  <li>Tasks are handed off to <code class="language-plaintext highlighter-rouge">Mono</code>/<code class="language-plaintext highlighter-rouge">Flux</code>, freeing up the request thread immediately</li>
+  <li>Results are written back asynchronously once inference is done</li>
+</ul>
+
+<p>Using <em>Spring MVC</em> is like a waiter who takes your order and waits at your table until the food arrives. With <em>Spring WebFlux</em>, the waiter takes your order, the kitchen prepares it, and whichever waiter is free will deliver it. So the whole service will be more efficient.</p>
+
+<hr />
+
+<h2 id="2-project-structure">2. Project Structure</h2>
+<p><img src="/assets/images/2025_08_27_spring_webflux_ai_moderation_structure.png" alt="Spring WebFlux AI Moderation Service Project Structure Diagram" title="Spring WebFlux AI Moderation Service Project Structure" /></p>
+
+<hr />
+
+<h2 id="3-core-implementation">3. Core Implementation</h2>
+
+<h3 id="31-model-configuration-nsfwmodelconfigjava">3.1 Model Configuration (NsfwModelConfig.java)</h3>
+<p>Loads the NSFW model (PyTorch, via DJL) and handles preprocessing.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Configuration</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">NsfwModelConfig</span> <span class="o">{</span>
+
+    <span class="nd">@Bean</span>
+    <span class="kd">public</span> <span class="nc">ZooModel</span><span class="o">&lt;</span><span class="nc">NDList</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="nf">nsfwModel</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">Criteria</span><span class="o">&lt;</span><span class="nc">NDList</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">criteria</span> <span class="o">=</span> <span class="nc">Criteria</span><span class="o">.</span><span class="na">builder</span><span class="o">()</span>
+                <span class="o">.</span><span class="na">setTypes</span><span class="o">(</span><span class="nc">NDList</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+                <span class="o">.</span><span class="na">optModelPath</span><span class="o">(</span><span class="n">modelPath</span><span class="o">)</span>
+                <span class="o">.</span><span class="na">optTranslator</span><span class="o">(</span><span class="n">translator</span><span class="o">)</span>
+                <span class="o">.</span><span class="na">optEngine</span><span class="o">(</span><span class="s">"OnnxRuntime"</span><span class="o">)</span>
+                <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+        
+        <span class="k">return</span> <span class="nc">ModelZoo</span><span class="o">.</span><span class="na">loadModel</span><span class="o">(</span><span class="n">criteria</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="nc">NDArray</span> <span class="nf">preprocess</span><span class="o">(</span><span class="nc">BufferedImage</span> <span class="n">img</span><span class="o">,</span> <span class="nc">NDManager</span> <span class="n">manager</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kt">int</span> <span class="n">width</span> <span class="o">=</span> <span class="mi">224</span><span class="o">;</span>
+        <span class="kt">int</span> <span class="n">height</span> <span class="o">=</span> <span class="mi">224</span><span class="o">;</span>
+        <span class="kt">float</span><span class="o">[]</span> <span class="n">mean</span> <span class="o">=</span> <span class="o">{</span><span class="mf">0.485f</span><span class="o">,</span> <span class="mf">0.456f</span><span class="o">,</span> <span class="mf">0.406f</span><span class="o">};</span>
+        <span class="kt">float</span><span class="o">[]</span> <span class="n">std</span> <span class="o">=</span> <span class="o">{</span><span class="mf">0.229f</span><span class="o">,</span> <span class="mf">0.224f</span><span class="o">,</span> <span class="mf">0.225f</span><span class="o">};</span>
+
+        <span class="n">ai</span><span class="o">.</span><span class="na">djl</span><span class="o">.</span><span class="na">modality</span><span class="o">.</span><span class="na">cv</span><span class="o">.</span><span class="na">Image</span> <span class="n">djlImage</span> <span class="o">=</span> <span class="nc">ImageFactory</span><span class="o">.</span><span class="na">getInstance</span><span class="o">().</span><span class="na">fromImage</span><span class="o">(</span><span class="n">img</span><span class="o">);</span>
+        <span class="n">ai</span><span class="o">.</span><span class="na">djl</span><span class="o">.</span><span class="na">modality</span><span class="o">.</span><span class="na">cv</span><span class="o">.</span><span class="na">Image</span> <span class="n">scaled</span> <span class="o">=</span> <span class="n">djlImage</span><span class="o">.</span><span class="na">resize</span><span class="o">(</span><span class="n">width</span><span class="o">,</span> <span class="n">height</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+        <span class="nc">BufferedImage</span> <span class="n">buffered</span> <span class="o">=</span> <span class="o">(</span><span class="nc">BufferedImage</span><span class="o">)</span> <span class="n">scaled</span><span class="o">.</span><span class="na">getWrappedImage</span><span class="o">();</span>
+
+        <span class="kt">int</span><span class="o">[]</span> <span class="n">pixels</span> <span class="o">=</span> <span class="n">buffered</span><span class="o">.</span><span class="na">getRGB</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">width</span><span class="o">,</span> <span class="n">height</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">width</span><span class="o">);</span>
+        <span class="kt">float</span><span class="o">[]</span> <span class="n">data</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">float</span><span class="o">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">width</span> <span class="o">*</span> <span class="n">height</span><span class="o">];</span>
+
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">pixels</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+            <span class="kt">int</span> <span class="n">rgb</span> <span class="o">=</span> <span class="n">pixels</span><span class="o">[</span><span class="n">i</span><span class="o">];</span>
+            <span class="kt">int</span> <span class="n">r</span> <span class="o">=</span> <span class="o">(</span><span class="n">rgb</span> <span class="o">&gt;&gt;</span> <span class="mi">16</span><span class="o">)</span> <span class="o">&amp;</span> <span class="mh">0xFF</span><span class="o">;</span>
+            <span class="kt">int</span> <span class="n">g</span> <span class="o">=</span> <span class="o">(</span><span class="n">rgb</span> <span class="o">&gt;&gt;</span> <span class="mi">8</span><span class="o">)</span> <span class="o">&amp;</span> <span class="mh">0xFF</span><span class="o">;</span>
+            <span class="kt">int</span> <span class="n">b</span> <span class="o">=</span> <span class="n">rgb</span> <span class="o">&amp;</span> <span class="mh">0xFF</span><span class="o">;</span>
+
+            <span class="kt">int</span> <span class="n">h</span> <span class="o">=</span> <span class="n">i</span> <span class="o">/</span> <span class="n">width</span><span class="o">;</span>
+            <span class="kt">int</span> <span class="n">w</span> <span class="o">=</span> <span class="n">i</span> <span class="o">%</span> <span class="n">width</span><span class="o">;</span>
+            <span class="kt">int</span> <span class="n">idx</span> <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="n">width</span> <span class="o">+</span> <span class="n">w</span><span class="o">;</span>
+
+            <span class="n">data</span><span class="o">[</span><span class="n">idx</span><span class="o">]</span> <span class="o">=</span> <span class="o">((</span><span class="n">r</span> <span class="o">/</span> <span class="mi">255</span><span class="n">f</span><span class="o">)</span> <span class="o">-</span> <span class="n">mean</span><span class="o">[</span><span class="mi">0</span><span class="o">])</span> <span class="o">/</span> <span class="n">std</span><span class="o">[</span><span class="mi">0</span><span class="o">];</span>
+            <span class="n">data</span><span class="o">[</span><span class="n">width</span> <span class="o">*</span> <span class="n">height</span> <span class="o">+</span> <span class="n">idx</span><span class="o">]</span> <span class="o">=</span> <span class="o">((</span><span class="n">g</span> <span class="o">/</span> <span class="mi">255</span><span class="n">f</span><span class="o">)</span> <span class="o">-</span> <span class="n">mean</span><span class="o">[</span><span class="mi">1</span><span class="o">])</span> <span class="o">/</span> <span class="n">std</span><span class="o">[</span><span class="mi">1</span><span class="o">];</span>
+            <span class="n">data</span><span class="o">[</span><span class="mi">2</span> <span class="o">*</span> <span class="n">width</span> <span class="o">*</span> <span class="n">height</span> <span class="o">+</span> <span class="n">idx</span><span class="o">]</span> <span class="o">=</span> <span class="o">((</span><span class="n">b</span> <span class="o">/</span> <span class="mi">255</span><span class="n">f</span><span class="o">)</span> <span class="o">-</span> <span class="n">mean</span><span class="o">[</span><span class="mi">2</span><span class="o">])</span> <span class="o">/</span> <span class="n">std</span><span class="o">[</span><span class="mi">2</span><span class="o">];</span>
+        <span class="o">}</span>
+
+        <span class="k">return</span> <span class="n">manager</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="n">data</span><span class="o">,</span> <span class="k">new</span> <span class="nc">Shape</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="n">height</span><span class="o">,</span> <span class="n">width</span><span class="o">));</span> <span class="c1">// NCHW</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="32-reactive-service-moderationfluxservicejava">3.2 Reactive Service (ModerationFluxService.java)</h3>
+<p>Uses <code class="language-plaintext highlighter-rouge">Mono.fromCallable</code> with <code class="language-plaintext highlighter-rouge">Schedulers.boundedElastic()</code> to run inference off the main I/O thread.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Service</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ModerationFluxService</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="kd">final</span> <span class="nc">ZooModel</span><span class="o">&lt;</span><span class="nc">NDList</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">model</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="nf">ModerationFluxService</span><span class="o">(</span><span class="nc">ZooModel</span><span class="o">&lt;</span><span class="nc">NDList</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">model</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="nc">Mono</span><span class="o">&lt;</span><span class="nc">ModerationResult</span><span class="o">&gt;</span> <span class="nf">classify</span><span class="o">(</span><span class="nc">FilePart</span> <span class="n">file</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="nc">DataBufferUtils</span><span class="o">.</span><span class="na">join</span><span class="o">(</span><span class="n">file</span><span class="o">.</span><span class="na">content</span><span class="o">())</span>
+                <span class="o">.</span><span class="na">flatMap</span><span class="o">(</span><span class="n">buffer</span> <span class="o">-&gt;</span> <span class="nc">Mono</span><span class="o">.</span><span class="na">fromCallable</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+                    <span class="k">try</span> <span class="o">(</span><span class="nc">InputStream</span> <span class="n">in</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="na">asInputStream</span><span class="o">();</span>
+                         <span class="nc">Predictor</span><span class="o">&lt;</span><span class="nc">NDList</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">predictor</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="na">newPredictor</span><span class="o">())</span> <span class="o">{</span>
+
+                        <span class="nc">BufferedImage</span> <span class="n">img</span> <span class="o">=</span> <span class="nc">ImageIO</span><span class="o">.</span><span class="na">read</span><span class="o">(</span><span class="n">in</span><span class="o">);</span>
+                        <span class="nc">NDArray</span> <span class="n">nd</span> <span class="o">=</span> <span class="nc">NsfwModelConfig</span><span class="o">.</span><span class="na">preprocess</span><span class="o">(</span><span class="n">img</span><span class="o">,</span> <span class="n">model</span><span class="o">.</span><span class="na">getNDManager</span><span class="o">());</span>
+                        <span class="nc">NDList</span> <span class="n">input</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">NDList</span><span class="o">(</span><span class="n">nd</span><span class="o">);</span>
+                        <span class="nc">Classifications</span> <span class="n">out</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="na">predict</span><span class="o">(</span><span class="n">input</span><span class="o">);</span>
+
+                        <span class="kt">var</span> <span class="n">best</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="na">best</span><span class="o">();</span>
+                        <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Double</span><span class="o">&gt;</span> <span class="n">probs</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">LinkedHashMap</span><span class="o">&lt;&gt;();</span>
+                        <span class="n">out</span><span class="o">.</span><span class="na">items</span><span class="o">().</span><span class="na">forEach</span><span class="o">(</span><span class="n">i</span> <span class="o">-&gt;</span> <span class="n">probs</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">i</span><span class="o">.</span><span class="na">getClassName</span><span class="o">(),</span> <span class="n">i</span><span class="o">.</span><span class="na">getProbability</span><span class="o">()));</span>
+
+                        <span class="k">return</span> <span class="k">new</span> <span class="nf">ModerationResult</span><span class="o">(</span><span class="n">best</span><span class="o">.</span><span class="na">getClassName</span><span class="o">(),</span> <span class="n">best</span><span class="o">.</span><span class="na">getProbability</span><span class="o">(),</span> <span class="n">probs</span><span class="o">);</span>
+                    <span class="o">}</span>
+                <span class="o">}))</span>
+                <span class="o">.</span><span class="na">subscribeOn</span><span class="o">(</span><span class="nc">Schedulers</span><span class="o">.</span><span class="na">boundedElastic</span><span class="o">())</span> 
+                <span class="o">.</span><span class="na">timeout</span><span class="o">(</span><span class="nc">Duration</span><span class="o">.</span><span class="na">ofSeconds</span><span class="o">(</span><span class="mi">3</span><span class="o">))</span>        
+                <span class="o">.</span><span class="na">onErrorResume</span><span class="o">(</span><span class="nc">TimeoutException</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
+                        <span class="n">e</span> <span class="o">-&gt;</span> <span class="nc">Mono</span><span class="o">.</span><span class="na">just</span><span class="o">(</span><span class="nc">ModerationResult</span><span class="o">.</span><span class="na">timeoutFallback</span><span class="o">()));</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="33-controller-moderationfluxcontrollerjava">3.3 Controller (ModerationFluxController.java)</h3>
+
+<p>Handles <code class="language-plaintext highlighter-rouge">POST</code> requests with image uploads.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@RestController</span>
+<span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">"/flux/moderation"</span><span class="o">)</span>
+<span class="nd">@RequiredArgsConstructor</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ModerationFluxController</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="kd">final</span> <span class="nc">ModerationFluxService</span> <span class="n">service</span><span class="o">;</span>
+
+    <span class="nd">@PostMapping</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">"/check"</span><span class="o">,</span> <span class="n">consumes</span> <span class="o">=</span> <span class="nc">MediaType</span><span class="o">.</span><span class="na">MULTIPART_FORM_DATA_VALUE</span><span class="o">)</span>
+    <span class="kd">public</span> <span class="nc">Mono</span><span class="o">&lt;</span><span class="nc">ModerationResult</span><span class="o">&gt;</span> <span class="nf">check</span><span class="o">(</span><span class="nd">@RequestPart</span><span class="o">(</span><span class="s">"file"</span><span class="o">)</span> <span class="nc">FilePart</span> <span class="n">file</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="na">classify</span><span class="o">(</span><span class="n">file</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="4-performance-benchmarking">4. Performance Benchmarking</h2>
+
+<p>We ran a local benchmark of the <strong>WebFlux-based moderation API</strong> under <strong>200 concurrent users</strong> using JMeter. The following numbers reflect performance on my development machine and highlight the current bottlenecks.</p>
+
+<h3 id="test-summary">Test Summary</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>MVC API</th>
+      <th>WebFlux API</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Requests</td>
+      <td>1018</td>
+      <td>1340</td>
+    </tr>
+    <tr>
+      <td>Errors</td>
+      <td>0 (0.00%)</td>
+      <td>0 (0.00%)</td>
+    </tr>
+    <tr>
+      <td>Average Response Time</td>
+      <td>35,853 ms (~36s)</td>
+      <td><strong>26,957 ms (~27s)</strong></td>
+    </tr>
+    <tr>
+      <td>Min Response Time</td>
+      <td>3,232 ms</td>
+      <td><strong>340 ms</strong></td>
+    </tr>
+    <tr>
+      <td>Max Response Time</td>
+      <td><strong>49,187 ms (~49s)</strong></td>
+      <td>141,574 ms (~141s)</td>
+    </tr>
+    <tr>
+      <td>Median Response Time</td>
+      <td>36,556 ms</td>
+      <td><strong>23,713 ms</strong></td>
+    </tr>
+    <tr>
+      <td>90th Percentile</td>
+      <td><strong>42,631 ms</strong></td>
+      <td>54,292 ms</td>
+    </tr>
+    <tr>
+      <td>95th Percentile</td>
+      <td><strong>44,824 ms</strong></td>
+      <td>64,867 ms</td>
+    </tr>
+    <tr>
+      <td>99th Percentile</td>
+      <td><strong>**46,654 ms</strong></td>
+      <td>86,554 ms</td>
+    </tr>
+    <tr>
+      <td>Throughput</td>
+      <td><strong>4.93 req/s</strong></td>
+      <td>3.31 req/s</td>
+    </tr>
+    <tr>
+      <td>Avg. Response Size</td>
+      <td>4.8 KB</td>
+      <td>3.2 KB</td>
+    </tr>
+    <tr>
+      <td>APDEX (500ms / 1.5s)</td>
+      <td>0.000</td>
+      <td>0.002</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<h3 id="observations">Observations</h3>
+
+<ul>
+  <li><strong>Stability:</strong> Both handled all requests without errors.</li>
+  <li><strong>Latency:</strong>
+    <ul>
+      <li>MVC showed <strong>consistently high latency (~36s median)</strong> but relatively narrow distribution (most requests 32–47s).</li>
+      <li>WebFlux had <strong>lower average/median latency (~27s / 23s)</strong>, but a heavier <strong>long tail</strong>, with some requests reaching ~141s.</li>
+    </ul>
+  </li>
+  <li><strong>Throughput:</strong> MVC achieved slightly higher raw throughput (~4.9 req/s vs 3.3 req/s), but by <strong>blocking threads</strong>.</li>
+  <li><strong>Scalability:</strong> WebFlux prevents thread pool exhaustion, which makes it more resilient under high concurrency, whereas MVC will degrade linearly once threads are saturated.</li>
+  <li><strong>User Experience:</strong> Both APDEX scores were poor in this CPU-bound local test, but WebFlux still provides better concurrency handling in production-like scenarios.</li>
+</ul>
+
+<hr />
+
+<h3 id="key-takeaway">Key Takeaway</h3>
+
+<p>This benchmark was run on my <strong>local development machine without GPU acceleration</strong>. While absolute numbers look slow, WebFlux demonstrates <strong>better scalability than a blocking MVC version</strong> would under the same conditions. In high-concurrency scenarios, WebFlux ensures requests are handled asynchronously, preventing thread pool exhaustion.</p>
+
+<p>On local CPU tests, MVC delivers slightly higher throughput but suffers from rigid blocking latency. WebFlux, while showing long-tail effects, is <strong>better suited for scaling under true high-concurrency workloads</strong>, especially once GPU acceleration or batching is introduced.</p>
+
+<p><strong>Next steps:</strong> Optimizations such as <strong>GPU acceleration, inference batching, or distributed model serving</strong> will significantly improve throughput and latency in production environments.</p>
+
+<hr />
+
+<h2 id="5-conclusion">5. Conclusion</h2>
+<p>This project demonstrates how to build a <strong>production-ready AI moderation service</strong>:</p>
+<ul>
+  <li>Java-native model inference with <strong>DJL</strong></li>
+  <li>High-concurrency API using <strong>Spring WebFlux</strong></li>
+  <li>Benchmarking showed <strong>clear advantages over MVC</strong></li>
+  <li>Real-world JMeter tests revealed <strong>inference performance as the main bottleneck</strong></li>
+</ul>
+
+<p>This is more than just a demo — it’s a <strong>practical AI engineering case study</strong> for bringing deep learning models into production systems.</p>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+<ul>
+  <li><a href="https://docs.spring.io/spring-framework/reference/web/webflux.html">Spring WebFlux Documentation</a></li>
+  <li><a href="https://projectreactor.io/docs/core/release/reference/">Project Reactor Reference Guide</a></li>
+  <li>Related post: <a href="/ai/2025/08/24/spring-boot-djl-image-moderation-api.html">Building an AI Moderation API with Spring Boot &amp; WebFlux</a></li>
+  <li>Related post: <a href="/ai/2025/08/25/spring-mvc-vs-webflux-performance-comparison.html">Spring MVC vs WebFlux: A Practical Look at Concurrency and Performance</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

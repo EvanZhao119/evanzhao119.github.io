@@ -1,0 +1,240 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="versioned-prompts-and-tool-contracts-building-a-safe-auditable-and-rollback-ready-ai-system">Versioned Prompts and Tool Contracts: Building a Safe, Auditable, and Rollback-Ready AI System</h1>
+
+<h2 id="1-from-prompt-words-to-system-logic">1. From “Prompt Words” to “System Logic”</h2>
+<p>Most people think a <em>prompt</em> is just a few words you type into ChatGPT and other AI platforms, something like <em>“Write a report about climate change.”</em></p>
+
+<p>That’s true for casual use, but in an <strong>AI production system</strong>, a prompt is much more.</p>
+
+<p>It defines how your model behaves, what it outputs, and even how it interacts with external systems.</p>
+
+<p>For example, a prompt like this,</p>
+<div class="language-md highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Output <span class="gs">**JSON**</span>: summary, kpiTable, exceptions[], citations[].
+Tone: formal, auditable. Every conclusion must include a [citation] from context.
+</code></pre></div></div>
+<p>It isn’t just “a request.” It’s the <strong>behavioral definition</strong> of a task, like source code for your AI logic.</p>
+
+<hr />
+
+<h2 id="2-why-prompts-need-version-control">2. Why Prompts Need Version Control</h2>
+<p>In real projects, prompts evolve constantly. Someone does not think that format, adding new fields, or changing tone guidelines are significant. In fact, without version control, you’ll quickly hit chaos.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Scenario</th>
+      <th>What Happens Without Versioning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Report errors</strong></td>
+      <td>Output format changes leads to dashboard breaks</td>
+    </tr>
+    <tr>
+      <td><strong>Audit and compliance</strong></td>
+      <td>You can’t reproduce which prompt created which report</td>
+    </tr>
+    <tr>
+      <td><strong>Testing</strong></td>
+      <td>No way to roll out new prompts safely</td>
+    </tr>
+    <tr>
+      <td><strong>Collaboration</strong></td>
+      <td>Multiple people overwrite each other’s changes</td>
+    </tr>
+    <tr>
+      <td><strong>Rollback</strong></td>
+      <td>Once broken, you can’t restore the last stable version</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>So we need to treat every prompt as a <strong>deployable artifact</strong> with a version number and approval record.</p>
+
+<hr />
+
+<h2 id="3-what-prompt-versioning-really-means">3. What “Prompt Versioning” Really Means</h2>
+<p>We’re not only tracking text, but also versioning <strong>the model’s behavior</strong>. It means what it’s allowed to do and how it formats results.</p>
+
+<p>Each prompt version controls multiple aspects of the model’s behavior, from what it outputs to how it’s deployed.</p>
+<ul>
+  <li>The <strong>output format</strong> defines the structure, like a function’s return type in software.</li>
+  <li><strong>Tone and rules</strong> act as a style guide, ensuring the results sound consistent and auditable.</li>
+  <li>The list of <strong>allowed tools</strong> restricts what external APIs the model can call, similar to setting API permissions.</li>
+  <li>Every version keeps an <strong>approval log</strong>, like a commit history, so changes can be traced and reviewed.</li>
+  <li>Finally, the <strong>rollout</strong> process, such as letting only 10% of users use the new version, works just like a canary release, ensuring safety before full deployment.</li>
+</ul>
+
+<hr />
+
+<h2 id="4-what-is-a-tool-contract">4. What Is a “Tool Contract”?</h2>
+<p>This is where many people get confused, because <strong>Tool</strong> doesn’t mean another AI like ChatGPT.</p>
+
+<p>A <strong>Tool Contract</strong> defines <em>what external APIs, functions, or services the model is allowed to call.</em></p>
+
+<p>Think of it as giving the AI “security guards” to interact with the outside world.</p>
+
+<h3 id="example">Example</h3>
+<h4 id="prompt">Prompt</h4>
+<div class="language-md highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Generate a daily report and call write_back_sharepoint() to upload the results.
+</code></pre></div></div>
+<h4 id="tool-contract">Tool Contract</h4>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"write_back_sharepoint"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"content"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"returns"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"ok"</span><span class="p">:</span><span class="w"> </span><span class="s2">"boolean"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<p>When the model runs, it doesn’t actually upload anything itself. It just produces a <strong>call request</strong> like this.</p>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"write_back_sharepoint"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"reports/2025-10-21"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"json"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"content"</span><span class="p">:</span><span class="w"> </span><span class="s2">"{...}"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<p>Then your backend executes the API safely and logs the result. The <strong>Tool Contracting</strong> defines exactly <em>what</em> the model can do and <em>how</em> it does it.</p>
+
+<hr />
+
+<h2 id="5-why-tool-contracting-matters">5. Why Tool Contracting Matters</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Goal</th>
+      <th>Explanation</th>
+      <th>Benefit</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Control</strong></td>
+      <td>The model can only use approved APIs</td>
+      <td>Prevents misuse or security leaks</td>
+    </tr>
+    <tr>
+      <td><strong>Testing</strong></td>
+      <td>Contracts define fixed inputs and outputs</td>
+      <td>Easy to mock or unit-test</td>
+    </tr>
+    <tr>
+      <td><strong>Audit</strong></td>
+      <td>Every tool call is logged</td>
+      <td>Perfect traceability</td>
+    </tr>
+    <tr>
+      <td><strong>Team collaboration</strong></td>
+      <td>Separation between AI logic and APIs</td>
+      <td>Clear roles for dev and AI teams</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>In short:</p>
+<blockquote>
+  <p>Prompt = <em>What to do</em><br />
+Tool = <em>How (and what) the model is allowed to do it</em></p>
+</blockquote>
+
+<p>Together they form a reliable, testable, and secure AI task.</p>
+
+<hr />
+
+<h2 id="6-approvals-and-gradual-rollout">6. Approvals and Gradual Rollout</h2>
+<p>Prompts and tools are not changed directly in production. Every new version must be reviewed and recorded.</p>
+
+<h3 id="approval-record">Approval Record</h3>
+<div class="language-md highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="gh"># Approval — report.generate@v001</span>
+<span class="p">-</span> Author: Alex
+<span class="p">-</span> Reviewer: Bob
+<span class="p">-</span> Date: 2025-09-24
+<span class="p">-</span> Decision: Approved for 10% rollout
+</code></pre></div></div>
+
+<h3 id="gradual-rollout-example">Gradual Rollout Example</h3>
+<p>Only 10% of requests use the new version.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="o">(</span><span class="n">hash</span><span class="o">(</span><span class="n">traceId</span><span class="o">)</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="o">)</span>
+    <span class="n">use</span><span class="o">(</span><span class="s">"report.generate@v001"</span><span class="o">);</span>
+<span class="k">else</span>
+    <span class="nf">use</span><span class="o">(</span><span class="s">"report.generate@v000"</span><span class="o">);</span>
+</code></pre></div></div>
+<p>This lets you monitor new behavior safely before full deployment.</p>
+
+<hr />
+
+<h2 id="7-one-click-rollback">7. One-Click Rollback</h2>
+<p>Because prompts are versioned as static files, rollback is instant.</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>registry rollback report.generate v000
+</code></pre></div></div>
+<p>No rebuilds, no re-training, just revert and recover in seconds.</p>
+
+<hr />
+
+<h2 id="8-conclusions">8. Conclusions</h2>
+<p>After implementing this structure, your AI system gains,</p>
+<ul>
+  <li><strong>Prompt versioning</strong>: Every change is traceable, reviewable, and reversible.</li>
+  <li><strong>Tool contracts</strong>: Safe API boundaries between model and system.</li>
+  <li><strong>Gradual rollout</strong>: 10% traffic test before full release.</li>
+  <li><strong>One-click rollback</strong>: Fast recovery from bad updates.</li>
+  <li><strong>Audit trail</strong>: Who changed what and when.</li>
+</ul>
+
+<p>This turns your LLM workflow from a “black box” experiment into a <strong>real, maintainable software system</strong>.</p>
+
+<blockquote>
+  <p>Prompt defines <strong>what</strong> the AI should do. <br />
+Tool contracts define <strong>how</strong> it can do it. <br />
+Versioning, approval, and rollback make both <strong>safe, testable, and auditable</strong>.</p>
+</blockquote>
+
+<p>When you start treating prompts and tools like versioned software components, your AI stops being a fragile prototype and becomes a <strong>production-grade, reliable system</strong>.</p>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+<ul>
+  <li><a href="/ai/2025/10/15/llm-gateway.html">LLM Gateway: One Endpoint for Safety, Cost Control, and Observability</a></li>
+  <li><a href="/ai/2025/10/12/stable-names-task-contracts-json-schema.html">Stable Names + Task Contracts: Keep Callers Stable While You Evolve Internals</a></li>
+  <li><a href="/ai/2025/10/07/capability-pool-simple-guide.html">The Reuse Layer: Governing AI as a Capability, Not a Credential</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

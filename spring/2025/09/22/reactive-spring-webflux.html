@@ -1,0 +1,200 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="reactive-spring-reactive-web-explained">Reactive Spring: Reactive Web Explained</h1>
+<p>Spring MVC works on top of the Servlet API and follows a “one thread per request” model. This means that every incoming request needs its own thread. When the number of requests grows very largely, the server may end up managing too many threads, which leads to extra memory and CPU cost.</p>
+
+<p>Spring WebFlux takes a different approach. It is built on the Reactive Streams standard and uses non-blocking I/O with an event-loop style of processing. Instead of creating a new thread for every request, a small number of threads can handle many requests efficiently. This makes it much better for applications that spend a lot of time waiting on I/O operations, such as calling external services or databases. WebFlux is powered by Project Reactor, which introduces the core types Flux and Mono for handling reactive data flows.</p>
+
+<p><em>The key idea:</em> WebFlux is not meant to replace Spring MVC. Rather, it provides an alternative choice when you need applications that are scalable and non-blocking.</p>
+
+<hr />
+
+<h2 id="1-webflux-programming-models">1. WebFlux Programming Models</h2>
+<h3 id="1-annotation-based">(1) Annotation-based</h3>
+<p>Similar to Spring MVC (<code class="language-plaintext highlighter-rouge">@RestController</code>, <code class="language-plaintext highlighter-rouge">@RequestMapping</code>), but the return type is <strong>Mono/Flux</strong> instead of plain objects.</p>
+
+<p><strong>Annotation style feels familiar for MVC developers.</strong></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@RestController</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">GreetingController</span> <span class="o">{</span>
+    <span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/hello"</span><span class="o">)</span>
+    <span class="kd">public</span> <span class="nc">Mono</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="nf">hello</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="nc">Mono</span><span class="o">.</span><span class="na">just</span><span class="o">(</span><span class="s">"Hello, Reactive World!"</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="2-functional-routing">(2) Functional Routing</h3>
+<p>A more functional, DSL-style approach using <code class="language-plaintext highlighter-rouge">RouterFunction</code> and <code class="language-plaintext highlighter-rouge">HandlerFunction</code>.</p>
+
+<p><strong>Functional style is lightweight and flexible, similar to frameworks like Express.js or Ktor.</strong></p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Configuration</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">RouterConfig</span> <span class="o">{</span>
+    <span class="nd">@Bean</span>
+    <span class="kd">public</span> <span class="nc">RouterFunction</span><span class="o">&lt;</span><span class="nc">ServerResponse</span><span class="o">&gt;</span> <span class="nf">route</span><span class="o">(</span><span class="nc">GreetingHandler</span> <span class="n">handler</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="nc">RouterFunctions</span>
+                <span class="o">.</span><span class="na">route</span><span class="o">(</span><span class="nc">RequestPredicates</span><span class="o">.</span><span class="na">GET</span><span class="o">(</span><span class="s">"/hello"</span><span class="o">),</span> <span class="nl">handler:</span><span class="o">:</span><span class="n">hello</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="nd">@Component</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">GreetingHandler</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="nc">Mono</span><span class="o">&lt;</span><span class="nc">ServerResponse</span><span class="o">&gt;</span> <span class="nf">hello</span><span class="o">(</span><span class="nc">ServerRequest</span> <span class="n">request</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="nc">ServerResponse</span><span class="o">.</span><span class="na">ok</span><span class="o">().</span><span class="na">bodyValue</span><span class="o">(</span><span class="s">"Hello, Reactive World!"</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="2-return-types-mono-vs-flux">2. Return Types: Mono vs Flux</h2>
+<ul>
+  <li>**Mono<T>**: at most 1 element (think `Optional` or `Future`).</T></li>
+  <li>**Flux<T>**: 0…N elements (think `Stream`).</T></li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/users/{id}"</span><span class="o">)</span>
+<span class="kd">public</span> <span class="nc">Mono</span><span class="o">&lt;</span><span class="nc">User</span><span class="o">&gt;</span> <span class="nf">getUser</span><span class="o">(</span><span class="nd">@PathVariable</span> <span class="nc">String</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="n">userRepository</span><span class="o">.</span><span class="na">findById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+<span class="o">}</span>
+
+<span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/users"</span><span class="o">)</span>
+<span class="kd">public</span> <span class="nc">Flux</span><span class="o">&lt;</span><span class="nc">User</span><span class="o">&gt;</span> <span class="nf">getAllUsers</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="n">userRepository</span><span class="o">.</span><span class="na">findAll</span><span class="o">();</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="3-backpressure">3. Backpressure</h2>
+<p>Reactive Streams include <strong>backpressure</strong>: the subscriber tells the publisher <em>“I can only handle 5 items right now.”</em></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Flux</span><span class="o">.</span><span class="na">range</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">1000</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">log</span><span class="o">()</span>
+    <span class="o">.</span><span class="na">limitRate</span><span class="o">(</span><span class="mi">100</span><span class="o">);</span> <span class="c1">// request 100 items at a time</span>
+</code></pre></div></div>
+
+<p>This prevents overload and keeps the system stable.</p>
+
+<hr />
+
+<h2 id="4-webclient-replacing-resttemplate">4. WebClient (Replacing RestTemplate)</h2>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">RestTemplate</code> is <strong>blocking</strong>.</li>
+  <li><strong>WebClient</strong> is <strong>non-blocking</strong> and integrates with Mono/Flux.</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">WebClient</span> <span class="n">client</span> <span class="o">=</span> <span class="nc">WebClient</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="s">"http://localhost:8080"</span><span class="o">);</span>
+
+<span class="nc">Mono</span><span class="o">&lt;</span><span class="nc">User</span><span class="o">&gt;</span> <span class="n">user</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">get</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">uri</span><span class="o">(</span><span class="s">"/users/{id}"</span><span class="o">,</span> <span class="s">"123"</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">retrieve</span><span class="o">()</span>
+        <span class="o">.</span><span class="na">bodyToMono</span><span class="o">(</span><span class="nc">User</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</code></pre></div></div>
+<p>WebClient is the modern choice for microservices and concurrent API calls.</p>
+
+<hr />
+
+<h2 id="5-webflux-vs-spring-mvc">5. WebFlux vs Spring MVC</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>Spring MVC</th>
+      <th>Spring WebFlux</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Foundation</td>
+      <td>Servlet API (blocking I/O)</td>
+      <td>Reactive Streams + Netty/Undertow/Tomcat (non-blocking I/O)</td>
+    </tr>
+    <tr>
+      <td>Concurrency</td>
+      <td>Thread per request</td>
+      <td>Small event-loop thread pool</td>
+    </tr>
+    <tr>
+      <td>Return Types</td>
+      <td>Plain objects</td>
+      <td>Mono / Flux</td>
+    </tr>
+    <tr>
+      <td>HTTP Client</td>
+      <td>RestTemplate</td>
+      <td>WebClient</td>
+    </tr>
+    <tr>
+      <td>Best Use Case</td>
+      <td>CPU-bound apps, moderate traffic</td>
+      <td>I/O-heavy, high-concurrency apps</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<h2 id="6-example-streaming-data">6. Example: Streaming Data</h2>
+<p>This streams data to the client using <strong>Server-Sent Events (SSE)</strong>.<br />
+The front-end can use <code class="language-plaintext highlighter-rouge">EventSource</code> to receive updates in real time.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@GetMapping</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">"/stream"</span><span class="o">,</span> <span class="n">produces</span> <span class="o">=</span> <span class="nc">MediaType</span><span class="o">.</span><span class="na">TEXT_EVENT_STREAM_VALUE</span><span class="o">)</span>
+<span class="kd">public</span> <span class="nc">Flux</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="nf">stream</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="nc">Flux</span><span class="o">.</span><span class="na">interval</span><span class="o">(</span><span class="nc">Duration</span><span class="o">.</span><span class="na">ofSeconds</span><span class="o">(</span><span class="mi">1</span><span class="o">))</span>
+               <span class="o">.</span><span class="na">map</span><span class="o">(</span><span class="n">seq</span> <span class="o">-&gt;</span> <span class="s">"Message "</span> <span class="o">+</span> <span class="n">seq</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="7-key-takeaways">7. Key Takeaways</h2>
+<ol>
+  <li>WebFlux = <strong>reactive programming + non-blocking I/O</strong>.</li>
+  <li>Core types: <code class="language-plaintext highlighter-rouge">Mono</code> and <code class="language-plaintext highlighter-rouge">Flux</code>.</li>
+  <li>Two styles: Annotation-based (MVC-like) and Functional routing (DSL-like).</li>
+  <li>Use <strong>WebClient</strong>, not RestTemplate, for async calls.</li>
+  <li>Backpressure ensures system stability.</li>
+  <li>Best for <strong>high-concurrency, I/O-bound applications</strong>.</li>
+</ol>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+<ul>
+  <li><a href="https://docs.spring.io/spring-framework/reference/web/webflux.html">Spring WebFlux Documentation</a></li>
+  <li><a href="https://projectreactor.io/docs/core/release/reference/">Project Reactor Reference Guide</a></li>
+  <li><a href="https://www.reactive-streams.org/">Reactive Streams Specification</a></li>
+  <li><a href="https://docs.spring.io/spring-framework/reference/web/webflux-webclient.html">Spring WebClient Guide</a></li>
+  <li>Related post: <a href="/ai/2025/08/25/spring-mvc-vs-webflux-performance-comparison.html">Spring MVC vs WebFlux: A Practical Look at Concurrency and Performance</a></li>
+  <li>Related post: <a href="/ai/2025/08/27/spring-webflux-ai-nsfw-moderation-api.html">Building a High-Concurrency AI Moderation Service with Spring WebFlux — From Concept to Production</a></li>
+  <li>Related post: <a href="/ai/2025/08/31/spring-webflux-monitoring-prometheus-grafana.html">Monitoring Spring WebFlux with Prometheus and Grafana</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

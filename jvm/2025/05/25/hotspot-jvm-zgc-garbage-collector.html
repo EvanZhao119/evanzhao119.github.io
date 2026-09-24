@@ -1,0 +1,117 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="hotspot-jvm-non-generational-garbage-collectors---zgc-z-garbage-collector">HotSpot JVM Non-Generational Garbage Collectors - ZGC (Z Garbage Collector)</h1>
+
+<p>Modern garbage collectors like <strong>G1</strong>, <strong>Shenandoah</strong>, and <strong>ZGC</strong> are designed to address the challenges of large heaps, low-latency requirements, and scalability. Unlike traditional generational collectors, these collectors <strong>do not strictly separate the heap into young and old generations</strong>, but rather operate on <strong>region-based memory layouts</strong> for more flexibility and performance.</p>
+
+<blockquote>
+  <p><strong><em>Note</em></strong>: While G1 is still technically generational, its region-based and incremental nature blurs the line. Shenandoah and ZGC, however, are <strong>truly non-generational</strong>.</p>
+</blockquote>
+
+<h2 id="overview">Overview</h2>
+<ul>
+  <li>Production-ready since <strong>JDK 15</strong>.</li>
+  <li>Designed for <strong>scalable, sub-millisecond pause times</strong> and <strong>massive heaps</strong>.</li>
+  <li>Uses <strong>colored pointers</strong> and <strong>load barriers</strong> to enable object relocation during application execution.</li>
+</ul>
+
+<h2 id="key-innovations">Key Innovations</h2>
+<ul>
+  <li><strong>Colored Pointers</strong>: Metadata (like GC phase bits) is embedded directly into 64-bit pointers.</li>
+  <li><strong>Load Barriers</strong>: Intercept object loads and apply necessary checks/corrections for concurrent relocation.</li>
+  <li><strong>Concurrent Everything</strong>: Marking, relocation, remapping—all run <strong>concurrently</strong>.</li>
+</ul>
+
+<h2 id="features">Features</h2>
+<ul>
+  <li><strong>Pause times &lt; 10ms</strong> even on 1TB+ heaps.</li>
+  <li><strong>No STW full GCs</strong>, ever.</li>
+  <li><strong>Region-based</strong> with variable-size regions.</li>
+  <li>Supports <strong>class unloading, weak references, and finalization</strong> all concurrently.</li>
+</ul>
+
+<h2 id="compared-to-shenandoah">Compared to Shenandoah</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Aspect</th>
+      <th>ZGC</th>
+      <th>Shenandoah</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Core Technique</td>
+      <td>Colored Pointers + Load Barriers</td>
+      <td>Brooks Pointers + Read Barriers</td>
+    </tr>
+    <tr>
+      <td>Pause Time</td>
+      <td>&lt; 10ms</td>
+      <td>Low (but typically longer)</td>
+    </tr>
+    <tr>
+      <td>Max Heap Size</td>
+      <td>16 TB+</td>
+      <td>4 TB</td>
+    </tr>
+    <tr>
+      <td>Barrier Overhead</td>
+      <td>Lower</td>
+      <td>Slightly higher</td>
+    </tr>
+    <tr>
+      <td>Ideal Use Case</td>
+      <td>Ultra-large heap + low-latency</td>
+      <td>Responsive UI and backends</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="colored-pointer">Colored Pointer</h2>
+
+<p>A <strong>Colored Pointer</strong> is a technique used in some garbage collectors—most notably <strong>ZGC</strong>—to <strong>embed metadata directly into the object reference (pointer)</strong> itself.</p>
+
+<p>This metadata encodes information about the <strong>GC state of the object</strong>, such as,</p>
+<ul>
+  <li>Whether the object is being moved</li>
+  <li>Whether the reference needs to be remapped</li>
+  <li>What GC phase the object is in</li>
+</ul>
+
+<p>Modern 64-bit systems do <strong>not use all 64 bits</strong> of memory addresses. For example, on most systems,</p>
+<ul>
+  <li>Only the <strong>lower 48 bits</strong> are used for actual addressing.</li>
+  <li>The remaining <strong>upper bits</strong> (e.g., bits 49–63) are unused and available.</li>
+</ul>
+
+<p>ZGC leverages these <strong>spare bits</strong> to store GC-related metadata—these are the “colors” in the pointer.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

@@ -1,0 +1,123 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="how-to-use-instanceof-operator-in-java">How to Use <code class="language-plaintext highlighter-rouge">instanceof</code> Operator in Java</h1>
+
+<h2 id="introduction">Introduction</h2>
+
+<p>The <code class="language-plaintext highlighter-rouge">instanceof</code> operator in Java is used to test whether an object is an instance of a specific class or implements a particular interface. It is a fundamental tool for type checking and is often used in polymorphism and object-oriented programming.</p>
+
+<h2 id="practical-use-cases">Practical Use Cases</h2>
+
+<h3 id="1-type-checking-before-casting">1. Type Checking Before Casting</h3>
+
+<p>Using <code class="language-plaintext highlighter-rouge">instanceof</code> before casting prevents <code class="language-plaintext highlighter-rouge">ClassCastException</code>.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">class</span> <span class="nc">Vehicle</span> <span class="o">{}</span>
+<span class="kd">class</span> <span class="nc">Car</span> <span class="kd">extends</span> <span class="nc">Vehicle</span> <span class="o">{</span>
+    <span class="kt">void</span> <span class="nf">drive</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Driving a car..."</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">TypeCheckingExample</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Vehicle</span> <span class="n">v</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Car</span><span class="o">();</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">v</span> <span class="k">instanceof</span> <span class="nc">Car</span><span class="o">)</span> <span class="o">{</span>
+            <span class="o">((</span><span class="nc">Car</span><span class="o">)</span> <span class="n">v</span><span class="o">).</span><span class="na">drive</span><span class="o">();</span> <span class="c1">// Safe casting</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="2-implementing-polymorphic-behavior-with-specific-actions">2. Implementing Polymorphic Behavior with Specific Actions</h3>
+
+<p>In real-world applications, instanceof is useful when different subclasses require specific actions beyond a common method.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">abstract</span> <span class="kd">class</span> <span class="nc">Employee</span> <span class="o">{</span>
+    <span class="kd">abstract</span> <span class="kt">void</span> <span class="nf">work</span><span class="o">();</span>
+<span class="o">}</span>
+
+<span class="kd">class</span> <span class="nc">Developer</span> <span class="kd">extends</span> <span class="nc">Employee</span> <span class="o">{</span>
+    <span class="kt">void</span> <span class="nf">work</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Writing code..."</span><span class="o">);</span>
+    <span class="o">}</span>
+    
+    <span class="kt">void</span> <span class="nf">debugCode</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Debugging code..."</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kd">class</span> <span class="nc">Manager</span> <span class="kd">extends</span> <span class="nc">Employee</span> <span class="o">{</span>
+    <span class="kt">void</span> <span class="nf">work</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Managing team..."</span><span class="o">);</span>
+    <span class="o">}</span>
+    
+    <span class="kt">void</span> <span class="nf">conductMeeting</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Conducting a meeting..."</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">InstanceofExample</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Employee</span><span class="o">[]</span> <span class="n">employees</span> <span class="o">=</span> <span class="o">{</span> <span class="k">new</span> <span class="nc">Developer</span><span class="o">(),</span> <span class="k">new</span> <span class="nc">Manager</span><span class="o">(),</span> <span class="k">new</span> <span class="nc">Developer</span><span class="o">()</span> <span class="o">};</span>
+
+        <span class="k">for</span> <span class="o">(</span><span class="nc">Employee</span> <span class="n">emp</span> <span class="o">:</span> <span class="n">employees</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">emp</span><span class="o">.</span><span class="na">work</span><span class="o">();</span> <span class="c1">// Calls common method</span>
+
+            <span class="k">if</span> <span class="o">(</span><span class="n">emp</span> <span class="k">instanceof</span> <span class="nc">Developer</span><span class="o">)</span> <span class="o">{</span>
+                <span class="o">((</span><span class="nc">Developer</span><span class="o">)</span> <span class="n">emp</span><span class="o">).</span><span class="na">debugCode</span><span class="o">();</span> <span class="c1">// Only Developer can debug code</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">emp</span> <span class="k">instanceof</span> <span class="nc">Manager</span><span class="o">)</span> <span class="o">{</span>
+                <span class="o">((</span><span class="nc">Manager</span><span class="o">)</span> <span class="n">emp</span><span class="o">).</span><span class="na">conductMeeting</span><span class="o">();</span> <span class="c1">// Only Manager can conduct meetings</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="3-avoiding-nullpointerexception">3. Avoiding NullPointerException</h3>
+
+<p><code class="language-plaintext highlighter-rouge">instanceof</code> returns <code class="language-plaintext highlighter-rouge">false</code> for <code class="language-plaintext highlighter-rouge">null</code> values, avoiding potential exceptions.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">String</span> <span class="n">str</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">str</span> <span class="k">instanceof</span> <span class="nc">String</span><span class="o">);</span> <span class="c1">// false</span>
+</code></pre></div></div>
+
+<h2 id="best-practices">Best Practices</h2>
+
+<ol>
+  <li><strong>Prefer Polymorphism Over <code class="language-plaintext highlighter-rouge">instanceof</code></strong> – Instead of checking the type, consider using method overriding and abstract classes to handle different behaviors.</li>
+  <li><strong>Avoid Overuse</strong> – Excessive use of <code class="language-plaintext highlighter-rouge">instanceof</code> may indicate poor object-oriented design; try using interfaces and polymorphism instead.</li>
+  <li><strong>Ensure Correct Type Hierarchies</strong> – Only use <code class="language-plaintext highlighter-rouge">instanceof</code> when it makes logical sense within your application’s design.</li>
+</ol>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>The <code class="language-plaintext highlighter-rouge">instanceof</code> operator is a useful tool for runtime type checking in Java. While it helps in preventing <code class="language-plaintext highlighter-rouge">ClassCastException</code> and implementing polymorphic behavior, overusing it can lead to less maintainable code. Proper design practices should be followed to minimize reliance on <code class="language-plaintext highlighter-rouge">instanceof</code> and leverage object-oriented principles effectively.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

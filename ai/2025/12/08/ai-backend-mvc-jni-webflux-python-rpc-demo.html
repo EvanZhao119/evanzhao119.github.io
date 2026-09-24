@@ -1,0 +1,133 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="building-a-modern-ai-ready-backend-web-mvc-jni-webflux-and-python-rpc">Building a Modern AI-Ready Backend: Web MVC, JNI, WebFlux, and Python RPC</h1>
+<p>I designed and implemented a modular backend architecture that supports <strong>traditional Spring MVC services</strong>, <strong>native AI acceleration through JNI</strong>, <strong>reactive APIs using WebFlux</strong>, and <strong>remote Python-based inference</strong>. Through this project, I explored multiple approaches to bridging classical Java backend engineering with contemporary AI workloads.</p>
+
+<hr />
+
+<h2 id="demo-video">Demo Video</h2>
+<p>Here is the complete demonstration integrating all four components.</p>
+
+<iframe width="100%" height="450" src="https://www.youtube.com/embed/mgG__Lo6OXQ" title="AI Backend Integration Demo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="">
+</iframe>
+
+<hr />
+
+<h2 id="1-java-web-mvc-core-library">1. Java Web MVC Core Library</h2>
+<p>The module focuses on building a clean and extensible Java MVC backend library.</p>
+<ul>
+  <li>Implemented using a standard, well-structured <strong>Spring MVC</strong> architecture</li>
+  <li>Abstracted the service, controller, and repository layers for <strong>rapid development</strong></li>
+  <li>Built reusable components to support future AI modules and reactive extensions</li>
+  <li>Optimized for fast iteration and deployment in low-traffic environments</li>
+</ul>
+
+<hr />
+
+<h2 id="2-jni-bridge-for-ai-integration">2. JNI Bridge for AI Integration</h2>
+<p>To connect Java with native AI modules, I developed a Java Native Interface (JNI) layer.</p>
+<ul>
+  <li>Bridges Java services with <strong>C++ native AI components</strong></li>
+  <li>Enables <strong>efficient data exchange</strong> between the JVM and the native runtime</li>
+  <li>Provides high-performance access to low-level AI model execution</li>
+  <li>Serves as a critical foundation for extending Java applications with advanced AI capabilities</li>
+</ul>
+
+<hr />
+
+<h2 id="3-reactive-api-with-spring-webflux">3. Reactive API with Spring WebFlux</h2>
+<p>Next, I added a non-blocking reactive API layer using Spring WebFlux.</p>
+<ul>
+  <li>Handles <strong>high concurrency</strong> with minimal resource usage</li>
+  <li>Ideal for <strong>streaming AI responses</strong> or <strong>batch</strong> prediction workloads</li>
+  <li>Fully asynchronous and scalable</li>
+  <li>This module brings modern reactive architecture into the system</li>
+</ul>
+
+<hr />
+
+<h2 id="4-python-rpc-model-service">4. Python RPC Model Service</h2>
+<p>Finally, I created a Python RPC inference server.</p>
+<ul>
+  <li>Exposes AI model inference through a lightweight <strong>RPC protocol</strong></li>
+  <li>Decouples AI lifecycle from JVM, making the system <strong>more flexible</strong></li>
+  <li>Allows Java services to call Python algorithms remotely</li>
+  <li>This design is highly suitable for real AI deployment in production environments</li>
+</ul>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+
+<h3 id="java--ai-backend-integration">Java + AI Backend Integration</h3>
+<ul>
+  <li><a href="/ai/2025/08/14/deploy-resnet-java-djl-tutorial.html">Deploying ResNet in Java with DJL — A Complete Tutorial</a></li>
+  <li><a href="/ai/2025/08/18/java-grpc-http-clients-python-inference.html">Java gRPC &amp; HTTP Clients for Python Inference Services</a></li>
+  <li><a href="/ai/2025/08/21/djl-resnet-jni-image-preprocessing.html">DJL ResNet JNI Image Preprocessing Pipeline</a></li>
+  <li><a href="/ai/2025/08/24/spring-boot-djl-image-moderation-api.html">Spring Boot + DJL Image Moderation API</a></li>
+</ul>
+
+<h3 id="spring-mvc--webflux">Spring MVC &amp; WebFlux</h3>
+<ul>
+  <li><a href="/ai/2025/08/25/spring-mvc-vs-webflux-performance-comparison.html">Spring MVC vs WebFlux — Performance Comparison</a></li>
+  <li><a href="/ai/2025/08/27/spring-webflux-ai-nsfw-moderation-api.html">Building an AI Moderation API with Spring WebFlux</a></li>
+  <li><a href="/ai/2025/08/31/spring-webflux-monitoring-prometheus-grafana.html">Monitoring Spring WebFlux with Prometheus &amp; Grafana</a></li>
+</ul>
+
+<h3 id="python-inference--rpc">Python Inference &amp; RPC</h3>
+<ul>
+  <li><a href="/ai/2025/08/16/python-inference-service-fastapi-grpc.html">Building a Python Inference Service with FastAPI &amp; gRPC</a></li>
+</ul>
+
+<h3 id="ai-infrastructure--system-design">AI Infrastructure &amp; System Design</h3>
+<ul>
+  <li><a href="/ai/2025/10/07/capability-pool-simple-guide.html">Capability Pools — A Simple Guide</a></li>
+  <li><a href="/ai/2025/10/12/stable-names-task-contracts-json-schema.html">Stable Names for Task Contracts (JSON Schema)</a></li>
+  <li><a href="/ai/2025/10/15/llm-gateway.html">LLM Gateway Architecture</a></li>
+  <li><a href="/ai/2025/10/21/versioned-prompts-and-tool-contracts.html">Versioned Prompts &amp; Tool Contracts</a></li>
+</ul>
+
+<h3 id="retrieval-evaluation--governance">Retrieval, Evaluation &amp; Governance</h3>
+<ul>
+  <li><a href="/ai/2025/10/27/rag-query-citations.html">Building a Trustworthy RAG System: Source-Cited Answers</a></li>
+  <li><a href="/ai/2025/10/31/eval-canary-redlines.html">Evaluation and Redlines — Safety Evaluation Framework</a></li>
+  <li><a href="/ai/2025/11/05/hitl-review-idempotent-writeback.html">HITL Review &amp; Idempotent Writebacks</a></li>
+  <li><a href="/ai/2025/11/09/observability-and-billing-ops-finance.html">Observability, Billing, and Ops Finance Layer</a></li>
+</ul>
+
+<h2 id="external-references">External References</h2>
+<ul>
+  <li><a href="https://docs.djl.ai/">Official DJL (Deep Java Library) Documentation</a></li>
+  <li><a href="https://docs.spring.io/spring-framework/reference/web/webflux.html">Spring WebFlux Reference Guide</a></li>
+  <li><a href="https://docs.oracle.com/javase/8/docs/technotes/guides/jni/">Java Native Interface (JNI) Guide – Oracle Docs</a></li>
+  <li><a href="https://fastapi.tiangolo.com/">FastAPI Official Documentation</a></li>
+  <li><a href="https://grpc.io/">gRPC — High-Performance RPC Framework</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

@@ -1,0 +1,324 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="how-a-spring-boot-web-app-starts-step-by-step-explained">How a Spring Boot Web App Starts: Step-by-Step Explained</h1>
+<p>This article explains the full startup process of a Spring Boot Web application, from the <code class="language-plaintext highlighter-rouge">main()</code> method to the application being fully initialized. <strong>I chose the older version(Spring Boot 1.5.7.RELEASE) because it is more understandable and fundational.</strong> And I will provide some updates in Spring Boot 3.x.</p>
+
+<h2 id="step-0-app-entry-point-main-method">Step 0: App Entry Point (main method)</h2>
+<p>Everything starts from this <code class="language-plaintext highlighter-rouge">main()</code> method.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@SpringBootApplication</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Application</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">SpringApplication</span><span class="o">.</span><span class="na">run</span><span class="o">(</span><span class="nc">Application</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="step-1-initializing-springapplication">Step 1: Initializing SpringApplication</h2>
+<p><code class="language-plaintext highlighter-rouge">SpringApplication.run()</code> creates a <code class="language-plaintext highlighter-rouge">SpringApplication</code> object and calls its <code class="language-plaintext highlighter-rouge">run()</code> method. Inside the constructor, <code class="language-plaintext highlighter-rouge">initialize()</code> prepares the setup.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="nc">ConfigurableApplicationContext</span> <span class="nf">run</span><span class="o">(</span><span class="nc">Object</span><span class="o">[]</span> <span class="n">sources</span><span class="o">,</span> <span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">return</span> <span class="k">new</span> <span class="nf">SpringApplication</span><span class="o">(</span><span class="n">sources</span><span class="o">).</span><span class="na">run</span><span class="o">(</span><span class="n">args</span><span class="o">);</span>
+<span class="o">}</span>
+<span class="kd">public</span> <span class="nf">SpringApplication</span><span class="o">(</span><span class="nc">Object</span><span class="o">...</span> <span class="n">sources</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">initialize</span><span class="o">(</span><span class="n">sources</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<h3 id="key-actions-in-initialize">Key Actions in <code class="language-plaintext highlighter-rouge">initialize()</code></h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">setInitializers()</code>: Adds setup logic before context refresh.</li>
+  <li><code class="language-plaintext highlighter-rouge">setListeners()</code>: Registers listeners for app events.</li>
+  <li><strong>(Updated in Spring Boot 3.x)</strong>: Replaced <code class="language-plaintext highlighter-rouge">webEnvironment</code> with <code class="language-plaintext highlighter-rouge">WebApplicationType</code> enum (SERVLET, REACTIVE, NONE).
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kt">void</span> <span class="nf">initialize</span><span class="o">(</span><span class="nc">Object</span><span class="o">[]</span> <span class="n">sources</span><span class="o">)</span> <span class="o">{</span>
+<span class="k">if</span> <span class="o">(</span><span class="n">sources</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">sources</span><span class="o">.</span><span class="na">length</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">this</span><span class="o">.</span><span class="na">sources</span><span class="o">.</span><span class="na">addAll</span><span class="o">(</span><span class="nc">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="n">sources</span><span class="o">));</span>
+<span class="o">}</span>
+<span class="k">this</span><span class="o">.</span><span class="na">webEnvironment</span> <span class="o">=</span> <span class="n">deduceWebEnvironment</span><span class="o">();</span>
+<span class="n">setInitializers</span><span class="o">((</span><span class="nc">Collection</span><span class="o">)</span> <span class="n">getSpringFactoriesInstances</span><span class="o">(</span><span class="nc">ApplicationContextInitializer</span><span class="o">.</span><span class="na">class</span><span class="o">));</span>
+<span class="n">setListeners</span><span class="o">((</span><span class="nc">Collection</span><span class="o">)</span> <span class="n">getSpringFactoriesInstances</span><span class="o">(</span><span class="nc">ApplicationListener</span><span class="o">.</span><span class="na">class</span><span class="o">));</span>
+<span class="k">this</span><span class="o">.</span><span class="na">mainApplicationClass</span> <span class="o">=</span> <span class="n">deduceMainApplicationClass</span><span class="o">();</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<h2 id="step-2-running-the-app">Step 2: Running the App</h2>
+<p>The code is a simplified version that retains the key parts, labeled from Step 3 to Step 9.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="nc">ConfigurableApplicationContext</span> <span class="nf">run</span><span class="o">(</span><span class="nc">String</span><span class="o">...</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">listeners</span><span class="o">.</span><span class="na">starting</span><span class="o">();</span>
+    <span class="c1">// Step 3: Parse application arguments and prepare the environment</span>
+    <span class="nc">ApplicationArguments</span> <span class="n">appArgs</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">DefaultApplicationArguments</span><span class="o">(</span><span class="n">args</span><span class="o">);</span>
+    <span class="nc">ConfigurableEnvironment</span> <span class="n">env</span> <span class="o">=</span> <span class="n">prepareEnvironment</span><span class="o">(</span><span class="n">listeners</span><span class="o">,</span> <span class="n">appArgs</span><span class="o">);</span>
+    <span class="c1">// Step 4: Print the startup banner</span>
+    <span class="nc">Banner</span> <span class="n">banner</span> <span class="o">=</span> <span class="n">printBanner</span><span class="o">(</span><span class="n">env</span><span class="o">);</span>
+    <span class="c1">// Step 5: Create the application context</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="n">createApplicationContext</span><span class="o">();</span>
+    <span class="c1">// Step 6: Prepare the context before refreshing</span>
+    <span class="n">prepareContext</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">env</span><span class="o">,</span> <span class="n">listeners</span><span class="o">,</span> <span class="n">appArgs</span><span class="o">,</span> <span class="n">banner</span><span class="o">);</span>
+    <span class="c1">// Step 7: Refresh the context (core Spring logic)</span>
+    <span class="n">refreshContext</span><span class="o">(</span><span class="n">context</span><span class="o">);</span>
+    <span class="c1">// Step 8: Call custom runners after context initialization</span>
+    <span class="n">afterRefresh</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">appArgs</span><span class="o">);</span>
+    <span class="c1">// Step 9: Notify listeners that startup is finished</span>
+    <span class="n">listeners</span><span class="o">.</span><span class="na">finished</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+    <span class="k">return</span> <span class="n">context</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="step-3-processing-command-line-args-and-environment">Step 3: Processing Command-Line Args and Environment</h2>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">ApplicationArguments</code>: Parses command-line input.</li>
+  <li><code class="language-plaintext highlighter-rouge">ConfigurableEnvironment</code>: Handles environment config.</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">ApplicationArguments</span> <span class="n">appArgs</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">DefaultApplicationArguments</span><span class="o">(</span><span class="n">args</span><span class="o">);</span>
+<span class="nc">ConfigurableEnvironment</span> <span class="n">env</span> <span class="o">=</span> <span class="n">prepareEnvironment</span><span class="o">(</span><span class="n">listeners</span><span class="o">,</span> <span class="n">appArgs</span><span class="o">);</span>
+</code></pre></div></div>
+<p><strong>(Updated)</strong>: Spring Boot 3 uses <code class="language-plaintext highlighter-rouge">SpringApplicationBuilder</code> more for configuration.</p>
+
+<h2 id="step-4-showing-the-banner">Step 4: Showing the Banner</h2>
+<p>Displays the startup banner.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Banner</span> <span class="n">banner</span> <span class="o">=</span> <span class="n">printBanner</span><span class="o">(</span><span class="n">env</span><span class="o">);</span>
+</code></pre></div></div>
+<p>Customize it with.</p>
+<div class="language-properties highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="py">banner.location</span><span class="p">=</span><span class="s">classpath:my-banner.txt</span>
+</code></pre></div></div>
+
+<h2 id="step-5-creating-the-context">Step 5: Creating the Context</h2>
+<p>Spring Boot creates a context (container), usually a web context.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="nc">ConfigurableApplicationContext</span> <span class="nf">createApplicationContext</span><span class="o">()</span> <span class="o">{</span>
+    <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">contextClass</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">applicationContextClass</span><span class="o">;</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">contextClass</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">contextClass</span> <span class="o">=</span> <span class="nc">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">webEnvironment</span> <span class="o">?</span> <span class="no">DEFAULT_WEB_CONTEXT_CLASS</span> <span class="o">:</span> <span class="no">DEFAULT_CONTEXT_CLASS</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="o">(</span><span class="nc">ConfigurableApplicationContext</span><span class="o">)</span> <span class="nc">BeanUtils</span><span class="o">.</span><span class="na">instantiate</span><span class="o">(</span><span class="n">contextClass</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p><strong>(Updated)</strong>: New default is <code class="language-plaintext highlighter-rouge">AnnotationConfigServletWebServerApplicationContext</code>.</p>
+
+<h2 id="step-6-setting-up-the-context">Step 6: Setting Up the Context</h2>
+<p>Before refreshing, it injects core values and beans.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">prepareContext</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">env</span><span class="o">,</span> <span class="n">listeners</span><span class="o">,</span> <span class="n">appArgs</span><span class="o">,</span> <span class="n">banner</span><span class="o">);</span>
+</code></pre></div></div>
+<p><strong>Tasks:</strong></p>
+<ul>
+  <li>Apply initializers</li>
+  <li>Register <code class="language-plaintext highlighter-rouge">ApplicationArguments</code> and others as beans</li>
+  <li>Load source classes</li>
+</ul>
+
+<h2 id="step-7-refreshing-the-context">Step 7: Refreshing the Context</h2>
+<p>This is where Spring starts creating beans and composing everything.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">refreshContext</span><span class="o">(</span><span class="n">context</span><span class="o">);</span>
+<span class="o">((</span><span class="nc">AbstractApplicationContext</span><span class="o">)</span> <span class="n">context</span><span class="o">).</span><span class="na">refresh</span><span class="o">();</span>
+</code></pre></div></div>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Override</span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">refresh</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">BeansException</span><span class="o">,</span> <span class="nc">IllegalStateException</span> <span class="o">{</span>
+    <span class="kd">synchronized</span> <span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">startupShutdownMonitor</span><span class="o">)</span> <span class="o">{</span>
+      <span class="c1">// Prepare this context for refreshing.</span>
+      <span class="n">prepareRefresh</span><span class="o">();</span>
+
+      <span class="c1">// Tell the subclass to refresh the internal bean factory.</span>
+      <span class="nc">ConfigurableListableBeanFactory</span> <span class="n">beanFactory</span> <span class="o">=</span> <span class="n">obtainFreshBeanFactory</span><span class="o">();</span>
+
+      <span class="c1">// Prepare the bean factory for use in this context.</span>
+      <span class="n">prepareBeanFactory</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+
+      <span class="k">try</span> <span class="o">{</span>
+        <span class="c1">// Allows post-processing of the bean factory in context subclasses.</span>
+        <span class="n">postProcessBeanFactory</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+
+        <span class="c1">// Invoke factory processors registered as beans in the context.</span>
+        <span class="c1">// Convert annotated beans into BeanDefinition structures</span>
+        <span class="n">invokeBeanFactoryPostProcessors</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+
+        <span class="c1">// Register bean processors that intercept bean creation.</span>
+        <span class="c1">// Register bean post-processors</span>
+        <span class="c1">// AOP is implemented using the registered AnnotationAwareAspectJAutoProxyCreator</span>
+        <span class="n">registerBeanPostProcessors</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+
+        <span class="c1">// Initialize message source for this context.</span>
+        <span class="n">initMessageSource</span><span class="o">();</span>
+
+        <span class="c1">// Initialize event multicaster for this context.</span>
+        <span class="n">initApplicationEventMulticaster</span><span class="o">();</span>
+
+        <span class="c1">// Initialize other special beans in specific context subclasses.</span>
+        <span class="n">onRefresh</span><span class="o">();</span>
+
+        <span class="c1">// Check for listener beans and register them.</span>
+        <span class="n">registerListeners</span><span class="o">();</span>
+
+        <span class="c1">// Instantiate all remaining (non-lazy-init) singletons.</span>
+        <span class="c1">// Create singleton beans</span>
+        <span class="n">finishBeanFactoryInitialization</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+
+        <span class="c1">// Last step: publish corresponding event.</span>
+        <span class="n">finishRefresh</span><span class="o">();</span>
+      <span class="o">}</span>
+
+      <span class="k">catch</span> <span class="o">(</span><span class="nc">BeansException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isWarnEnabled</span><span class="o">())</span> <span class="o">{</span>
+          <span class="n">logger</span><span class="o">.</span><span class="na">warn</span><span class="o">(</span><span class="s">"Exception encountered during context initialization - "</span> <span class="o">+</span>
+              <span class="s">"cancelling refresh attempt: "</span> <span class="o">+</span> <span class="n">ex</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="c1">// Destroy already created singletons to avoid dangling resources.</span>
+        <span class="n">destroyBeans</span><span class="o">();</span>
+
+        <span class="c1">// Reset 'active' flag.</span>
+        <span class="n">cancelRefresh</span><span class="o">(</span><span class="n">ex</span><span class="o">);</span>
+
+        <span class="c1">// Propagate exception to caller.</span>
+        <span class="k">throw</span> <span class="n">ex</span><span class="o">;</span>
+      <span class="o">}</span>
+
+      <span class="k">finally</span> <span class="o">{</span>
+        <span class="c1">// Reset common introspection caches in Spring's core, since we</span>
+        <span class="c1">// might not ever need metadata for singleton beans anymore...</span>
+        <span class="n">resetCommonCaches</span><span class="o">();</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<h3 id="what-happens-during-refresh">What happens during <code class="language-plaintext highlighter-rouge">refresh()</code>:</h3>
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">prepareRefresh()</code> prepares the context for refresh.</li>
+  <li><code class="language-plaintext highlighter-rouge">obtainFreshBeanFactory()</code> creates or refreshs the internal <code class="language-plaintext highlighter-rouge">BeanFactory</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">prepareBeanFactory(beanFactory)</code> configures the <code class="language-plaintext highlighter-rouge">BeanFactory</code> before it is used.</li>
+  <li><code class="language-plaintext highlighter-rouge">postProcessBeanFactory(beanFactory)</code> is an extension point for subclasses.</li>
+  <li><code class="language-plaintext highlighter-rouge">invokeBeanFactoryPostProcessors(beanFactory)</code> converts annotated components (@Component, etc.) into BeanDefinitions.</li>
+  <li><code class="language-plaintext highlighter-rouge">registerBeanPostProcessors(beanFactory)</code> registers processors that intervene in bean creation.</li>
+  <li><code class="language-plaintext highlighter-rouge">initMessageSource()</code> sets up internationalization (i18n) message handling.</li>
+  <li><code class="language-plaintext highlighter-rouge">initApplicationEventMulticaster()</code> initializes the event publishing mechanism.</li>
+  <li><code class="language-plaintext highlighter-rouge">onRefresh()</code> is an extension hook for subclasses (like web apps).</li>
+  <li><code class="language-plaintext highlighter-rouge">registerListeners()</code> registers application event listeners.</li>
+  <li><code class="language-plaintext highlighter-rouge">finishBeanFactoryInitialization(beanFactory)</code> creates all singleton beans.</li>
+  <li><code class="language-plaintext highlighter-rouge">finishRefresh()</code> publish the <code class="language-plaintext highlighter-rouge">ContextRefreshedEvent</code>.</li>
+</ol>
+
+<h2 id="step-8-running-custom-code">Step 8: Running Custom Code</h2>
+<p>Spring Boot checks for <code class="language-plaintext highlighter-rouge">ApplicationRunner</code> or <code class="language-plaintext highlighter-rouge">CommandLineRunner</code> beans and runs them.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kt">void</span> <span class="nf">afterRefresh</span><span class="o">(</span><span class="nc">ConfigurableApplicationContext</span> <span class="n">context</span><span class="o">,</span> <span class="nc">ApplicationArguments</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">callRunners</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
+<span class="o">}</span>
+
+<span class="kd">private</span> <span class="kt">void</span> <span class="nf">callRunners</span><span class="o">(</span><span class="nc">ApplicationContext</span> <span class="n">context</span><span class="o">,</span> <span class="nc">ApplicationArguments</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Object</span><span class="o">&gt;</span> <span class="n">runners</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;</span><span class="nc">Object</span><span class="o">&gt;();</span>
+    <span class="n">runners</span><span class="o">.</span><span class="na">addAll</span><span class="o">(</span><span class="n">context</span><span class="o">.</span><span class="na">getBeansOfType</span><span class="o">(</span><span class="nc">ApplicationRunner</span><span class="o">.</span><span class="na">class</span><span class="o">).</span><span class="na">values</span><span class="o">());</span>
+    <span class="n">runners</span><span class="o">.</span><span class="na">addAll</span><span class="o">(</span><span class="n">context</span><span class="o">.</span><span class="na">getBeansOfType</span><span class="o">(</span><span class="nc">CommandLineRunner</span><span class="o">.</span><span class="na">class</span><span class="o">).</span><span class="na">values</span><span class="o">());</span>
+    <span class="nc">AnnotationAwareOrderComparator</span><span class="o">.</span><span class="na">sort</span><span class="o">(</span><span class="n">runners</span><span class="o">);</span>
+    <span class="k">for</span> <span class="o">(</span><span class="nc">Object</span> <span class="n">runner</span> <span class="o">:</span> <span class="k">new</span> <span class="nc">LinkedHashSet</span><span class="o">&lt;</span><span class="nc">Object</span><span class="o">&gt;(</span><span class="n">runners</span><span class="o">))</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">runner</span> <span class="k">instanceof</span> <span class="nc">ApplicationRunner</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">callRunner</span><span class="o">((</span><span class="nc">ApplicationRunner</span><span class="o">)</span> <span class="n">runner</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
+      <span class="o">}</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">runner</span> <span class="k">instanceof</span> <span class="nc">CommandLineRunner</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">callRunner</span><span class="o">((</span><span class="nc">CommandLineRunner</span><span class="o">)</span> <span class="n">runner</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="step-9-final-events">Step 9: Final Events</h2>
+<p>At the end, it sends either:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">ApplicationReadyEvent</code> if startup was successful</li>
+  <li>or <code class="language-plaintext highlighter-rouge">ApplicationFailedEvent</code> if something broke</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">listeners</span><span class="o">.</span><span class="na">finished</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+</code></pre></div></div>
+
+<h3 id="custom-listener-example">Custom listener example</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Component</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">SloganReadyEventListener</span> <span class="kd">implements</span> <span class="nc">ApplicationListener</span><span class="o">&lt;</span><span class="nc">ApplicationReadyEvent</span><span class="o">&gt;</span> <span class="o">{</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onApplicationEvent</span><span class="o">(</span><span class="nc">ApplicationReadyEvent</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">//Here, you can do what you want to do.</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p><strong>(Updated)</strong>: Prefer <code class="language-plaintext highlighter-rouge">@EventListener</code> annotation:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@EventListener</span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">onReady</span><span class="o">(</span><span class="nc">ApplicationReadyEvent</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// Custom logic here</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="step-10-app-is-running">Step 10: App Is Running</h2>
+<p>So far, the app is running, with all beans ready and server listening for requests.</p>
+
+<h2 id="simplified-diagram">Simplified Diagram</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>main() → SpringApplication.run()
+      → initialize()
+      → run()
+         → prepareEnvironment()
+         → printBanner()
+         → createApplicationContext()
+         → prepareContext()
+         → refreshContext() → refresh()
+         → afterRefresh() → callRunners()
+         → listeners.finished()
+</code></pre></div></div>
+
+<h2 id="key-changes-from-spring-boot-15-to-3x">Key Changes from Spring Boot 1.5 to 3.x</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>Spring Boot 1.5</th>
+      <th>Spring Boot 3.x (Updated)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Web Context Class</td>
+      <td><code class="language-plaintext highlighter-rouge">AnnotationConfigEmbeddedWebApplicationContext</code></td>
+      <td><code class="language-plaintext highlighter-rouge">AnnotationConfigServletWebServerApplicationContext</code></td>
+    </tr>
+    <tr>
+      <td>Web Env Detection</td>
+      <td><code class="language-plaintext highlighter-rouge">webEnvironment</code> boolean</td>
+      <td><code class="language-plaintext highlighter-rouge">WebApplicationType</code> enum</td>
+    </tr>
+    <tr>
+      <td>Event Listening</td>
+      <td>Implements <code class="language-plaintext highlighter-rouge">ApplicationListener</code></td>
+      <td>Use <code class="language-plaintext highlighter-rouge">@EventListener</code></td>
+    </tr>
+    <tr>
+      <td>Banner Support</td>
+      <td><code class="language-plaintext highlighter-rouge">banner.txt</code>, images</td>
+      <td>Unicode + styled banner support</td>
+    </tr>
+  </tbody>
+</table>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

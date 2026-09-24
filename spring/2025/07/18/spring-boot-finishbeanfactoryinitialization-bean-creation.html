@@ -1,0 +1,182 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="how-spring-boot-actually-creates-beans--a-step-by-step-walkthrough-via-finishbeanfactoryinitialization">How Spring Boot Actually Creates Beans — A Step-by-Step Walkthrough via <code class="language-plaintext highlighter-rouge">finishBeanFactoryInitialization</code></h1>
+<p>After a series of initialization steps in Spring Boot, the real process of <strong>bean creation</strong> begins in the <code class="language-plaintext highlighter-rouge">finishBeanFactoryInitialization()</code> method. This is the core of the Spring IoC container, where control over bean instantiation shifts from the user to the Spring framework.</p>
+
+<h2 id="starting-point-refresh-method-in-spring-boot-bean-lifecycle">Starting Point: refresh() Method in Spring Boot Bean Lifecycle</h2>
+<p>Let’s take <strong>a common example</strong> where a bean is annotated with <code class="language-plaintext highlighter-rouge">@Component</code>. The process starts with the <code class="language-plaintext highlighter-rouge">refresh()</code> method in the <code class="language-plaintext highlighter-rouge">AbstractApplicationContext</code> class, which then calls:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Instantiate all remaining (non-lazy-init) singletons.</span>
+<span class="n">finishBeanFactoryInitialization</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+</code></pre></div></div>
+<p>This method marks the beginning of actual bean creation.</p>
+
+<h2 id="finishbeanfactoryinitialization-preparing-for-bean-creation">finishBeanFactoryInitialization: Preparing for Bean Creation</h2>
+<p>In the <code class="language-plaintext highlighter-rouge">finishBeanFactoryInitialization()</code> method, we focus on:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Instantiate all remaining (non-lazy-init) singletons.</span>
+<span class="n">beanFactory</span><span class="o">.</span><span class="na">preInstantiateSingletons</span><span class="o">();</span>
+</code></pre></div></div>
+<p>This line triggers the instantiation of all remaining singleton beans that are not marked for lazy initialization. The method <code class="language-plaintext highlighter-rouge">preInstantiateSingletons()</code> belongs to the <code class="language-plaintext highlighter-rouge">DefaultListableBeanFactory</code> class.</p>
+
+<h2 id="preinstantiatesingletons-eager-singleton-bean-instantiation-in-spring-boot">preInstantiateSingletons(): Eager Singleton Bean Instantiation in Spring Boot</h2>
+<p>Here, for each non-abstract, non-lazy singleton bean, the framework ensures they are fully instantiated.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Override</span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">preInstantiateSingletons</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">BeansException</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">logger</span><span class="o">.</span><span class="na">isDebugEnabled</span><span class="o">())</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">logger</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">"Pre-instantiating singletons in "</span> <span class="o">+</span> <span class="k">this</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">beanNames</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;(</span><span class="k">this</span><span class="o">.</span><span class="na">beanDefinitionNames</span><span class="o">);</span>
+
+    <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">beanName</span> <span class="o">:</span> <span class="n">beanNames</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">RootBeanDefinition</span> <span class="n">bd</span> <span class="o">=</span> <span class="n">getMergedLocalBeanDefinition</span><span class="o">(</span><span class="n">beanName</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">bd</span><span class="o">.</span><span class="na">isAbstract</span><span class="o">()</span> <span class="o">&amp;&amp;</span> <span class="n">bd</span><span class="o">.</span><span class="na">isSingleton</span><span class="o">()</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">bd</span><span class="o">.</span><span class="na">isLazyInit</span><span class="o">())</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">isFactoryBean</span><span class="o">(</span><span class="n">beanName</span><span class="o">))</span> <span class="o">{</span>
+                <span class="nc">FactoryBean</span><span class="o">&lt;?&gt;</span> <span class="n">factory</span> <span class="o">=</span> <span class="o">(</span><span class="nc">FactoryBean</span><span class="o">&lt;?&gt;)</span> <span class="n">getBean</span><span class="o">(</span><span class="no">FACTORY_BEAN_PREFIX</span> <span class="o">+</span> <span class="n">beanName</span><span class="o">);</span>
+                <span class="kt">boolean</span> <span class="n">isEagerInit</span> <span class="o">=</span> <span class="o">(</span><span class="n">factory</span> <span class="k">instanceof</span> <span class="nc">SmartFactoryBean</span> <span class="o">&amp;&amp;</span>
+                    <span class="o">((</span><span class="nc">SmartFactoryBean</span><span class="o">&lt;?&gt;)</span> <span class="n">factory</span><span class="o">).</span><span class="na">isEagerInit</span><span class="o">());</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">isEagerInit</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">getBean</span><span class="o">(</span><span class="n">beanName</span><span class="o">);</span>
+                <span class="o">}</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                <span class="n">getBean</span><span class="o">(</span><span class="n">beanName</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="core-bean-creation-logic-getbean-and-dogetbean">Core Bean Creation Logic: <code class="language-plaintext highlighter-rouge">getBean()</code> and <code class="language-plaintext highlighter-rouge">doGetBean()</code></h2>
+<p><code class="language-plaintext highlighter-rouge">getBean()</code> calls <code class="language-plaintext highlighter-rouge">doGetBean()</code>:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Override</span>
+<span class="kd">public</span> <span class="nc">Object</span> <span class="nf">getBean</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">BeansException</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="nf">doGetBean</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>The <code class="language-plaintext highlighter-rouge">doGetBean()</code> method is the central logic shared by all bean types — whether user-defined, internal processor beans, or context-related infrastructure beans.</p>
+<ul>
+  <li>Checking first-level and second-level caches (to manage circular dependencies)</li>
+  <li>Resolving dependencies recursively</li>
+  <li>Creating the bean if not found in cache</li>
+</ul>
+
+<h2 id="bean-creation-createbean-and-docreatebean">Bean Creation: <code class="language-plaintext highlighter-rouge">createBean()</code> and <code class="language-plaintext highlighter-rouge">doCreateBean()</code></h2>
+<p>The <code class="language-plaintext highlighter-rouge">createBean()</code> method is defined in the <code class="language-plaintext highlighter-rouge">AbstractAutowireCapableBeanFactory</code> class and serves as the entry point for creating a new bean instance. It delegates the actual work to <code class="language-plaintext highlighter-rouge">doCreateBean()</code>.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Override</span>
+<span class="kd">protected</span> <span class="nc">Object</span> <span class="nf">createBean</span><span class="o">(</span><span class="nc">String</span> <span class="n">beanName</span><span class="o">,</span> <span class="nc">RootBeanDefinition</span> <span class="n">mbd</span><span class="o">,</span> <span class="nc">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span>
+        <span class="kd">throws</span> <span class="nc">BeanCreationException</span> <span class="o">{</span>
+    <span class="nc">Object</span> <span class="n">beanInstance</span> <span class="o">=</span> <span class="n">doCreateBean</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">mbd</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
+    <span class="k">return</span> <span class="n">beanInstance</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>The <code class="language-plaintext highlighter-rouge">doCreateBean()</code> method handles most of the essential steps involved in creating a bean. This includes creating the bean instance, injecting its dependencies, and applying important Spring features such as AOP proxies and lifecycle callbacks.</p>
+<ul>
+  <li><strong>Checks for pre-existing instance</strong> in the cache (for circular dependency resolution)</li>
+  <li><strong>Creates the bean instance</strong> using constructors</li>
+  <li><strong>Records the resolved type</strong> in the metadata</li>
+  <li><strong>Handles advanced Spring features</strong> like property injection, lifecycle methods, and aspect weaving (done after this point)</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="nc">Object</span> <span class="nf">doCreateBean</span><span class="o">(</span><span class="nc">String</span> <span class="n">beanName</span><span class="o">,</span> <span class="nc">RootBeanDefinition</span> <span class="n">mbd</span><span class="o">,</span> <span class="nc">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span>
+        <span class="kd">throws</span> <span class="nc">BeanCreationException</span> <span class="o">{</span>
+
+    <span class="nc">BeanWrapper</span> <span class="n">instanceWrapper</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+
+    <span class="c1">// If this is a singleton bean, remove any cached instance from the factoryBeanInstanceCache.</span>
+    <span class="c1">// This cache is used for resolving circular dependencies.</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">mbd</span><span class="o">.</span><span class="na">isSingleton</span><span class="o">())</span> <span class="o">{</span>
+        <span class="n">instanceWrapper</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">factoryBeanInstanceCache</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">beanName</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="c1">// If we don’t already have an instance wrapper, create a new instance of the bean.</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">instanceWrapper</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">instanceWrapper</span> <span class="o">=</span> <span class="n">createBeanInstance</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">mbd</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="c1">// Get the actual bean object from the wrapper.</span>
+    <span class="kd">final</span> <span class="nc">Object</span> <span class="n">bean</span> <span class="o">=</span> <span class="o">(</span><span class="n">instanceWrapper</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">?</span> <span class="n">instanceWrapper</span><span class="o">.</span><span class="na">getWrappedInstance</span><span class="o">()</span> <span class="o">:</span> <span class="kc">null</span><span class="o">);</span>
+
+    <span class="c1">// Determine and record the target type (i.e., the actual class of the bean).</span>
+    <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">beanType</span> <span class="o">=</span> <span class="o">(</span><span class="n">instanceWrapper</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">?</span> <span class="n">instanceWrapper</span><span class="o">.</span><span class="na">getWrappedClass</span><span class="o">()</span> <span class="o">:</span> <span class="kc">null</span><span class="o">);</span>
+    <span class="n">mbd</span><span class="o">.</span><span class="na">resolvedTargetType</span> <span class="o">=</span> <span class="n">beanType</span><span class="o">;</span>
+
+    <span class="c1">// The following steps will:</span>
+    <span class="c1">// - Inject dependencies (via setters, fields, constructors)</span>
+    <span class="c1">// - Handle aware interfaces (like BeanNameAware, ApplicationContextAware)</span>
+    <span class="c1">// - Apply post-processors (e.g., @Autowired, AOP proxies)</span>
+    <span class="c1">// - Trigger lifecycle callbacks (@PostConstruct, InitializingBean)</span>
+
+    <span class="c1">// Additional steps for property population, AOP proxying, etc. follow...</span>
+    <span class="k">return</span> <span class="n">bean</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="instance-creation-strategy-createbeaninstance-and-instantiatebean">Instance Creation Strategy: <code class="language-plaintext highlighter-rouge">createBeanInstance()</code> and <code class="language-plaintext highlighter-rouge">instantiateBean()</code></h2>
+<p>In <code class="language-plaintext highlighter-rouge">createBeanInstance()</code>, Spring determines how to instantiate the bean:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="nc">BeanWrapper</span> <span class="nf">createBeanInstance</span><span class="o">(</span><span class="nc">String</span> <span class="n">beanName</span><span class="o">,</span> <span class="nc">RootBeanDefinition</span> <span class="n">mbd</span><span class="o">,</span> <span class="nc">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="nf">instantiateBean</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">mbd</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>This reflects the <strong>Strategy Pattern</strong>, where <code class="language-plaintext highlighter-rouge">InstantiationStrategy</code> (usually <code class="language-plaintext highlighter-rouge">SimpleInstantiationStrategy</code>) defines how beans are constructed.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="nc">BeanWrapper</span> <span class="nf">instantiateBean</span><span class="o">(</span><span class="kd">final</span> <span class="nc">String</span> <span class="n">beanName</span><span class="o">,</span> <span class="kd">final</span> <span class="nc">RootBeanDefinition</span> <span class="n">mbd</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="nf">getInstantiationStrategy</span><span class="o">().</span><span class="na">instantiate</span><span class="o">(</span><span class="n">mbd</span><span class="o">,</span> <span class="n">beanName</span><span class="o">,</span> <span class="n">parent</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="final-instantiation-via-reflection">Final Instantiation via Reflection</h2>
+<p>The actual instantiation uses the <code class="language-plaintext highlighter-rouge">instantiateClass()</code> method in the <code class="language-plaintext highlighter-rouge">BeanUtils</code> utility class.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="no">T</span> <span class="nf">instantiateClass</span><span class="o">(</span><span class="nc">Constructor</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">ctor</span><span class="o">,</span> <span class="nc">Object</span><span class="o">...</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">BeanInstantiationException</span> <span class="o">{</span>
+    <span class="nc">ReflectionUtils</span><span class="o">.</span><span class="na">makeAccessible</span><span class="o">(</span><span class="n">ctor</span><span class="o">);</span>
+    <span class="k">return</span> <span class="n">ctor</span><span class="o">.</span><span class="na">newInstance</span><span class="o">(</span><span class="n">args</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p><strong>This uses Java reflection to call the constructor and create the object. All metadata for instantiation (class, constructor, parameters) comes from the <code class="language-plaintext highlighter-rouge">BeanDefinition</code>.</strong></p>
+
+<h2 id="update-spring-boot-3x--spring-framework-6x"><strong>Update: Spring Boot 3.x / Spring Framework 6.x</strong></h2>
+
+<h3 id="1-jakarta-ee-migration">1. Jakarta EE Migration:</h3>
+<p>Spring 6 and Boot 3 have fully migrated to <strong>Jakarta EE namespaces</strong>.
+<strong>For example</strong></p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">javax.annotation.PostConstruct</code> → <code class="language-plaintext highlighter-rouge">jakarta.annotation.PostConstruct</code></li>
+  <li><code class="language-plaintext highlighter-rouge">javax.persistence.*</code> → <code class="language-plaintext highlighter-rouge">jakarta.persistence.*</code></li>
+</ul>
+
+<h3 id="2-native-image-support-spring-aot">2. Native Image Support (Spring AOT):</h3>
+<p>Spring Boot 3 introduces <strong>AOT (Ahead-of-Time) Compilation</strong> and native image support with GraalVM. Bean definitions and dependency graphs can be processed at build time to reduce startup time.</p>
+
+<p><strong>New behavior in <code class="language-plaintext highlighter-rouge">finishBeanFactoryInitialization()</code></strong>:</p>
+
+<p>When AOT mode is enabled, many beans are registered via precomputed metadata, skipping reflective instantiation paths like <code class="language-plaintext highlighter-rouge">instantiateClass()</code>.</p>
+
+<h3 id="3-instantiator-abstraction">3. <code class="language-plaintext highlighter-rouge">Instantiator</code> Abstraction:</h3>
+
+<p>Spring Framework 6 introduces <code class="language-plaintext highlighter-rouge">BeanInstantiator</code> abstraction for advanced instantiation strategies that are pluggable and friendly to AOT processing.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

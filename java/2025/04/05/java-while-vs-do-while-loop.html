@@ -1,0 +1,129 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="understanding-the-two-variations-of-the-while-loop-in-java">Understanding the Two Variations of the <code class="language-plaintext highlighter-rouge">while</code> Loop in Java</h1>
+
+<p>In Java, there are two types of <code class="language-plaintext highlighter-rouge">while</code> loops:</p>
+
+<ol>
+  <li><strong><code class="language-plaintext highlighter-rouge">while</code> loop (pre-test loop)</strong></li>
+  <li><strong><code class="language-plaintext highlighter-rouge">do-while</code> loop (post-test loop)</strong></li>
+</ol>
+
+<p>The key difference between them is <strong>when the condition is checked</strong>. In a <code class="language-plaintext highlighter-rouge">while</code> loop, the condition is tested before executing the loop body, while in a <code class="language-plaintext highlighter-rouge">do-while</code> loop, the loop body is executed at least once before the condition is checked.</p>
+
+<h2 id="1-while-loop-pre-test-loop">1. <code class="language-plaintext highlighter-rouge">while</code> Loop (Pre-Test Loop)</h2>
+
+<p>The <code class="language-plaintext highlighter-rouge">while</code> loop first checks the condition before executing the block of code. If the condition is <code class="language-plaintext highlighter-rouge">false</code> at the start, the loop never runs.The loop executes <strong>only if</strong> the condition is <code class="language-plaintext highlighter-rouge">true</code> at the beginning.</p>
+
+<h3 id="syntax">Syntax:</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">while</span> <span class="o">(</span><span class="n">condition</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// Code block to be executed</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="2-do-while-loop-post-test-loop">2. <code class="language-plaintext highlighter-rouge">do-while</code> Loop (Post-Test Loop)</h2>
+
+<p>The <code class="language-plaintext highlighter-rouge">do-while</code> loop executes the body first and <strong>then</strong> checks the condition. This guarantees at least <strong>one execution</strong>, even if the condition is initially <code class="language-plaintext highlighter-rouge">false</code>.The loop body <strong>always executes at least once</strong> before checking the condition.</p>
+
+<h3 id="syntax-1">Syntax:</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">do</span> <span class="o">{</span>
+    <span class="c1">// Code block to be executed at least once</span>
+<span class="o">}</span> <span class="k">while</span> <span class="o">(</span><span class="n">condition</span><span class="o">);</span>
+</code></pre></div></div>
+
+<h2 id="3-while-vs-do-while-in-real-scenarios">3. <code class="language-plaintext highlighter-rouge">while</code> vs <code class="language-plaintext highlighter-rouge">do-while</code> in Real Scenarios</h2>
+
+<h3 id="reading-a-file-using-while">Reading a File Using <code class="language-plaintext highlighter-rouge">while</code></h3>
+
+<p>If the file is empty, the loop won’t run at all.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.io.*</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">FileReadingWhile</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="nc">BufferedReader</span> <span class="n">reader</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">BufferedReader</span><span class="o">(</span><span class="k">new</span> <span class="nc">FileReader</span><span class="o">(</span><span class="s">"test.txt"</span><span class="o">));</span>
+            <span class="nc">String</span> <span class="n">line</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="na">readLine</span><span class="o">();</span> <span class="c1">// Read the first line</span>
+
+            <span class="k">while</span> <span class="o">(</span><span class="n">line</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span> <span class="c1">// Check before reading</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">line</span><span class="o">);</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="na">readLine</span><span class="o">();</span>
+            <span class="o">}</span>
+
+            <span class="n">reader</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="menu-system-using-do-while">Menu System Using <code class="language-plaintext highlighter-rouge">do-while</code></h3>
+
+<p>The menu <strong>must be displayed at least once</strong> before exiting.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.util.Scanner</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">MenuExample</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Scanner</span> <span class="n">scanner</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Scanner</span><span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">in</span><span class="o">);</span>
+        <span class="kt">int</span> <span class="n">choice</span><span class="o">;</span>
+
+        <span class="k">do</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Menu:"</span><span class="o">);</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"1. Start Game"</span><span class="o">);</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"2. View Score"</span><span class="o">);</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"3. Exit"</span><span class="o">);</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">"Enter your choice: "</span><span class="o">);</span>
+            <span class="n">choice</span> <span class="o">=</span> <span class="n">scanner</span><span class="o">.</span><span class="na">nextInt</span><span class="o">();</span>
+
+            <span class="k">switch</span> <span class="o">(</span><span class="n">choice</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">case</span> <span class="mi">1</span> <span class="o">-&gt;</span> <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Starting Game..."</span><span class="o">);</span>
+                <span class="k">case</span> <span class="mi">2</span> <span class="o">-&gt;</span> <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Your score: 100"</span><span class="o">);</span>
+                <span class="k">case</span> <span class="mi">3</span> <span class="o">-&gt;</span> <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Exiting..."</span><span class="o">);</span>
+                <span class="k">default</span> <span class="o">-&gt;</span> <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Invalid choice. Try again."</span><span class="o">);</span>
+            <span class="o">}</span>
+
+        <span class="o">}</span> <span class="k">while</span> <span class="o">(</span><span class="n">choice</span> <span class="o">!=</span> <span class="mi">3</span><span class="o">);</span> <span class="c1">// Ensure the menu appears at least once</span>
+
+        <span class="n">scanner</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="4-conclusion">4. Conclusion</h2>
+
+<ul>
+  <li><strong>Use <code class="language-plaintext highlighter-rouge">while</code></strong> when a loop should <strong>not run</strong> if the condition is false from the beginning.</li>
+  <li><strong>Use <code class="language-plaintext highlighter-rouge">do-while</code></strong> when the loop <strong>must execute at least once</strong>, such as in user interaction scenarios.</li>
+  <li>Understanding when to use each loop can help you write more <strong>efficient and bug-free</strong> code.</li>
+</ul>
+
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

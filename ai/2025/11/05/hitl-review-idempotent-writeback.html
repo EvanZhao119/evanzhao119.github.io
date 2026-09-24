@@ -1,0 +1,219 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="human-in-the-loop-review-and-idempotent-write-back-from-review-to-auditable-system-updates">Human-in-the-Loop Review and Idempotent Write-Back: From <code class="language-plaintext highlighter-rouge">/review</code> to Auditable System Updates</h1>
+<p>In any AI-driven workflow, some decisions are too important to leave entirely to machines. Before an automated result is allowed to change real business data, it should be reviewed by a person, especially when the decision carries risk or uncertainty. A good human-review process doesn’t slow things down; instead, it adds trust, accountability, and a safety layer around automation. This articlu shows how to route model outputs into a simple <code class="language-plaintext highlighter-rouge">/review</code> page, let humans approve or reject results, and then write those approved changes back to business systems in a safe, idempotent, and fully auditable way. By the end, we will see how this approach turns risky automation into a process that teams can confidently rely on.</p>
+
+<hr />
+
+<h2 id="1-why-human-review-hitl-matters">1. Why Human Review (HITL) Matters</h2>
+<p>In modern AI-powered automation, <em>Human-in-the-Loop (HITL)</em> review is the safety valve that keeps automation <strong>trustworthy and accountable</strong>. When a model’s output affects real business actions, such as fraud detection, loan approval, or ticket classification, we can’t simply “trust the model”. Instead, we insert a human review stage between <em>AI inference</em> and <em>system update</em>.</p>
+
+<ol>
+  <li><strong>Risk Control</strong>: Even highly accurate models make mistakes. Human judgment catches edge cases before they reach production.</li>
+  <li><strong>Accountability and Explainability</strong>: Every approved or rejected decision can be traced, such as who reviewed it, when, why, and based on what evidence.</li>
+  <li><strong>Continuous Learning</strong>: Each human correction provides labeled data to improve the model or rule engine.</li>
+  <li><strong>Regulatory Compliance</strong>: Many industries (finance, utilities, healthcare, public service) require a human step for critical decisions.</li>
+</ol>
+
+<hr />
+
+<h2 id="2-design-goals-and-overall-architecture">2. Design Goals and Overall Architecture</h2>
+<h3 id="core-objectives">Core Objectives</h3>
+<ul>
+  <li><strong>Idempotent Write-Back</strong>: Multiple submissions never duplicate or corrupt data.</li>
+  <li><strong>Full Auditability</strong>: Every decision is logged: <em>who</em>, <em>when</em>, <em>what changed</em>, <em>why</em>, and <em>with what evidence</em>.</li>
+  <li><strong>Pluggable Adapters</strong>: Support for SharePoint, Jira, or database backends without changing logic.</li>
+  <li><strong>Security and Access Control</strong>: Role-based permissions and minimal privileges.</li>
+  <li><strong>Observability</strong>: Clear metrics and traces for latency, error rates, and retry counts.</li>
+</ul>
+
+<h3 id="conceptual-flow">Conceptual Flow</h3>
+<p>Think of the process as a funnel,</p>
+<ol>
+  <li><strong>AI or Rule Engine Output</strong> → stored in a <strong>review queue</strong>.</li>
+  <li><strong>Human Reviewer</strong> uses <code class="language-plaintext highlighter-rouge">/review</code> UI to inspect, comment, and decide (approve/reject/request info).</li>
+  <li>On approval, a <strong>write-back adapter</strong> updates the target system (SharePoint, Jira, or database).</li>
+  <li>All actions are recorded in an <strong>audit log</strong>, ensuring traceability.</li>
+</ol>
+
+<hr />
+
+<h2 id="3-the-three-core-data-types">3. The Three Core Data Types</h2>
+<ol>
+  <li><strong>Review Item</strong><br />
+That contains model output, risk score, data source, and evidence references (like document links or transaction IDs).</li>
+  <li><strong>Review Decision</strong><br />
+The reviewer’s action (<code class="language-plaintext highlighter-rouge">APPROVE</code>, <code class="language-plaintext highlighter-rouge">REJECT</code>, or <code class="language-plaintext highlighter-rouge">NEED_INFO</code>) with optional comments or field updates. Each decision includes an <em>idempotency key</em> to prevent duplicate writes.</li>
+  <li><strong>Write-Back Contract</strong><br />
+A schema defining how updates are written to external systems. Every adapter (SharePoint, Jira, DB) must accept the same minimal fields, including Target identifier (<code class="language-plaintext highlighter-rouge">issueKey</code>, <code class="language-plaintext highlighter-rouge">itemId</code>, or <code class="language-plaintext highlighter-rouge">primaryKey</code>), <code class="language-plaintext highlighter-rouge">idempotencyKey</code>, and Update fields and audit info (reviewer, timestamp, comments, citations). This consistent contract allows adapters to be swapped or combined without breaking the workflow.</li>
+</ol>
+
+<hr />
+
+<h2 id="4-the-review-page--minimal-but-powerful">4. The <code class="language-plaintext highlighter-rouge">/review</code> Page — Minimal but Powerful</h2>
+<p>The <code class="language-plaintext highlighter-rouge">/review</code> interface doesn’t need to be fancy. In contract, it just needs to work reliably and clearly.<br />
+A typical layout should include,</p>
+<ul>
+  <li><strong>List View</strong>: Shows pending items, with filters by risk level, source, or date.</li>
+  <li><strong>Details Panel</strong>: Displays record content and linked evidence.</li>
+  <li><strong>Action Buttons</strong>: <em>Approve</em>, <em>Reject</em>, or <em>Need Info</em>, with a comment box.</li>
+</ul>
+
+<p>When the reviewer submits a decision,</p>
+<ul>
+  <li>The system generates an <code class="language-plaintext highlighter-rouge">idempotencyKey</code>,</li>
+  <li>Saves the decision to the audit log, and</li>
+  <li>Queues the record for the write-back adapter to process.</li>
+</ul>
+
+<p>Afterward, the record disappears from the review list, and its history becomes part of the audit trail.</p>
+
+<hr />
+
+<h2 id="5-the-write-back-adapter-layer">5. The Write-Back Adapter Layer</h2>
+<p>Adapters bridge the review system and your business tools. Each adapter implements the same basic behavior but targets a different system.</p>
+
+<h3 id="supported-targets">Supported Targets</h3>
+<ul>
+  <li><strong>SharePoint Adapter</strong>: Updates a list item, adds review comments, and attaches citations.</li>
+  <li><strong>Jira Adapter</strong>: Updates issue fields and adds an audit comment or worklog.</li>
+  <li><strong>Database Adapter</strong>: Updates a business record and inserts a corresponding audit entry.</li>
+</ul>
+
+<h3 id="why-idempotency-matters">Why Idempotency Matters</h3>
+<p>Imagine the same request being sent twice because of a network retry. Without idempotency, you might end up with duplicated updates or inconsistent states.<br />
+An <strong>idempotency key table</strong> prevents that. Each write operation checks whether the same key has been processed before. If yes, it will return “duplicate, skip”. Otherwise, it will execute and record the key. Finally, even if retried 10 times, the target system updates only once.</p>
+
+<hr />
+
+<h2 id="6-building-a-reliable-audit-trail">6. Building a Reliable Audit Trail</h2>
+<p>An <strong>audit log</strong> is the backbone of trust in your HITL system. Each entry should contain <code class="language-plaintext highlighter-rouge">Review ID</code>, <code class="language-plaintext highlighter-rouge">Reviewer identity and role</code>, <code class="language-plaintext highlighter-rouge">Action time</code>, <code class="language-plaintext highlighter-rouge">Decision and changes</code>, <code class="language-plaintext highlighter-rouge">Comment or rationale</code>, <code class="language-plaintext highlighter-rouge">Evidence references</code>, and <code class="language-plaintext highlighter-rouge">Target system and write status</code>.</p>
+
+<h3 id="why-it-matters">Why It Matters</h3>
+<ul>
+  <li><strong>Reproducibility</strong>: You can replay any past decision and verify the context.</li>
+  <li><strong>Training Data</strong>: Useful for model retraining and bias analysis.</li>
+  <li><strong>Accountability</strong>: Essential for compliance and incident investigation.</li>
+  <li><strong>Transparency</strong>: Builds confidence among business users.</li>
+</ul>
+
+<p>Audit logs can be stored in a database table or exported to a secure, versioned storage service for long-term retention.</p>
+
+<hr />
+
+<h2 id="7-ensuring-idempotency-and-final-consistency">7. Ensuring Idempotency and Final Consistency</h2>
+<p>Real systems fail in messy ways — timeouts, API errors, permission issues and so on. To make sure no review decision is lost, we can use the <strong>Outbox Pattern</strong>.</p>
+<ol>
+  <li>When a review decision is made, the system stores an “outbox event” in a local database.</li>
+  <li>A background worker reads the outbox and performs the external write-back.</li>
+  <li>If it fails, the worker retries later using exponential backoff (e.g., after 1m → 5m → 15m).</li>
+  <li>Once successful, it marks the event as completed and updates the audit log.</li>
+</ol>
+
+<p>This design guarantees <strong>eventual consistency</strong> even under temporary outages.</p>
+
+<hr />
+
+<h2 id="8-security-and-compliance">8. Security and Compliance</h2>
+<p>Because review systems touch real customer or business data, security must be treated as a first-class concern.</p>
+<ol>
+  <li><strong>Role-Based Access Control (RBAC)</strong>: Separate reviewer, approver, and admin roles; critical updates may require dual approval.</li>
+  <li><strong>Least Privilege Principle</strong>: Each adapter uses a dedicated service account with minimal write permissions.</li>
+  <li><strong>Data Masking</strong>: Hide or redact personally identifiable information (PII) from review UIs.</li>
+  <li><strong>Non-Repudiation</strong>: Digitally sign or timestamp every request so actions can’t be denied later.</li>
+</ol>
+
+<hr />
+
+<h2 id="9-observability-and-monitoring">9. Observability and Monitoring</h2>
+<p>A production HITL system should be observable end-to-end. Important metrics should include <strong>Pending Review Queue Size</strong>, <strong>Average Review Time (P50/P95)</strong>, <strong>Approval / Rejection Rate</strong>, <strong>Write-Back Success vs. Error Rate</strong>, <strong>Retry Counts and Delay Duration</strong>, and <strong>Idempotency Hit Rate</strong>. Logs should include trace IDs linking the <code class="language-plaintext highlighter-rouge">/review</code> UI, API, and adapter actions, enabling full request tracing.</p>
+
+<hr />
+
+<h2 id="10-example-end-to-end-flow-using-jira">10. Example End-to-End Flow (Using Jira)</h2>
+<ol>
+  <li>The AI model flags a transaction as suspicious, and then adds it to the review queue.</li>
+  <li>The reviewer checks details in <code class="language-plaintext highlighter-rouge">/review</code>, adds notes, and approves.</li>
+  <li>The system records the decision and generates an idempotency key.</li>
+  <li>The background worker calls the Jira adapter to update the issue and post a comment.</li>
+  <li>On success, the audit log updates the status to “completed.”</li>
+  <li>In Jira, the business team can now see the review notes directly in the issue.</li>
+</ol>
+
+<hr />
+
+<h2 id="11-testing-and-validation">11. Testing and Validation</h2>
+<p>Before deployment, we should verify our system through several tests.</p>
+<ul>
+  <li><strong>Idempotency Test:</strong> Submitting the same decision twice should not double-write.</li>
+  <li><strong>Failure Recovery Test:</strong> Simulate network errors and the outbox should retry automatically.</li>
+  <li><strong>Audit Completeness Test:</strong> Each decision must have full “who/when/what/why” fields.</li>
+  <li><strong>Permission Test:</strong> Users see only what they are authorized to review.</li>
+  <li><strong>Playback Test:</strong> Pick an old review and replay the entire decision chain from audit logs.</li>
+</ul>
+
+<p>These tests ensure your pipeline is resilient, compliant, and traceable.</p>
+
+<hr />
+
+<h2 id="12-from-mvp-to-production-grade-system">12. From MVP to Production-Grade System</h2>
+<p>You don’t need to build everything at once. Start with the smallest useful loop.</p>
+<ol>
+  <li>A <code class="language-plaintext highlighter-rouge">/review</code> page</li>
+  <li>A database adapter</li>
+  <li>A simple audit log table</li>
+</ol>
+
+<p>Then expand gradually. Each step increases trust and operational maturity.</p>
+<ul>
+  <li>Add more adapters (SharePoint, Jira)</li>
+  <li>Introduce dual-review for high-risk items</li>
+  <li>Implement rollback or correction workflows</li>
+  <li>Build dashboards for metrics and audit replay</li>
+</ul>
+
+<hr />
+
+<h2 id="13-final-thoughts">13. Final Thoughts</h2>
+<p>By combining <strong>Human Review</strong>, <strong>Idempotent Write-Back</strong>, and <strong>Audit Logging</strong>, such systems earn confidence because every outcome is <strong>Reversible</strong>, <strong>Explainable</strong> and <strong>Auditable</strong>. We transform high-risk automation into <strong>trustworthy semi-automation</strong>.<br />
+Once out automation can <strong>explain itself</strong>, we have taken a big step towards building AI systems people can truly trust.</p>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+<ul>
+  <li><a href="/ai/2025/10/31/eval-canary-redlines.html">Evaluation and Redlines: Offline Baseline + Production Replay + Automatic Rollback</a></li>
+  <li><a href="/ai/2025/10/27/rag-query-citations.html">Building a Trustworthy RAG System: Make AI Answers Traceable with Source Citations</a></li>
+  <li><a href="/ai/2025/10/21/versioned-prompts-and-tool-contracts.html">Versioned Prompts and Tool Contracts: Building a Safe, Auditable, and Rollback-Ready AI System</a></li>
+  <li><a href="/ai/2025/10/15/llm-gateway.html">LLM Gateway: One Endpoint for Safety, Cost Control, and Observability</a></li>
+  <li><a href="/ai/2025/10/12/stable-names-task-contracts-json-schema.html">Stable Names + Task Contracts: Keep Callers Stable While You Evolve Internals</a></li>
+  <li><a href="/ai/2025/10/07/capability-pool-simple-guide.html">The Reuse Layer: Governing AI as a Capability, Not a Credential</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

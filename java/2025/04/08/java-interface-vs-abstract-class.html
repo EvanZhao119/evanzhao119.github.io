@@ -1,0 +1,213 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="differences-and-real-world-usage-between-java-interface-and-abstract-class">Differences and Real-World Usage Between Java Interface and Abstract Class</h1>
+
+<h2 id="1-java-interface">1. Java Interface</h2>
+
+<ul>
+  <li><strong>Fully Abstract</strong>: Interfaces cannot have method implementations (before Java 8); only method declarations. Since Java 8, <code class="language-plaintext highlighter-rouge">default</code> and <code class="language-plaintext highlighter-rouge">static</code> methods are allowed with bodies.</li>
+  <li><strong>Multiple Inheritance</strong>: A class can implement multiple interfaces (solves the single inheritance limitation).</li>
+  <li><strong>All variables</strong> are implicitly <code class="language-plaintext highlighter-rouge">public static final</code> constants.</li>
+  <li><strong>All methods</strong> are implicitly <code class="language-plaintext highlighter-rouge">public abstract</code> (except <code class="language-plaintext highlighter-rouge">default</code> and <code class="language-plaintext highlighter-rouge">static</code>).</li>
+  <li><strong>Used to define behaviors and capabilities</strong>.</li>
+</ul>
+
+<p><strong>Application Scenarios:</strong></p>
+
+<ul>
+  <li>When you want to define a set of capabilities or behaviors without enforcing a specific implementation:
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">Comparable</code> for comparison logic</li>
+      <li><code class="language-plaintext highlighter-rouge">Runnable</code> for thread task execution</li>
+      <li><code class="language-plaintext highlighter-rouge">Serializable</code> for object serialization</li>
+    </ul>
+  </li>
+  <li>When <strong>multiple inheritance</strong> is needed</li>
+</ul>
+
+<h2 id="2-java-abstract-class">2. Java Abstract Class</h2>
+
+<ul>
+  <li><strong>Can have both abstract and concrete methods (with bodies)</strong>.</li>
+  <li><strong>Can include member variables, constructors, and static blocks</strong>.</li>
+  <li><strong>Single inheritance only</strong>: A class can only extend one abstract class.</li>
+  <li><strong>Used for code reuse and structural design</strong>.</li>
+</ul>
+
+<p><strong>Application Scenarios:</strong></p>
+
+<ul>
+  <li>When multiple classes share common implementation, but still need customization.</li>
+  <li>When you want to provide a <strong>default implementation or template method</strong>.</li>
+</ul>
+
+<h2 id="3-comparison-table">3. Comparison Table</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>Interface</th>
+      <th>Abstract Class</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Method Implementation</td>
+      <td>Only abstract methods (Java 8+ allows <code class="language-plaintext highlighter-rouge">default</code>)</td>
+      <td>Both abstract and concrete methods</td>
+    </tr>
+    <tr>
+      <td>Member Variables</td>
+      <td><code class="language-plaintext highlighter-rouge">public static final</code> constants only</td>
+      <td>Can have any type of member variable</td>
+    </tr>
+    <tr>
+      <td>Constructor</td>
+      <td>No constructors</td>
+      <td>Can have constructors</td>
+    </tr>
+    <tr>
+      <td>Inheritance</td>
+      <td>Supports multiple interfaces</td>
+      <td>Single inheritance only</td>
+    </tr>
+    <tr>
+      <td>Purpose</td>
+      <td>Defines behavior contracts</td>
+      <td>Promotes code reuse and structure</td>
+    </tr>
+    <tr>
+      <td>Default Modifiers</td>
+      <td>Methods: <code class="language-plaintext highlighter-rouge">public abstract</code>; Fields: <code class="language-plaintext highlighter-rouge">public static final</code></td>
+      <td>Can use any access modifier</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="4-an-interview-question--zoo-system-design">4. An Interview Question – Zoo System Design</h2>
+
+<blockquote>
+  <p>Design a Zoo System where different animals (e.g., Tiger, Penguin, Parrot) have shared behaviors (like eating and sleeping) and unique capabilities (like flying or swimming). Some animals can fly, others can swim.</p>
+</blockquote>
+
+<h3 id="solution-design">Solution Design:</h3>
+<ol>
+  <li>Use an <strong>abstract class <code class="language-plaintext highlighter-rouge">Animal</code></strong> to hold common properties and behaviors (<code class="language-plaintext highlighter-rouge">name</code>, <code class="language-plaintext highlighter-rouge">eat()</code>, <code class="language-plaintext highlighter-rouge">sleep()</code>).</li>
+  <li>Use <strong>interfaces</strong> (<code class="language-plaintext highlighter-rouge">Flyable</code>, <code class="language-plaintext highlighter-rouge">Swimmable</code>) to represent optional capabilities.</li>
+  <li>Concrete animals extend <code class="language-plaintext highlighter-rouge">Animal</code> and implement the appropriate interfaces.</li>
+</ol>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Interfaces</span>
+<span class="kd">public</span> <span class="kd">interface</span> <span class="nc">Flyable</span> <span class="o">{</span>
+    <span class="kt">void</span> <span class="nf">fly</span><span class="o">();</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="kd">interface</span> <span class="nc">Swimmable</span> <span class="o">{</span>
+    <span class="kt">void</span> <span class="nf">swim</span><span class="o">();</span>
+<span class="o">}</span>
+
+<span class="c1">// Abstract Class</span>
+<span class="kd">public</span> <span class="kd">abstract</span> <span class="kd">class</span> <span class="nc">Animal</span> <span class="o">{</span>
+    <span class="kd">protected</span> <span class="nc">String</span> <span class="n">name</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="nf">Animal</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">eat</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">name</span> <span class="o">+</span> <span class="s">" is eating"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">sleep</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">name</span> <span class="o">+</span> <span class="s">" is sleeping"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">abstract</span> <span class="kt">void</span> <span class="nf">makeSound</span><span class="o">();</span>
+<span class="o">}</span>
+
+<span class="c1">// Concrete Animal Classes</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Tiger</span> <span class="kd">extends</span> <span class="nc">Animal</span> <span class="kd">implements</span> <span class="nc">Swimmable</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="nf">Tiger</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kd">super</span><span class="o">(</span><span class="n">name</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">makeSound</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Roar!"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">swim</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Tiger swims powerfully."</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Penguin</span> <span class="kd">extends</span> <span class="nc">Animal</span> <span class="kd">implements</span> <span class="nc">Swimmable</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="nf">Penguin</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kd">super</span><span class="o">(</span><span class="n">name</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">makeSound</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Penguin squawks!"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">swim</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Penguin swims fast!"</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Parrot</span> <span class="kd">extends</span> <span class="nc">Animal</span> <span class="kd">implements</span> <span class="nc">Flyable</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="nf">Parrot</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kd">super</span><span class="o">(</span><span class="n">name</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">makeSound</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Parrot says hello!"</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">fly</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Parrot is flying!"</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="conclusion">Conclusion:</h3>
+
+<p>I used an abstract class <code class="language-plaintext highlighter-rouge">Animal</code> to provide common behavior like <code class="language-plaintext highlighter-rouge">eat()</code><code class="language-plaintext highlighter-rouge"> and </code>sleep()<code class="language-plaintext highlighter-rouge">, and kept `makeSound()</code> as an abstract method because each animal makes a different sound.</p>
+
+<p>For flying and swimming capabilities, I created interfaces (<code class="language-plaintext highlighter-rouge">Flyable</code>, <code class="language-plaintext highlighter-rouge">Swimmable</code>) so that these behaviors can be flexibly added to specific animal classes, without affecting inheritance structure.</p>
+
+<p>This follows the object-oriented principle of <strong>“composition over inheritance”</strong> and improves code reusability and maintainability.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

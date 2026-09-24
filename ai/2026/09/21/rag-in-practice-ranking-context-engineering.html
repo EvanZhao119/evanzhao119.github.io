@@ -1,0 +1,86 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="rag-in-practice-ranking-context-and-why-rag-is-an-engineering-problem">RAG in Practice: Ranking, Context, and Why RAG Is an Engineering Problem</h1>
+
+<p>Retrieving potentially relevant document chunks is only one part of a RAG pipeline. A real system must also determine <strong>which information should actually be sent to the LLM</strong>.</p>
+
+<p>Vector search may return several chunks, but they are not necessarily equally useful. The system may therefore need to rank the results, select the most relevant information, and combine it into a context for the final prompt.</p>
+
+<p>This is where RAG becomes an engineering problem rather than simply an LLM problem.</p>
+
+<h2 id="what-the-article-covers">What the Article Covers</h2>
+
+<ul>
+  <li>Why vector search results may require an additional ranking step</li>
+  <li>How selected chunks are combined into context</li>
+  <li>How retrieved information augments the final prompt</li>
+  <li>Why RAG involves more than storing documents in a vector database</li>
+  <li>How document cleaning, chunk size, and chunk overlap affect retrieval</li>
+  <li>Why embedding-model selection matters</li>
+  <li>Why a powerful LLM cannot completely compensate for poor retrieval</li>
+  <li>How the surrounding pipeline affects the quality of the final answer</li>
+</ul>
+
+<p>A practical RAG pipeline can be represented like this:</p>
+
+<pre>
+Process and Clean Documents
+          ↓
+Create Document Chunks
+          ↓
+Generate Embeddings
+          ↓
+Retrieve Candidate Chunks
+          ↓
+Rank the Results
+          ↓
+Select the Best Context
+          ↓
+Build the Augmented Prompt
+          ↓
+Send the Prompt to the LLM
+          ↓
+Generate the Final Answer
+</pre>
+
+<p>The final prompt may include three main parts:</p>
+
+<ul>
+  <li>Instructions</li>
+  <li>Retrieved information</li>
+  <li>The user’s original question</li>
+</ul>
+
+<p>The prompt is described as “augmented” because the system adds externally retrieved information without modifying the LLM itself.</p>
+
+<p>The quality of the final answer depends on the complete pipeline, including document processing, chunking, embeddings, retrieval, ranking, context selection, and prompt design. Better RAG is therefore not only about choosing a better model—it is about building a better system around the model.</p>
+
+<p><a href="https://macstuforum.top/d/26-rag-in-practice-ranking-context-and-why-rag-is-an-engineering-problem">Read the full article and join the discussion →</a></p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

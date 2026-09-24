@@ -1,0 +1,103 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="java-object-creation-and-heap-memory-allocation">Java Object Creation and Heap Memory Allocation</h1>
+
+<h2 id="heap-memory-allocation-strategies">Heap Memory Allocation Strategies</h2>
+
+<p>When creating objects on the heap, the JVM generally adopts one of the two memory allocation strategies.</p>
+
+<h3 id="1-bump-the-pointer-allocation">1. Bump-the-Pointer Allocation</h3>
+
+<ul>
+  <li>The heap is treated as a contiguous memory space with a pointer pointing to the beginning of the free area.</li>
+  <li>When an object is allocated, the pointer is moved forward by the size of the object.</li>
+</ul>
+
+<p>Bump-the-pointer allocation is highly efficient and fast but requires a compact heap layout, making it less effective in fragmented memory scenarios. The fragmentation caused by garbage collection may require memory compaction.</p>
+
+<h3 id="2-free-list-allocation">2. Free List Allocation</h3>
+
+<ul>
+  <li>The JVM maintains a list of free memory blocks in the heap.</li>
+  <li>To allocate an object, the JVM searches for a suitable block from the free list.</li>
+</ul>
+
+<p>Free list allocation is more flexible in fragmented memory environments but can cause increased fragmentation over time, making it difficult and slower to allocate large objects.</p>
+
+<blockquote>
+  <p><em>Note</em>: The memory allocation strategy used by the JVM largely depends on the <strong>garbage collector</strong>. For example, many generational collectors, such as G1, often use bump-the-pointer allocation in the young generation for fast and efficient object allocation, since most young objects are short-lived and collected quickly.</p>
+</blockquote>
+
+<h2 id="object-initialization-process">Object Initialization Process</h2>
+
+<p>Once an object is allocated in the heap, the JVM performs a series of steps to initialize it properly.</p>
+
+<ol>
+  <li><strong>Zero Initialization</strong>
+    <ul>
+      <li>The object’s memory is filled with default values.</li>
+      <li>For example, 0 for numeric types and null for object references.</li>
+    </ul>
+  </li>
+  <li><strong>Object Header Setup</strong>
+    <ul>
+      <li>The JVM sets up the object’s header, which includes critical metadata such as the object’s identity hash code, garbage collection information, and a reference to its class metadata (also known as the type pointer).</li>
+    </ul>
+  </li>
+  <li><strong>Constructor Execution</strong>
+    <ul>
+      <li>The Java constructor is executed to initialize the object’s fields with user-defined values.</li>
+    </ul>
+  </li>
+</ol>
+
+<h2 id="object-addressing-mechanisms">Object Addressing Mechanisms</h2>
+
+<p>The JVM can use one of the two methods to manage object references - Handle-Based Addressing and Direct Pointer Addressing.</p>
+
+<h3 id="1-handle-based-addressing">1. Handle-Based Addressing</h3>
+<ul>
+  <li>A separate <strong>handle pool</strong> is maintained.</li>
+  <li>Each object reference points to a handle, which contains separate pointers to the object’s data and its class metadata.</li>
+  <li><strong>Pros</strong>: Makes object movement easier during garbage collection (just update the handle).</li>
+</ul>
+
+<h3 id="2-direct-pointer-addressing">2. Direct Pointer Addressing</h3>
+
+<ul>
+  <li>The reference directly points to the object.</li>
+  <li>The object contains a pointer to its class metadata.</li>
+  <li><strong>Pros</strong>: Field access is faster because the reference points directly to the object, eliminating the need for an extra lookup step.</li>
+</ul>
+
+<blockquote>
+  <p>The choice of addressing method is implementation-specific. It depends on how the JVM is designed rather than the Java language specification. For example, the <strong>HotSpot JVM</strong>, widely used in production environments, typically adopts <strong>direct pointer addressing</strong> to prioritize performance.</p>
+</blockquote>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

@@ -1,0 +1,121 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="hotspot-jvm-non-generational-garbage-collectors---shenandoah-gc">HotSpot JVM Non-Generational Garbage Collectors - Shenandoah GC</h1>
+
+<p>Modern garbage collectors like <strong>G1</strong>, <strong>Shenandoah</strong>, and <strong>ZGC</strong> are designed to address the challenges of large heaps, low-latency requirements, and scalability. Unlike traditional generational collectors, these collectors <strong>do not strictly separate the heap into young and old generations</strong>, but rather operate on <strong>region-based memory layouts</strong> for more flexibility and performance.</p>
+
+<blockquote>
+  <p><strong><em>Note</em></strong>: While G1 is still technically generational, its region-based and incremental nature blurs the line. Shenandoah and ZGC, however, are <strong>truly non-generational</strong>.</p>
+</blockquote>
+
+<h2 id="overview">Overview</h2>
+<ul>
+  <li>Introduced as an experimental feature in <strong>JDK 12</strong>, production-ready by <strong>JDK 15</strong>.</li>
+  <li>A <strong>truly concurrent, low-pause-time</strong> garbage collector.</li>
+  <li><strong>Region-based</strong>, like G1, but avoids traditional remembered sets.</li>
+</ul>
+
+<h2 id="key-innovations">Key Innovations</h2>
+<ul>
+  <li><strong>Connection Matrix</strong>: A global data structure that replaces remembered sets to track inter-region references.</li>
+  <li><strong>Brooks Pointers</strong>: Every object has an <strong>extra level of indirection</strong> (a forwarding pointer) to support concurrent object relocation.</li>
+  <li><strong>Read Barriers</strong>: Lightweight checks on object reads that enable concurrent compaction and relocation.</li>
+</ul>
+
+<h2 id="features">Features</h2>
+<ul>
+  <li><strong>Pause times in milliseconds</strong>, even with very large heaps (up to 4 TB).</li>
+  <li>Nearly <strong>all GC phases run concurrently</strong> with application threads.</li>
+  <li>No stop-the-world full compaction phases.</li>
+</ul>
+
+<h2 id="compared-to-g1">Compared to G1</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Aspect</th>
+      <th>Shenandoah</th>
+      <th>G1 GC</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Compaction</td>
+      <td>Concurrent</td>
+      <td>Only during evacuation</td>
+    </tr>
+    <tr>
+      <td>Pause Times</td>
+      <td>Ultra-low</td>
+      <td>Moderate</td>
+    </tr>
+    <tr>
+      <td>Read Barrier</td>
+      <td>Required</td>
+      <td>Not used</td>
+    </tr>
+    <tr>
+      <td>Suitability</td>
+      <td>Interactive, responsive apps</td>
+      <td>General-purpose</td>
+    </tr>
+    <tr>
+      <td>Heap Size Support</td>
+      <td>Up to 4 TB</td>
+      <td>Up to ~32 GB (practically)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="brooks-pointers">Brooks Pointers</h2>
+<p>A <strong>Brooks Pointer</strong> is an <strong>extra field</strong> added to every object in the heap. This field acts as a <strong>forwarding pointer</strong>, which either:</p>
+
+<ul>
+  <li>Points to the object itself (in the normal state), or</li>
+  <li>Points to the object’s new location after it has been moved during GC.</li>
+</ul>
+
+<p>This indirection allows the collector to <strong>move objects concurrently</strong> without breaking references. Every time the application accesses an object, it first follows the Brooks Pointer to get the <strong>current valid address</strong>.</p>
+
+<h2 id="read-barriers">Read Barriers</h2>
+
+<p>A <strong>Read Barrier</strong> is a lightweight piece of code that is automatically executed <strong>on every object reference read</strong>.</p>
+
+<p>Its purpose is to:</p>
+
+<ul>
+  <li><strong>Check</strong> whether the object has been moved or is in the process of being moved by the GC.</li>
+  <li>If needed, <strong>update the reference</strong> to point to the new (correct) location.</li>
+  <li>Optionally, perform actions like logging, tracking, or correcting object state.</li>
+</ul>
+
+<p>Read Barriers are <strong>crucial</strong> in concurrent and compacting GCs where objects may move at any time.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

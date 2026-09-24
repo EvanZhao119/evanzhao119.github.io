@@ -1,0 +1,241 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="getting-started-with-pytorch-image-classification-on-google-colab">Getting Started with PyTorch Image Classification on Google Colab</h1>
+<p>This beginner-friendly <strong>PyTorch image classification tutorial</strong> shows how to train and test a model on <strong>Google Colab</strong> using the <strong>CIFAR-10 dataset</strong>.<br />
+You will learn step-by-step how to:</p>
+<ul>
+  <li>Set up <strong>Google Colab with GPU</strong> for deep learning</li>
+  <li>Train a <strong>ResNet18 model</strong> on CIFAR-10</li>
+  <li>Upload and test your own images with the trained model</li>
+</ul>
+
+<p>By the end, you’ll have a working <strong>PyTorch image classifier in Colab</strong>, complete with code examples.</p>
+
+<h2 id="part-1-how-to-use-google-colab-from-scratch">Part 1: How to Use Google Colab from Scratch</h2>
+
+<h3 id="what-is-google-colab-beginner-introduction">What is Google Colab? (Beginner Introduction)</h3>
+<p>Google Colab is a <strong>free cloud-based Jupyter notebook</strong> with GPU/TPU support. It’s widely used for machine learning because it eliminates the need to install PyTorch locally and provides free GPU acceleration.</p>
+
+<h3 id="steps-to-get-started">Steps to Get Started:</h3>
+
+<ol>
+  <li>Go to: <a href="https://colab.research.google.com">https://colab.research.google.com</a></li>
+  <li>Sign in with your Google account.</li>
+  <li>Click <code class="language-plaintext highlighter-rouge">File &gt; New Notebook</code>.</li>
+  <li>To enable GPU:<br />
+<code class="language-plaintext highlighter-rouge">Edit &gt; Notebook settings &gt; Hardware Accelerator &gt; GPU</code></li>
+  <li>Run a test:
+    <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">torch</span>
+<span class="n">torch</span><span class="p">.</span><span class="n">cuda</span><span class="p">.</span><span class="nf">is_available</span><span class="p">()</span>  <span class="c1"># Should return True if GPU is enabled
+</span></code></pre></div>    </div>
+  </li>
+</ol>
+
+<hr />
+
+<h2 id="part-2-pytorch-cifar-10-image-classification-code-on-google-colab">Part 2: PyTorch CIFAR-10 Image Classification Code on Google Colab</h2>
+<p>Below is the <strong>end-to-end PyTorch pipeline</strong> for CIFAR-10 classification: dataset loading, model training, evaluation, and predictions.</p>
+
+<h3 id="1-import-required-libraries">1. Import required libraries</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">torch</span>
+<span class="kn">import</span> <span class="n">torchvision</span>
+<span class="kn">import</span> <span class="n">torchvision.transforms</span> <span class="k">as</span> <span class="n">transforms</span>
+<span class="kn">import</span> <span class="n">torch.nn</span> <span class="k">as</span> <span class="n">nn</span>
+<span class="kn">import</span> <span class="n">torch.optim</span> <span class="k">as</span> <span class="n">optim</span>
+<span class="kn">import</span> <span class="n">torchvision.models</span> <span class="k">as</span> <span class="n">models</span>
+<span class="kn">import</span> <span class="n">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+</code></pre></div></div>
+
+<h3 id="2-define-image-preprocessing-pipeline">2. Define image preprocessing pipeline</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Convert image to tensor and normalize to [-1, 1]
+</span><span class="n">transform</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">.</span><span class="nc">Compose</span><span class="p">([</span>
+    <span class="n">transforms</span><span class="p">.</span><span class="nc">ToTensor</span><span class="p">(),</span>
+    <span class="n">transforms</span><span class="p">.</span><span class="nc">Normalize</span><span class="p">((</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span> <span class="c1">#(mean, std) for RGB channels
+</span><span class="p">])</span>
+</code></pre></div></div>
+
+<h3 id="3-load-cifar-10-dataset-automatically-downloads-if-not-present">3. Load CIFAR-10 dataset (automatically downloads if not present)</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># CIFAR-10 has 50,000 training images and 10,000 test images of size 32x32
+</span><span class="n">trainset</span> <span class="o">=</span> <span class="n">torchvision</span><span class="p">.</span><span class="n">datasets</span><span class="p">.</span><span class="nc">CIFAR10</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="sh">'</span><span class="s">./data</span><span class="sh">'</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                        <span class="n">download</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">)</span>
+<span class="n">trainloader</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">utils</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="nc">DataLoader</span><span class="p">(</span><span class="n">trainset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                                          <span class="n">shuffle</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">testset</span> <span class="o">=</span> <span class="n">torchvision</span><span class="p">.</span><span class="n">datasets</span><span class="p">.</span><span class="nc">CIFAR10</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="sh">'</span><span class="s">./data</span><span class="sh">'</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                       <span class="n">download</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">)</span>
+<span class="n">testloader</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">utils</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="nc">DataLoader</span><span class="p">(</span><span class="n">testset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                                         <span class="n">shuffle</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c1"># Define class labels
+</span><span class="n">classes</span> <span class="o">=</span> <span class="p">(</span><span class="sh">'</span><span class="s">plane</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">car</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">bird</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">cat</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">deer</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">dog</span><span class="sh">'</span><span class="p">,</span> 
+	<span class="sh">'</span><span class="s">frog</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">horse</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">ship</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">truck</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h4 id="where-is-the-training-dataset-from">Where is the training dataset from?</h4>
+<p>The dataset used in this tutorial is <strong>CIFAR-10</strong>, one of the most popular <strong>image classification benchmarks</strong> in deep learning. It comes pre-integrated with PyTorch’s <code class="language-plaintext highlighter-rouge">torchvision.datasets</code>, and when running on <strong>Google Colab</strong>, it will be automatically downloaded and cached.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">torchvision</span><span class="p">.</span><span class="n">datasets</span><span class="p">.</span><span class="nc">CIFAR10</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="sh">'</span><span class="s">./data</span><span class="sh">'</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> 
+	<span class="n">download</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>It contains:</p>
+<ul>
+  <li>50,000 training images</li>
+  <li>10,000 test images</li>
+  <li>10 classes (airplane, car, bird, etc.)</li>
+</ul>
+
+<h3 id="4-initialize-the-resnet18-model-and-modify-the-final-layer-for-10-class-classification">4. Initialize the ResNet18 model and modify the final layer for 10-class classification</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">net</span> <span class="o">=</span> <span class="n">models</span><span class="p">.</span><span class="nf">resnet18</span><span class="p">(</span><span class="n">pretrained</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">net</span><span class="p">.</span><span class="n">fc</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="nc">Linear</span><span class="p">(</span><span class="n">net</span><span class="p">.</span><span class="n">fc</span><span class="p">.</span><span class="n">in_features</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>  <span class="c1"># Replace the final fully connected layer
+</span>
+<span class="c1"># Move model to GPU if available
+</span><span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">device</span><span class="p">(</span><span class="sh">"</span><span class="s">cuda</span><span class="sh">"</span> <span class="k">if</span> <span class="n">torch</span><span class="p">.</span><span class="n">cuda</span><span class="p">.</span><span class="nf">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="sh">"</span><span class="s">cpu</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">net</span><span class="p">.</span><span class="nf">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="5-define-loss-function-and-optimizer">5. Define loss function and optimizer</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">criterion</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="nc">CrossEntropyLoss</span><span class="p">()</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">optim</span><span class="p">.</span><span class="nc">SGD</span><span class="p">(</span><span class="n">net</span><span class="p">.</span><span class="nf">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="6-train-the-model-for-2-epochs">6. Train the model for 2 epochs</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>  <span class="c1"># You can increase this number for better accuracy
+</span>    <span class="n">running_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">trainloader</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="n">inputs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="c1"># Forward pass + backward pass + optimization
+</span>        <span class="n">optimizer</span><span class="p">.</span><span class="nf">zero_grad</span><span class="p">()</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="nf">net</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="nf">criterion</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+        <span class="n">loss</span><span class="p">.</span><span class="nf">backward</span><span class="p">()</span>
+        <span class="n">optimizer</span><span class="p">.</span><span class="nf">step</span><span class="p">()</span>
+
+        <span class="c1"># Print loss every 2000 mini-batches
+</span>        <span class="n">running_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="p">.</span><span class="nf">item</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">2000</span> <span class="o">==</span> <span class="mi">1999</span><span class="p">:</span>
+            <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="s">[Epoch </span><span class="si">{</span><span class="n">epoch</span> <span class="o">+</span> <span class="mi">1</span><span class="si">}</span><span class="s">, Batch </span><span class="si">{</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="si">}</span><span class="s">] loss: </span><span class="si">{</span><span class="n">running_loss</span> <span class="o">/</span> <span class="mi">2000</span><span class="si">:</span><span class="p">.</span><span class="mi">3</span><span class="n">f</span><span class="si">}</span><span class="sh">'</span><span class="p">)</span>
+            <span class="n">running_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Finished Training</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="7-evaluate-the-model-on-test-data">7. Evaluate the model on test data</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">correct</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">with</span> <span class="n">torch</span><span class="p">.</span><span class="nf">no_grad</span><span class="p">():</span>  <span class="c1"># Disable gradient computation for evaluation
+</span>    <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">testloader</span><span class="p">:</span>
+        <span class="n">images</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="nf">net</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">predicted</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">max</span><span class="p">(</span><span class="n">outputs</span><span class="p">.</span><span class="n">data</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># Get the index of the max log-probability
+</span>        <span class="n">total</span> <span class="o">+=</span> <span class="n">labels</span><span class="p">.</span><span class="nf">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">correct</span> <span class="o">+=</span> <span class="p">(</span><span class="n">predicted</span> <span class="o">==</span> <span class="n">labels</span><span class="p">).</span><span class="nf">sum</span><span class="p">().</span><span class="nf">item</span><span class="p">()</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="s">Accuracy on test images: </span><span class="si">{</span><span class="mi">100</span> <span class="o">*</span> <span class="n">correct</span> <span class="o">/</span> <span class="n">total</span><span class="si">:</span><span class="p">.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s">%</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="8-display-a-batch-of-test-images-along-with-ground-truth-and-predicted-labels">8. Display a batch of test images along with ground truth and predicted labels</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">imshow</span><span class="p">(</span><span class="n">img</span><span class="p">):</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">img</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="mf">0.5</span>  <span class="c1"># Unnormalize the image
+</span>    <span class="n">npimg</span> <span class="o">=</span> <span class="n">img</span><span class="p">.</span><span class="nf">numpy</span><span class="p">()</span>
+    <span class="n">plt</span><span class="p">.</span><span class="nf">imshow</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">transpose</span><span class="p">(</span><span class="n">npimg</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>  <span class="c1"># Convert from CHW to HWC
+</span>    <span class="n">plt</span><span class="p">.</span><span class="nf">axis</span><span class="p">(</span><span class="sh">'</span><span class="s">off</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">plt</span><span class="p">.</span><span class="nf">show</span><span class="p">()</span>
+
+<span class="c1"># Get one batch of test data
+</span><span class="n">dataiter</span> <span class="o">=</span> <span class="nf">iter</span><span class="p">(</span><span class="n">testloader</span><span class="p">)</span>
+<span class="n">images</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="nf">next</span><span class="p">(</span><span class="n">dataiter</span><span class="p">)</span>
+
+<span class="c1"># Show the images
+</span><span class="nf">imshow</span><span class="p">(</span><span class="n">torchvision</span><span class="p">.</span><span class="n">utils</span><span class="p">.</span><span class="nf">make_grid</span><span class="p">(</span><span class="n">images</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">GroundTruth: </span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s"> </span><span class="sh">'</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="si">{</span><span class="n">classes</span><span class="p">[</span><span class="n">labels</span><span class="p">[</span><span class="n">j</span><span class="p">]]</span><span class="si">}</span><span class="sh">'</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)))</span>
+
+<span class="c1"># Make predictions
+</span><span class="n">outputs</span> <span class="o">=</span> <span class="nf">net</span><span class="p">(</span><span class="n">images</span><span class="p">.</span><span class="nf">to</span><span class="p">(</span><span class="n">device</span><span class="p">))</span>
+<span class="n">_</span><span class="p">,</span> <span class="n">predicted</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">max</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Predicted: </span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s"> </span><span class="sh">'</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="si">{</span><span class="n">classes</span><span class="p">[</span><span class="n">predicted</span><span class="p">[</span><span class="n">j</span><span class="p">]]</span><span class="si">}</span><span class="sh">'</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)))</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="part-3-upload-and-classify-your-own-image">Part 3: Upload and Classify Your Own Image</h2>
+
+<h3 id="1-upload-your-own-image-to-google-colab">1. Upload Your Own Image to Google Colab</h3>
+<p>This step demonstrates how to <strong>test the trained PyTorch model with your own images</strong>. Uploading custom data ensures the classifier works beyond CIFAR-10 test images.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">google.colab</span> <span class="kn">import</span> <span class="n">files</span>
+<span class="n">uploaded</span> <span class="o">=</span> <span class="n">files</span><span class="p">.</span><span class="nf">upload</span><span class="p">()</span>
+</code></pre></div></div>
+
+<h3 id="2-preprocess-and-predict">2. Preprocess and Predict</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
+<span class="n">img</span> <span class="o">=</span> <span class="n">Image</span><span class="p">.</span><span class="nf">open</span><span class="p">(</span><span class="sh">'</span><span class="s">your_image.png</span><span class="sh">'</span><span class="p">).</span><span class="nf">convert</span><span class="p">(</span><span class="sh">'</span><span class="s">RGB</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">transform</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">.</span><span class="nc">Compose</span><span class="p">([</span>
+    <span class="n">transforms</span><span class="p">.</span><span class="nc">Resize</span><span class="p">((</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">)),</span>
+    <span class="n">transforms</span><span class="p">.</span><span class="nc">ToTensor</span><span class="p">(),</span>
+    <span class="n">transforms</span><span class="p">.</span><span class="nc">Normalize</span><span class="p">((</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
+<span class="p">])</span>
+<span class="n">input_tensor</span> <span class="o">=</span> <span class="nf">transform</span><span class="p">(</span><span class="n">img</span><span class="p">).</span><span class="nf">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">).</span><span class="nf">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+<span class="n">net</span><span class="p">.</span><span class="nf">eval</span><span class="p">()</span>
+<span class="n">output</span> <span class="o">=</span> <span class="nf">net</span><span class="p">(</span><span class="n">input_tensor</span><span class="p">)</span>
+<span class="n">_</span><span class="p">,</span> <span class="n">predicted</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">max</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Prediction:</span><span class="sh">"</span><span class="p">,</span> <span class="n">classes</span><span class="p">[</span><span class="n">predicted</span><span class="p">.</span><span class="nf">item</span><span class="p">()])</span>
+</code></pre></div></div>
+
+<h3 id="3-sample-output-from-colab">3. Sample Output from <code class="language-plaintext highlighter-rouge">Colab</code></h3>
+<p>The following figure shows the actual output after successfully uploading an image in Google <code class="language-plaintext highlighter-rouge">Colab</code> and running the model inference code.</p>
+
+<p><img src="/assets/images/2025_07_31_cifar10_batch_output.jpg" alt="PyTorch CIFAR-10 image classification results on Google Colab" title="PyTorch CIFAR-10 Image Classification Results" /></p>
+
+<hr />
+
+<h2 id="faq">FAQ</h2>
+
+<p><strong>Q: Why use Google Colab for PyTorch?</strong><br />
+A: Google Colab provides free GPU acceleration, collaborative notebooks, and zero installation. It’s perfect for beginners learning PyTorch.</p>
+
+<p><strong>Q: What dataset is used in this tutorial?</strong><br />
+A: We use CIFAR-10, a standard benchmark with 60,000 images across 10 categories (e.g., airplane, car, cat, dog).</p>
+
+<p><strong>Q: Can I replace ResNet18 with another model?</strong><br />
+A: Yes. You can replace <code class="language-plaintext highlighter-rouge">models.resnet18</code> with other models such as ResNet50, VGG16, or MobileNet, depending on your accuracy vs performance needs.</p>
+
+<hr />
+
+<h2 id="references">References</h2>
+<ul>
+  <li><a href="https://pytorch.org/docs/stable/index.html">PyTorch Official Documentation</a></li>
+  <li><a href="https://colab.research.google.com/">Google Colab Guide</a></li>
+  <li>Related post: <a href="/ai/2025/08/05/linear-regression-pytorch-tutorial.html">Linear Regression with PyTorch: Theory and Practice</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

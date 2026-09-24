@@ -1,0 +1,101 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="difference-between-jre-and-jdk">Difference Between JRE and JDK</h1>
+
+<p>The difference between JRE (Java Runtime Environment) and JDK (Java Development Kit) lies in their <strong>purpose</strong> and <strong>components</strong>.</p>
+
+<h2 id="1-jre-java-runtime-environment">1. JRE (Java Runtime Environment)</h2>
+<ul>
+  <li><strong>Purpose:</strong> Used to <strong>run</strong> Java applications (not to compile Java applications).</li>
+  <li><strong>Components:</strong>
+    <ul>
+      <li><strong>JVM (Java Virtual Machine):</strong> Executes Java bytecode.</li>
+      <li><strong>Core Libraries:</strong> Provides essential libraries required for Java programs to run.</li>
+      <li><strong>Runtime Environment:</strong> Manages application execution.</li>
+    </ul>
+  </li>
+  <li><strong>Who Needs It?</strong> If you only need to run Java applications and not develop them, JRE is sufficient.</li>
+</ul>
+
+<h2 id="2-jdk-java-development-kit">2. JDK (Java Development Kit)</h2>
+<ul>
+  <li><strong>Purpose:</strong> Used to <strong>develop and run</strong> Java applications.</li>
+  <li><strong>Components:</strong>
+    <ul>
+      <li><strong>JRE (which includes JVM, core libraries, and runtime environment).</strong></li>
+      <li><strong>Development Tools:</strong> Compiler (<code class="language-plaintext highlighter-rouge">javac</code>), debugger (<code class="language-plaintext highlighter-rouge">jdb</code>), JavaDoc (<code class="language-plaintext highlighter-rouge">javadoc</code>), and other utilities.</li>
+    </ul>
+  </li>
+  <li><strong>Who Needs It?</strong> If you are a developer writing Java code, you need JDK to compile and build Java applications.</li>
+</ul>
+
+<h2 id="3-conclusion">3. Conclusion</h2>
+<ul>
+  <li>If you <strong>only need to run</strong> Java programs → Install <strong>JRE</strong>.</li>
+  <li>If you <strong>need to develop</strong> Java programs → Install <strong>JDK</strong> (which already includes JRE).</li>
+</ul>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>JRE</th>
+      <th>JDK</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Contains JVM?</td>
+      <td>✅ Yes</td>
+      <td>✅ Yes</td>
+    </tr>
+    <tr>
+      <td>Contains JRE?</td>
+      <td>✅ Yes</td>
+      <td>✅ Yes</td>
+    </tr>
+    <tr>
+      <td>Includes Compiler (<code class="language-plaintext highlighter-rouge">javac</code>)?</td>
+      <td>❌ No</td>
+      <td>✅ Yes</td>
+    </tr>
+    <tr>
+      <td>Includes Development Tools?</td>
+      <td>❌ No</td>
+      <td>✅ Yes</td>
+    </tr>
+    <tr>
+      <td>Purpose</td>
+      <td>Run Java applications</td>
+      <td>Develop and run Java applications</td>
+    </tr>
+  </tbody>
+</table>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

@@ -1,0 +1,206 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="pytorch-housing-price-prediction-demo-multi-feature">PyTorch Housing Price Prediction Demo (Multi-feature)</h1>
+<p>This tutorial demonstrates how to build a <strong>PyTorch housing price prediction model</strong> using <strong>multiple features</strong> such as area, number of bedrooms, and house type.<br />
+You will learn how to:</p>
+<ul>
+  <li>Generate synthetic multi-feature housing data</li>
+  <li>Train a <strong>linear regression model with PyTorch</strong></li>
+  <li>Standardize and de-standardize features and targets</li>
+  <li>Compare learned weights with ground truth</li>
+  <li>Predict the price of a new house sample</li>
+</ul>
+
+<p>By the end, you’ll understand how PyTorch can be applied to <strong>structured data regression tasks</strong> beyond image classification.</p>
+
+<h2 id="part-1-import-dependencies-and-set-random-seed">Part 1: Import Dependencies and Set Random Seed</h2>
+<ul>
+  <li>Import PyTorch, NumPy and StandardScaler</li>
+  <li>Set a random seed to ensure consistent results across runs</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">torch</span>
+<span class="kn">from</span> <span class="n">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+<span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">from</span> <span class="n">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">StandardScaler</span>
+
+<span class="n">torch</span><span class="p">.</span><span class="nf">manual_seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># Set random seed for reproducibility
+</span></code></pre></div></div>
+
+<h2 id="part-2-generate-simulated-housing-feature-data">Part 2: Generate Simulated Housing Feature Data</h2>
+<ul>
+  <li>Manually generate housing data: area, number of bedrooms, and house type</li>
+  <li><code class="language-plaintext highlighter-rouge">X</code> has shape <code class="language-plaintext highlighter-rouge">(500, 5)</code>, where each row is a 5-dimensional feature vector for a sample</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Simulate 500 housing samples
+</span><span class="n">n</span> <span class="o">=</span> <span class="mi">500</span>
+<span class="c1"># Area in square meters
+</span><span class="n">area</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">normal</span><span class="p">(</span><span class="mf">150.0</span><span class="p">,</span> <span class="mf">40.0</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> 
+<span class="c1"># Number of bedrooms: integers from 1 to 4
+</span><span class="n">bed</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">)).</span><span class="nf">float</span><span class="p">()</span>         
+<span class="c1"># House type: 0 = detached, 1 = townhouse, 2 = condo
+</span><span class="n">types</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>                     
+<span class="n">type_onehot</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">functional</span><span class="p">.</span><span class="nf">one_hot</span><span class="p">(</span><span class="n">types</span><span class="p">.</span><span class="nf">squeeze</span><span class="p">(),</span> <span class="n">num_classes</span><span class="o">=</span><span class="mi">3</span><span class="p">).</span><span class="nf">float</span><span class="p">()</span>
+<span class="c1"># Combine all features: area, bedrooms, house type → X
+# Final shape: (500, 5)
+</span><span class="n">X_raw</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">cat</span><span class="p">([</span><span class="n">area</span><span class="p">,</span> <span class="n">bed</span><span class="p">,</span> <span class="n">type_onehot</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>             
+</code></pre></div></div>
+
+<h2 id="part-3-generate-target-variable-y-simulated-house-prices">Part 3: Generate Target Variable <code class="language-plaintext highlighter-rouge">y</code> (Simulated House Prices)</h2>
+<p>We assume <strong>ground truth weights</strong> for different housing features (area, bedrooms, house type), then add Gaussian noise to simulate real-world uncertainty.</p>
+
+<ul>
+  <li>Use preset weights and bias to generate the target price</li>
+  <li>Add Gaussian noise (std = 50,000) to simulate real-world noise</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Assume ground truth weights
+</span><span class="n">true_w</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">([</span><span class="mf">2000.0</span><span class="p">,</span> <span class="mf">15000.0</span><span class="p">,</span> <span class="mf">200000.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">200000.0</span><span class="p">])</span>
+<span class="c1"># Bias term (base price)
+</span><span class="n">true_b</span> <span class="o">=</span> <span class="mf">100000.0</span>
+<span class="c1"># Add Gaussian noise
+</span><span class="n">y_raw</span> <span class="o">=</span> <span class="n">X_raw</span> <span class="o">@</span> <span class="n">true_w</span> <span class="o">+</span> <span class="n">true_b</span> <span class="o">+</span> <span class="n">torch</span><span class="p">.</span><span class="nf">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">50000</span><span class="p">,</span> <span class="p">(</span><span class="n">n</span><span class="p">,))</span>  
+</code></pre></div></div>
+
+<h2 id="part-4-standardize-features-and-labels">Part 4: Standardize Features and Labels</h2>
+<p>Standardization ensures each feature contributes fairly during training and improves gradient descent stability.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">scaler_X</span> <span class="o">=</span> <span class="nc">StandardScaler</span><span class="p">()</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">(</span><span class="n">scaler_X</span><span class="p">.</span><span class="nf">fit_transform</span><span class="p">(</span><span class="n">X_raw</span><span class="p">.</span><span class="nf">numpy</span><span class="p">()),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="p">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="n">scaler_y</span> <span class="o">=</span> <span class="nc">StandardScaler</span><span class="p">()</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">(</span><span class="n">scaler_y</span><span class="p">.</span><span class="nf">fit_transform</span><span class="p">(</span><span class="n">y_raw</span><span class="p">.</span><span class="nf">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)).</span><span class="nf">squeeze</span><span class="p">(),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="p">.</span><span class="n">float32</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="part-5-define-linear-regression-model-in-pytorch">Part 5: Define Linear Regression Model in PyTorch</h2>
+<ul>
+  <li>Define a linear model using PyTorch’s <code class="language-plaintext highlighter-rouge">nn.Linear</code></li>
+  <li>Use MSE as the loss function</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Linear regression model: input features = 5, output = 1 (price)
+</span><span class="n">net</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="nc">Linear</span><span class="p">(</span><span class="n">X</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>  
+<span class="c1"># Loss function: Mean Squared Error        
+</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="nc">MSELoss</span><span class="p">()</span> 
+<span class="c1"># Optimizer: Stochastic Gradient Descent                 
+</span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">optim</span><span class="p">.</span><span class="nc">Adam</span><span class="p">(</span><span class="n">net</span><span class="p">.</span><span class="nf">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="part-6-train-the-model">Part 6: Train the Model</h2>
+<p>We use <strong>Adam optimizer</strong> with Mean Squared Error (MSE) loss for training. Although this is a small dataset, the setup mimics real regression workflows.</p>
+
+<ul>
+  <li>Run 3000 iterations (epochs) of training</li>
+  <li>Full-batch training: using all samples in each iteration</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">3000</span><span class="p">):</span>
+    <span class="n">pred</span> <span class="o">=</span> <span class="nf">net</span><span class="p">(</span><span class="n">X</span><span class="p">).</span><span class="nf">squeeze</span><span class="p">()</span> <span class="c1"># Make predictions
+</span>    <span class="n">loss</span> <span class="o">=</span> <span class="nf">loss_fn</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="c1"># Compute loss
+</span>    <span class="n">optimizer</span><span class="p">.</span><span class="nf">zero_grad</span><span class="p">()</span>   <span class="c1"># Clear previous gradients
+</span>    <span class="n">loss</span><span class="p">.</span><span class="nf">backward</span><span class="p">()</span>         <span class="c1"># Backpropagation
+</span>    <span class="n">optimizer</span><span class="p">.</span><span class="nf">step</span><span class="p">()</span>        <span class="c1"># Update model parameters
+</span>    <span class="k">if</span> <span class="n">epoch</span> <span class="o">%</span> <span class="mi">300</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>    <span class="c1">#print the loss every 300 epochs
+</span>        <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s">, Loss: </span><span class="si">{</span><span class="n">loss</span><span class="p">.</span><span class="nf">item</span><span class="p">()</span><span class="si">:</span><span class="p">.</span><span class="mi">4</span><span class="n">f</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="part-7-de-standardize-results-and-compare-with-ground-truth">Part 7: De-standardize Results and Compare with Ground Truth</h2>
+<p>After training, we rescale the learned weights and bias back to the original scale, and compare them with the assumed true parameters.</p>
+
+<ul>
+  <li>After training, print the learned weights and bias</li>
+  <li>Compare them with <code class="language-plaintext highlighter-rouge">true_w</code> and <code class="language-plaintext highlighter-rouge">true_b</code> to check if the model learned correctly</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">w_learned</span> <span class="o">=</span> <span class="n">net</span><span class="p">.</span><span class="n">weight</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="nf">squeeze</span><span class="p">().</span><span class="nf">numpy</span><span class="p">()</span>
+<span class="n">b_learned</span> <span class="o">=</span> <span class="n">net</span><span class="p">.</span><span class="n">bias</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="nf">item</span><span class="p">()</span>
+
+<span class="c1"># Convert back to original scale
+</span><span class="n">w_learned_rescaled</span> <span class="o">=</span> <span class="n">scaler_y</span><span class="p">.</span><span class="n">scale_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">w_learned</span> <span class="o">/</span> <span class="n">scaler_X</span><span class="p">.</span><span class="n">scale_</span>
+<span class="n">b_learned_rescaled</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">scaler_y</span><span class="p">.</span><span class="n">scale_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">b_learned</span>
+    <span class="o">+</span> <span class="n">scaler_y</span><span class="p">.</span><span class="n">mean_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="o">-</span> <span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">w_learned_rescaled</span> <span class="o">*</span> <span class="n">scaler_X</span><span class="p">.</span><span class="n">mean_</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="c1"># Print and Compare
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Learned weights:</span><span class="sh">"</span><span class="p">,</span> <span class="n">w_learned_rescaled</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Learned bias:</span><span class="sh">"</span><span class="p">,</span> <span class="n">b_learned_rescaled</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">True weights:</span><span class="sh">"</span><span class="p">,</span> <span class="n">true_w</span><span class="p">.</span><span class="nf">numpy</span><span class="p">())</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">True bias:</span><span class="sh">"</span><span class="p">,</span> <span class="n">true_b</span><span class="p">)</span>
+</code></pre></div></div>
+<p>The following figure shows the actual output after running the code.
+<img src="/assets/images/2025_08_05_housing_prediction.png" alt="PyTorch Housing Price Prediction Results with Multi-feature Input" title="PyTorch Housing Price Prediction Results" /></p>
+
+<p>Even though this is a simple linear model, the results show that <strong>linear regression can effectively capture patterns in structured data</strong>.</p>
+
+<p>For more accurate predictions — especially in real-world tasks — we would need to go further:</p>
+<ul>
+  <li>Tune hyperparameters</li>
+  <li>Optimize training</li>
+  <li>Consider more advanced models (like adding regularization or nonlinear features)</li>
+</ul>
+
+<p>It is a great first step in understanding and applying linear regression!</p>
+
+<h2 id="part-8-predicting-a-new-housing-sample">Part 8: Predicting a New Housing Sample</h2>
+<p>Finally, we test the trained model on a new house sample (area=200m², 3 bedrooms, detached type) to demonstrate real prediction.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># area=200m², 3 beds, detached
+</span><span class="n">x_new</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">([[</span><span class="mf">200.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]])</span>  
+<span class="n">pred_price</span> <span class="o">=</span> <span class="nf">net</span><span class="p">(</span><span class="n">x_new</span><span class="p">).</span><span class="nf">item</span><span class="p">()</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Predicted Price ≈ $</span><span class="sh">"</span><span class="p">,</span> <span class="nf">round</span><span class="p">(</span><span class="n">pred_price</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+</code></pre></div></div>
+<p>Here are the result:</p>
+
+<p><img src="/assets/images/2025_08_05_house_prediction_result.png" alt="PyTorch Housing Price Prediction for New Sample" title="PyTorch Housing Price Prediction Example" /></p>
+
+<hr />
+
+<h2 id="faq">FAQ</h2>
+
+<p><strong>Q: What features are used for this housing price prediction model?</strong><br />
+A: We use multiple features: area (m²), number of bedrooms, and house type (detached, townhouse, condo).</p>
+
+<p><strong>Q: Why do we need to standardize the data?</strong><br />
+A: Standardization helps each feature contribute equally and prevents large-valued features (like area) from dominating the regression.</p>
+
+<p><strong>Q: Can I extend this model with more features?</strong><br />
+A: Yes. You can add more features such as location, year built, or amenities, and PyTorch will scale to handle them.</p>
+
+<hr />
+
+<h2 id="references">References</h2>
+<ul>
+  <li>Related post: <a href="/ai/2025/08/05/linear-regression-pytorch-tutorial.html">Linear Regression Tutorial with Theory and PyTorch Implementation</a></li>
+  <li>Related post: <a href="/ai/2025/07/31/pytorch-image-classification-colab.html">PyTorch Image Classification Tutorial on Google Colab (CIFAR-10 Example)</a></li>
+  <li><a href="https://pytorch.org/tutorials/beginner/basics/linear_regression_tutorial.html">PyTorch Regression Tutorial</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

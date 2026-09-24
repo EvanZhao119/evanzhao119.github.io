@@ -1,0 +1,192 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="autoboxing--unboxing-in-java">Autoboxing &amp; Unboxing in Java</h1>
+
+<p>In Java, <strong>autoboxing</strong> and <strong>unboxing</strong> are automatic conversions between <strong>primitive data types</strong> and their <strong>corresponding wrapper classes</strong>. These features were introduced in <strong>Java 5</strong> to simplify coding when working with collections, generics, and object-oriented programming.</p>
+
+<h2 id="1-what-is-autoboxing">1. What is Autoboxing?</h2>
+
+<p><strong>Autoboxing</strong> is the automatic conversion of a <strong>primitive data type</strong> into its corresponding <strong>wrapper class</strong> by the Java compiler.</p>
+
+<h3 id="example-of-autoboxing">Example of Autoboxing</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">AutoboxingExample</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kt">int</span> <span class="n">primitiveInt</span> <span class="o">=</span> <span class="mi">10</span><span class="o">;</span>
+
+        <span class="c1">// Autoboxing: int → Integer</span>
+        <span class="nc">Integer</span> <span class="n">objectInt</span> <span class="o">=</span> <span class="n">primitiveInt</span><span class="o">;</span>
+
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Primitive int: "</span> <span class="o">+</span> <span class="n">primitiveInt</span><span class="o">);</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Autoboxed Integer: "</span> <span class="o">+</span> <span class="n">objectInt</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="where-autoboxing-is-useful">Where Autoboxing is Useful?</h3>
+
+<ul>
+  <li><strong>When adding primitive values to collections</strong></li>
+  <li><strong>When using generic methods with primitives</strong></li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.util.ArrayList</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">AutoboxingExample</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="kt">void</span> <span class="nf">printValue</span><span class="o">(</span><span class="no">T</span> <span class="n">value</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Value: "</span> <span class="o">+</span> <span class="n">value</span><span class="o">);</span>
+    <span class="o">}</span>
+    
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">ArrayList</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">numbers</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;();</span>
+        <span class="n">numbers</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="mi">5</span><span class="o">);</span> <span class="c1">// Autoboxing: int → Integer</span>
+        <span class="n">numbers</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="mi">10</span><span class="o">);</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Numbers List: "</span> <span class="o">+</span> <span class="n">numbers</span><span class="o">);</span>
+        
+        <span class="n">printValue</span><span class="o">(</span><span class="mi">20</span><span class="o">);</span> <span class="c1">// Autoboxing: int → Integer</span>
+        <span class="n">printValue</span><span class="o">(</span><span class="mf">3.14</span><span class="o">);</span> <span class="c1">// Autoboxing: double → Double</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="2-what-is-unboxing">2. What is Unboxing?</h2>
+
+<p><strong>Unboxing</strong> is the automatic conversion of a <strong>wrapper class object</strong> back into its corresponding <strong>primitive type</strong>.</p>
+
+<h3 id="example-of-unboxing">Example of Unboxing</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UnboxingExample</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Integer</span> <span class="n">objectInt</span> <span class="o">=</span> <span class="mi">20</span><span class="o">;</span>
+
+        <span class="c1">// Unboxing: Integer → int</span>
+        <span class="kt">int</span> <span class="n">primitiveInt</span> <span class="o">=</span> <span class="n">objectInt</span><span class="o">;</span>
+
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Wrapper Integer: "</span> <span class="o">+</span> <span class="n">objectInt</span><span class="o">);</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Unboxed int: "</span> <span class="o">+</span> <span class="n">primitiveInt</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="where-unboxing-is-useful">Where Unboxing is Useful?</h3>
+
+<ul>
+  <li><strong>When performing arithmetic operations on wrapper objects</strong></li>
+  <li><strong>When passing wrapper objects to methods expecting primitives</strong></li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UnboxingExample</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">printSquare</span><span class="o">(</span><span class="kt">int</span> <span class="n">num</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Square: "</span> <span class="o">+</span> <span class="o">(</span><span class="n">num</span> <span class="o">*</span> <span class="n">num</span><span class="o">));</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Integer</span> <span class="n">num1</span> <span class="o">=</span> <span class="mi">50</span><span class="o">;</span>
+        <span class="nc">Integer</span> <span class="n">num2</span> <span class="o">=</span> <span class="mi">30</span><span class="o">;</span>
+
+        <span class="c1">// Unboxing happens automatically</span>
+        <span class="kt">int</span> <span class="n">sum</span> <span class="o">=</span> <span class="n">num1</span> <span class="o">+</span> <span class="n">num2</span><span class="o">;</span>
+
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Sum: "</span> <span class="o">+</span> <span class="n">sum</span><span class="o">);</span>
+        
+        <span class="nc">Integer</span> <span class="n">objNum</span> <span class="o">=</span> <span class="mi">7</span><span class="o">;</span>
+        <span class="n">printSquare</span><span class="o">(</span><span class="n">objNum</span><span class="o">);</span> <span class="c1">// Unboxing: Integer → int</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="3-performance-considerations">3. Performance Considerations</h2>
+
+<p>While <strong>autoboxing and unboxing</strong> simplify code, they introduce performance overhead:</p>
+
+<ul>
+  <li>
+    <p><strong>Memory Usage</strong></p>
+
+    <ul>
+      <li>Wrapper objects consume more memory than primitives.</li>
+      <li>Example: <code class="language-plaintext highlighter-rouge">int</code> takes <strong>4 bytes</strong>, but <code class="language-plaintext highlighter-rouge">Integer</code> takes <strong>16 bytes</strong> (due to object overhead).</li>
+    </ul>
+  </li>
+  <li>
+    <p><strong>Processing Time</strong></p>
+
+    <ul>
+      <li>Unnecessary boxing/unboxing can slow down performance in loops.</li>
+      <li>Example:
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   <span class="kd">public</span> <span class="kd">class</span> <span class="nc">PerformanceTest</span> <span class="o">{</span>
+   <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+       <span class="kt">long</span> <span class="n">start</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="na">nanoTime</span><span class="o">();</span>
+             
+       <span class="nc">Integer</span> <span class="n">sum</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="c1">// Autoboxing</span>
+       <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">1000000</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+           <span class="n">sum</span> <span class="o">+=</span> <span class="n">i</span><span class="o">;</span> <span class="c1">// Unboxing &amp; Autoboxing happening repeatedly</span>
+       <span class="o">}</span>
+             
+       <span class="kt">long</span> <span class="n">end</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="na">nanoTime</span><span class="o">();</span>
+       <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Time taken: "</span> <span class="o">+</span> <span class="o">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="o">)</span> <span class="o">+</span> <span class="s">" ns"</span><span class="o">);</span>
+   <span class="o">}</span>
+   <span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+      <li><strong>Fix</strong>: Use <code class="language-plaintext highlighter-rouge">int</code> instead of <code class="language-plaintext highlighter-rouge">Integer</code> inside loops.</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="4-summary">4. Summary</h2>
+
+<p>Autoboxing &amp; unboxing make Java easier to work with, but understanding when and how they occur helps optimize performance.</p>
+
+<table>
+    <tr>
+        <th>Feature</th>
+        <th>Autoboxing</th>
+        <th>Unboxing</th>
+    </tr>
+    <tr>
+        <td>Definition</td>
+        <td>Converts <b>primitive</b> → <b>Wrapper object</b></td>
+        <td>Converts <b>Wrapper object</b> → <b>primitive</b></td>
+    </tr>
+    <tr>
+        <td>When?</td>
+        <td>Assigning a primitive value to a wrapper class</td>
+        <td>Assigning a wrapper object to a primitive type</td>
+    </tr>
+    <tr>
+        <td>Benefit</td>
+        <td>Simplifies working with collections, generics</td>
+        <td>Allows seamless arithmetic operations</td>
+    </tr>
+    <tr>
+        <td>Downside</td>
+        <td colspan="2">Consume more memory and implicit conversions may impact efficiency</td>
+    </tr>
+</table>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

@@ -1,0 +1,108 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="aqs-made-simple-how-javas-locking-framework-works">AQS Made Simple: How Java’s Locking Framework Works</h1>
+<p><strong>AbstractQueuedSynchronizer (AQS)</strong> is a foundational framework in Java for building locks and synchronizers like <code class="language-plaintext highlighter-rouge">ReentrantLock</code>, <code class="language-plaintext highlighter-rouge">CountDownLatch</code>, <code class="language-plaintext highlighter-rouge">Semaphore</code>, etc. It manages a <strong>FIFO queue</strong> and a <strong>state variable</strong> to handle synchronization.</p>
+
+<p>Its primary goal is to simplify the development of robust and scalable synchronization tools.</p>
+
+<p>With the introduction of Virtual Threads in Java 21, traditional blocking locks (like ReentrantLock) are being re-evaluated in favor of non-blocking constructs or high-throughput alternatives like <code class="language-plaintext highlighter-rouge">StampedLock</code>.</p>
+
+<h2 id="core-mechanism-of-aqs">Core Mechanism of AQS</h2>
+<h3 id="state-management">State Management</h3>
+<p>AQS maintains an internal state using a <code class="language-plaintext highlighter-rouge">volatile int</code>.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">volatile</span> <span class="kt">int</span> <span class="n">state</span><span class="o">;</span>
+</code></pre></div></div>
+<p>AQS provides protected methods for accessing and modifying this state.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kd">final</span> <span class="kt">int</span> <span class="nf">getState</span><span class="o">();</span>
+<span class="kd">protected</span> <span class="kd">final</span> <span class="kt">void</span> <span class="nf">setState</span><span class="o">(</span><span class="kt">int</span> <span class="n">newState</span><span class="o">);</span>
+<span class="kd">protected</span> <span class="kd">final</span> <span class="kt">boolean</span> <span class="nf">compareAndSetState</span><span class="o">(</span><span class="kt">int</span> <span class="n">expect</span><span class="o">,</span> <span class="kt">int</span> <span class="n">update</span><span class="o">);</span>
+</code></pre></div></div>
+<p>These are typically used by subclasses to control synchronization logic.</p>
+
+<h3 id="methods-to-override">Methods to Override</h3>
+<p>When extending AQS, developers implement the following protected methods to define custom locking behavior.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kt">boolean</span> <span class="nf">tryAcquire</span><span class="o">(</span><span class="kt">int</span> <span class="n">arg</span><span class="o">);</span>
+<span class="kd">protected</span> <span class="kt">boolean</span> <span class="nf">tryRelease</span><span class="o">(</span><span class="kt">int</span> <span class="n">arg</span><span class="o">);</span>
+<span class="kd">protected</span> <span class="kt">int</span> <span class="nf">tryAcquireShared</span><span class="o">(</span><span class="kt">int</span> <span class="n">arg</span><span class="o">);</span>
+<span class="kd">protected</span> <span class="kt">boolean</span> <span class="nf">tryReleaseShared</span><span class="o">(</span><span class="kt">int</span> <span class="n">arg</span><span class="o">);</span>
+<span class="kd">protected</span> <span class="kt">boolean</span> <span class="nf">isHeldExclusively</span><span class="o">();</span>
+</code></pre></div></div>
+<p>These methods are called by higher-level functions like <code class="language-plaintext highlighter-rouge">acquire()</code> and <code class="language-plaintext highlighter-rouge">release()</code> to control how threads access shared resources.</p>
+
+<h2 id="reentrantlock-example">ReentrantLock Example</h2>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kd">final</span> <span class="kt">boolean</span> <span class="nf">tryAcquire</span><span class="o">(</span><span class="kt">int</span> <span class="n">acquires</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="nf">nonfairTryAcquire</span><span class="o">(</span><span class="n">acquires</span><span class="o">);</span>
+<span class="o">}</span>
+
+<span class="kd">final</span> <span class="kt">boolean</span> <span class="nf">nonfairTryAcquire</span><span class="o">(</span><span class="kt">int</span> <span class="n">acquires</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// Get the current thread</span>
+    <span class="kd">final</span> <span class="nc">Thread</span> <span class="n">current</span> <span class="o">=</span> <span class="nc">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">();</span>
+
+    <span class="c1">// Get the current state value, which represents the lock status</span>
+    <span class="kt">int</span> <span class="n">c</span> <span class="o">=</span> <span class="n">getState</span><span class="o">();</span>
+
+    <span class="c1">// If the state is 0, it means the lock is currently free</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">c</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">// Attempt to atomically set the state to `acquires` (typically 1)</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">compareAndSetState</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">acquires</span><span class="o">))</span> <span class="o">{</span>
+            <span class="c1">// Set the current thread as the exclusive owner of the lock</span>
+            <span class="n">setExclusiveOwnerThread</span><span class="o">(</span><span class="n">current</span><span class="o">);</span>
+            <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="c1">// If the state is not 0, the lock is already held by another thread</span>
+    <span class="c1">// Check if the current thread is the one holding the lock (reentrant case)</span>
+    <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">current</span> <span class="o">==</span> <span class="n">getExclusiveOwnerThread</span><span class="o">())</span> <span class="o">{</span>
+        <span class="c1">// If so, allow reentrancy by incrementing the state</span>
+        <span class="kt">int</span> <span class="n">nextc</span> <span class="o">=</span> <span class="n">c</span> <span class="o">+</span> <span class="n">acquires</span><span class="o">;</span>
+
+        <span class="c1">// Overflow check (not likely, but needed for safety)</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">nextc</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">)</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">Error</span><span class="o">(</span><span class="s">"Maximum lock count exceeded"</span><span class="o">);</span>
+
+        <span class="c1">// Update the state with the new value</span>
+        <span class="n">setState</span><span class="o">(</span><span class="n">nextc</span><span class="o">);</span>
+        <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="c1">// Failed to acquire the lock</span>
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="benefits">Benefits</h2>
+<ul>
+  <li>Generic: Supports exclusive and shared locks.</li>
+  <li>Efficient: Relies on CAS and condition queues for performance.</li>
+  <li>Extendable: Easy to create custom synchronizers.</li>
+</ul>
+
+<p>Relying on blocking, AQS will be becoming less popular as Virtual Threads gradually offer a faster and more efficient way to handle concurrency without blocking.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

@@ -1,0 +1,200 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="understanding-java-memory-model-jmm-and-volatile">Understanding Java Memory Model (JMM) and <code class="language-plaintext highlighter-rouge">volatile</code></h1>
+<blockquote>
+  <p>This article provides a comprehensive guide to the Java Memory Model (JMM), including its design, the main-working memory model, memory operation instructions, and the semantics of the <code class="language-plaintext highlighter-rouge">volatile</code> keyword. Updated for 2025, it includes JVM-level enhancements and practical insights for concurrent programming.</p>
+</blockquote>
+
+<h2 id="1-motivation-consistent-memory-behavior-across-platforms">1. Motivation: Consistent Memory Behavior Across Platforms</h2>
+<p>Java aims to be platform-independent, running seamlessly on various operating systems and hardware. However, differences in memory architecture, CPU cache design, and compiler optimizations pose challenges in multi-threaded environments.</p>
+
+<p>To solve this, <strong>the Java Memory Model (JMM)</strong> defines how threads interact through memory, ensuring consistent behavior across platforms and processors.</p>
+
+<h2 id="2-main-memory-vs-working-memory">2. Main Memory vs. Working Memory</h2>
+<p>JMM introduces a memory model that separates <strong>main memory</strong> from <strong>per-thread working memory</strong>.
+| Component      | Description                                                                 |
+|—————-|—————————————————————————–|
+| <strong>Main Memory</strong>    | Shared by all threads; stores the master copy of variables.                |
+| <strong>Working Memory</strong> | Thread-local; stores copies of variables used by the thread.               |
+| <strong>Access Rule</strong>    | Threads must read/write variables via their working memory, not directly from main memory. |</p>
+
+<blockquote>
+  <p>Any data exchange between threads must go through <strong>main memory</strong>.</p>
+</blockquote>
+
+<h2 id="3-the-8-memory-operations-in-jmm">3. The 8 Memory Operations in JMM</h2>
+<p>JMM defines 8 low-level operations that abstract how threads interact with memory.
+| Operation   | Meaning                                                   |
+|————-|———————————————————–|
+| <code class="language-plaintext highlighter-rouge">lock</code>      | Mark a variable as exclusively accessible by a thread.    |
+| <code class="language-plaintext highlighter-rouge">unlock</code>    | Release the exclusive access lock.                        |
+| <code class="language-plaintext highlighter-rouge">read</code>      | Read a variable from main memory into the working memory. |
+| <code class="language-plaintext highlighter-rouge">load</code>      | Load the variable into the working memory.                |
+| <code class="language-plaintext highlighter-rouge">use</code>       | Use the variable in working memory.                       |
+| <code class="language-plaintext highlighter-rouge">assign</code>    | Assign a new value to the variable in working memory.     |
+| <code class="language-plaintext highlighter-rouge">store</code>     | Write the value from working memory back to main memory.  |
+| <code class="language-plaintext highlighter-rouge">write</code>     | Commit the stored value to main memory.                   |</p>
+
+<blockquote>
+  <p>These are <strong>conceptual operations</strong>—they guide how compilers and CPUs implement memory consistency, but are not directly exposed to developers.</p>
+</blockquote>
+
+<h2 id="4-understanding-volatile-in-jmm">4. Understanding <code class="language-plaintext highlighter-rouge">volatile</code> in JMM</h2>
+<p>The <code class="language-plaintext highlighter-rouge">volatile</code> keyword offers a <strong>lightweight synchronization mechanism</strong> in Java, ideal for sharing <strong>simple flags or state information</strong> between threads.</p>
+
+<h3 id="key-characteristics-of-volatile">Key Characteristics of <code class="language-plaintext highlighter-rouge">volatile</code></h3>
+<h4 id="1-visibility-guarantee">1. <strong>Visibility Guarantee</strong></h4>
+<ul>
+  <li>A read of a <code class="language-plaintext highlighter-rouge">volatile</code> variable <strong>always fetches the latest value from main memory</strong>.</li>
+  <li>A write to a <code class="language-plaintext highlighter-rouge">volatile</code> variable <strong>is immediately flushed to main memory</strong>.</li>
+</ul>
+
+<h4 id="2-ordering-guarantee">2. <strong>Ordering Guarantee</strong></h4>
+<ul>
+  <li>Read and write operations on <code class="language-plaintext highlighter-rouge">volatile</code> variables are <strong>not reordered</strong> with other instructions.</li>
+  <li>This prevents subtle concurrency bugs caused by instruction reordering.</li>
+</ul>
+
+<h3 id="jvm-implementation-enhancements">JVM Implementation Enhancements</h3>
+<p>Modern JVMs (e.g., HotSpot) implement <code class="language-plaintext highlighter-rouge">volatile</code> behavior using <strong>memory barriers</strong>, such as:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">storestore</code>: Prevents previous writes from being reordered after the <code class="language-plaintext highlighter-rouge">volatile</code> write.</li>
+  <li><code class="language-plaintext highlighter-rouge">storeload</code>: Prevents subsequent reads from being reordered before the <code class="language-plaintext highlighter-rouge">volatile</code> write.</li>
+</ul>
+
+<p>These ensure both <strong>visibility</strong> and <strong>ordering</strong> across threads.</p>
+
+<h3 id="performance-considerations">Performance Considerations</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Operation</th>
+      <th>Performance Impact</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Read</strong></td>
+      <td>Same as normal variable reads.</td>
+    </tr>
+    <tr>
+      <td><strong>Write</strong></td>
+      <td>Slightly slower due to memory barriers.</td>
+    </tr>
+    <tr>
+      <td><strong>Compared to Locks</strong></td>
+      <td>Much cheaper than using <code class="language-plaintext highlighter-rouge">synchronized</code> blocks.</td>
+    </tr>
+  </tbody>
+</table>
+
+<blockquote>
+  <p><code class="language-plaintext highlighter-rouge">volatile</code> <strong>does not guarantee atomicity</strong>. Use <code class="language-plaintext highlighter-rouge">AtomicInteger</code>, <code class="language-plaintext highlighter-rouge">synchronized</code>, or locks for compound actions like <code class="language-plaintext highlighter-rouge">i++</code>.</p>
+</blockquote>
+
+<h2 id="5-non-atomic-access-to-long-and-double-obsolete">5. Non-Atomic Access to <code class="language-plaintext highlighter-rouge">long</code> and <code class="language-plaintext highlighter-rouge">double</code> (obsolete)</h2>
+<p>According to the Java specification, 64-bit types (<code class="language-plaintext highlighter-rouge">long</code>, <code class="language-plaintext highlighter-rouge">double</code>) <strong>may be accessed non-atomically</strong> on some 32-bit JVMs if not declared <code class="language-plaintext highlighter-rouge">volatile</code>.</p>
+
+<ul>
+  <li>A thread might observe a half-updated value: one half old, one half new.</li>
+</ul>
+
+<blockquote>
+  <p><strong>Modern JVM Update</strong>: Most JVMs since JDK 8 guarantee atomic access to <code class="language-plaintext highlighter-rouge">long</code> and <code class="language-plaintext highlighter-rouge">double</code> even without <code class="language-plaintext highlighter-rouge">volatile</code>. This issue is largely <strong>obsolete</strong> in current development environments.</p>
+</blockquote>
+
+<h2 id="6-the-happens-before-principle">6. The Happens-Before Principle</h2>
+<p>The <strong>Happens-Before</strong> principle is a core concept of JMM and is critical for reasoning about thread safety.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>Rule Name</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td><strong>Program Order Rule</strong></td>
+      <td>Each action in a thread happens-before every subsequent action in that thread, as dictated by program control flow.</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><strong>Monitor Lock Rule</strong></td>
+      <td>An unlock on a monitor lock happens-before every subsequent lock on the same monitor.</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><strong>Volatile Variable Rule</strong></td>
+      <td>A write to a <code class="language-plaintext highlighter-rouge">volatile</code> variable happens-before every subsequent read of that same variable.</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><strong>Thread Start Rule</strong></td>
+      <td>A call to <code class="language-plaintext highlighter-rouge">Thread.start()</code> on a thread happens-before any action in the started thread.</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><strong>Thread Termination Rule</strong></td>
+      <td>Any action in a thread happens-before other threads detect that the thread has terminated (via <code class="language-plaintext highlighter-rouge">Thread.join()</code> or <code class="language-plaintext highlighter-rouge">Thread.isAlive()</code> returning false).</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><strong>Thread Interruption Rule</strong></td>
+      <td>A call to <code class="language-plaintext highlighter-rouge">Thread.interrupt()</code> happens-before the interrupted thread detects the interrupt (via <code class="language-plaintext highlighter-rouge">isInterrupted()</code> or <code class="language-plaintext highlighter-rouge">interrupted()</code>).</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td><strong>Finalizer Rule</strong></td>
+      <td>The completion of an object’s constructor happens-before the start of its finalizer method.</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td><strong>Transitivity</strong></td>
+      <td>If A happens-before B, and B happens-before C, then A happens-before C.</td>
+    </tr>
+  </tbody>
+</table>
+
+<blockquote>
+  <p>If two operations are related by happens-before, their execution order is guaranteed and memory visibility is ensured. Otherwise, the JVM and CPU may <strong>reorder</strong> them, leading to potential <strong>data races</strong>.</p>
+</blockquote>
+
+<h2 id="7-practical-use-cases">7. Practical Use Cases</h2>
+<ul>
+  <li>Use <code class="language-plaintext highlighter-rouge">volatile</code> for flags and simple state sharing.</li>
+  <li>Avoid using <code class="language-plaintext highlighter-rouge">volatile</code> for compound operations (e.g., increments) without external synchronization.</li>
+  <li>Use <code class="language-plaintext highlighter-rouge">Atomic*</code> classes for lock-free counters and accumulators.</li>
+  <li>Use <code class="language-plaintext highlighter-rouge">synchronized</code> for complex atomic sections.</li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

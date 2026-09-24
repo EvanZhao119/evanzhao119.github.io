@@ -1,0 +1,133 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="understanding-java-class-loaders-and-delegation">Understanding Java Class Loaders and Delegation</h1>
+
+<h2 id="1-class-uniqueness-and-class-loaders">1. Class Uniqueness and Class Loaders</h2>
+<p>In the Java Virtual Machine (JVM), <strong>the uniqueness of a class</strong> is determined by <strong>its fully qualified name plus the class loader that loaded it</strong>.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&lt;</span><span class="kd">class</span> <span class="nc">loader</span> <span class="n">instance</span><span class="o">&gt;</span> <span class="o">+</span> <span class="o">&lt;</span><span class="kn">package</span><span class="nn">.class</span> <span class="n">name</span><span class="o">&gt;</span>
+</code></pre></div></div>
+<p>Two classes with the same name loaded by different class loaders are treated as <strong>completely distinct types</strong> by the JVM.</p>
+
+<h2 id="2-parent-delegation-model">2. Parent Delegation Model</h2>
+<p>Java’s class loading mechanism follows the <strong>Parent Delegation Model</strong>, where <strong>a class loader first delegates the class-loading request to its parent</strong> before attempting to load the class itself.</p>
+
+<h3 id="21-types-of-class-loaders">2.1 Types of Class Loaders</h3>
+<p>| Class Loader | Implemented In | Responsibility |
+|————–|—————-|—————-|
+| <strong>Bootstrap ClassLoader</strong> | C++ | Loads core Java classes from <code class="language-plaintext highlighter-rouge">JAVA_HOME/lib</code> and classes specified by <code class="language-plaintext highlighter-rouge">-Xbootclasspath</code>. Appears as <code class="language-plaintext highlighter-rouge">null</code> in output. |
+| <strong>Extension ClassLoader</strong> | Java | Loads classes from <code class="language-plaintext highlighter-rouge">JAVA_HOME/lib/ext</code> or paths specified by <code class="language-plaintext highlighter-rouge">java.ext.dirs</code>. |
+| <strong>Application ClassLoader</strong> | Java | Loads classes from the user classpath (<code class="language-plaintext highlighter-rouge">classpath</code>). This is the default loader for most applications. |</p>
+
+<p>As of Java 9, the <strong>Extension ClassLoader has been removed</strong> and replaced by the <strong>Platform ClassLoader</strong>, reflecting the introduction of the Java Module System.</p>
+
+<h2 id="3-class-loader-hierarchy-java-9">3. Class Loader Hierarchy (Java 9+)</h2>
+<p>From Java 9 onward, the Platform ClassLoader replaces the Extension ClassLoader and is responsible for loading platform modules (excluding core modules).</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>                +--------------------------+
+                |   Bootstrap ClassLoader  |
+                +--------------------------+
+                            |
+                +--------------------------+
+                |Platform ClassLoader (new)|
+                +--------------------------+
+                            |
+                +--------------------------+
+                |  Application ClassLoader |
+                +--------------------------+
+
+</code></pre></div></div>
+
+<h2 id="4-scenarios-that-break-the-parent-delegation-model">4. Scenarios that Break the Parent Delegation Model</h2>
+<p>Although delegation is the default model, certain real-world use cases break this pattern deliberately.</p>
+
+<h3 id="41-jdbc-mechanism">4.1 JDBC Mechanism</h3>
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;dependency&gt;</span>
+    <span class="nt">&lt;groupId&gt;</span>mysql<span class="nt">&lt;/groupId&gt;</span>
+    <span class="nt">&lt;artifactId&gt;</span>mysql-connector-java<span class="nt">&lt;/artifactId&gt;</span>
+    <span class="nt">&lt;version&gt;</span>8.0.18<span class="nt">&lt;/version&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+</code></pre></div></div>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">DriverStudy</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">SQLException</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="nc">Driver</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getClassLoader</span><span class="o">());</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="nc">DriverManager</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getClassLoader</span><span class="o">());</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">com</span><span class="o">.</span><span class="na">mysql</span><span class="o">.</span><span class="na">cj</span><span class="o">.</span><span class="na">jdbc</span><span class="o">.</span><span class="na">Driver</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getClassLoader</span><span class="o">());</span>
+
+        <span class="nc">Connection</span> <span class="n">conn</span> <span class="o">=</span> <span class="nc">DriverManager</span><span class="o">.</span><span class="na">getConnection</span><span class="o">(</span><span class="s">"jdbc:mysql://localhost:3306"</span><span class="o">,</span> <span class="s">"root"</span><span class="o">,</span> <span class="s">"123456"</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p><strong>Sample output (Java 8):</strong></p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kc">null</span>  <span class="c1">// Driver and DriverManager are loaded by Bootstrap ClassLoader</span>
+<span class="kc">null</span>
+<span class="n">sun</span><span class="o">.</span><span class="na">misc</span><span class="o">.</span><span class="na">Launcher</span><span class="n">$AppClassLoader</span><span class="nd">@xxx</span>  <span class="c1">// MySQL driver loaded by Application ClassLoader</span>
+</code></pre></div></div>
+
+<h3 id="42-internal-analysis-of-jdbc-loading">4.2 Internal Analysis of JDBC Loading</h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">DriverManager</code> is loaded by the Bootstrap ClassLoader.</li>
+  <li>Inside <code class="language-plaintext highlighter-rouge">getConnection()</code>, the loader:
+    <ul>
+      <li>Retrieves <strong>the context class loader</strong> via <code class="language-plaintext highlighter-rouge">Thread.currentThread().getContextClassLoader()</code>.</li>
+      <li>Uses this loader to locate <code class="language-plaintext highlighter-rouge">com.mysql.cj.jdbc.Driver</code>.</li>
+      <li>Verifies the class using <code class="language-plaintext highlighter-rouge">Class.forName()</code> and loads it if allowed.</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="breaking-point">Breaking Point</h4>
+<p>Although DriverManager is loaded by the Bootstrap ClassLoader, it uses the thread context class loader—typically the Application ClassLoader—to discover and load third-party JDBC drivers dynamically.</p>
+
+<p>This breaks the parent delegation model and follows the Service Provider Interface (SPI) pattern, which relies on the META-INF/services directory and the ServiceLoader mechanism.</p>
+
+<h2 id="5-java-9-module-system-and-class-loading">5. Java 9+ Module System and Class Loading</h2>
+<p>With the introduction of Java Modules (Jigsaw) in Java 9:</p>
+<ul>
+  <li>Class loading is determined by <strong>module ownership</strong>, not just classpath.</li>
+  <li>Platform and application class loaders must check if a class belongs to a system module before delegating.</li>
+  <li>If a class belongs to a specific module, the corresponding module class loader loads it, bypassing parent delegation.</li>
+</ul>
+
+<blockquote>
+  <p>The Java 9+ module system formally relaxes strict parent delegation, favoring modular encapsulation.</p>
+</blockquote>
+
+<h2 id="6-other-scenarios-that-break-delegation">6. Other Scenarios that Break Delegation</h2>
+
+<p>Frameworks such as <strong>JNDI</strong> and <strong>OSGi</strong> often <strong>intentionally break the parent delegation model</strong> by using <strong>custom class loader hierarchies</strong>. These hierarchies are designed to support <strong>modularization</strong>, <strong>dynamic loading</strong>, and <strong>hot-swapping</strong> of components.</p>
+
+<p>Such frameworks typically rely on:</p>
+<ul>
+  <li><strong>Child-first loading</strong> (also known as reverse delegation)</li>
+  <li>Allowing <strong>child class loaders to load classes before delegating to parent loaders</strong></li>
+</ul>
+
+<p>This approach enables better <strong>isolation</strong>, <strong>versioning</strong>, and <strong>runtime flexibility</strong>, which are essential in modular systems or plugin-based architectures.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

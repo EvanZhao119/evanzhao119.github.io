@@ -1,0 +1,118 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="introduction-to-java-modules">Introduction to Java Modules</h1>
+
+<p>Java Modules were introduced in <strong>Java 9</strong> as a powerful feature to better organize and encapsulate code.</p>
+
+<p>They provide a modular structure for Java applications, allowing developers to explicitly declare dependencies between modules and control which classes are accessible from outside.</p>
+
+<h2 id="1-what-are-java-modules">1. What are Java Modules?</h2>
+<p>A module is a logical unit of code, typically consisting of related classes, interfaces, and resources.</p>
+
+<p>Each module includes a <code class="language-plaintext highlighter-rouge">module-info.java</code> file that declares the module’s name, dependencies, and which packages are exposed to other modules.</p>
+
+<h3 id="example-module-structure">Example Module Structure</h3>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>myapp/
+├── module-info.java
+├── com/
+│   └── example/
+│       └── app/
+│           ├── Main.java
+│           └── Utils.java
+</code></pre></div></div>
+
+<h3 id="sample-module-infojava">Sample module-info.java</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">module</span> <span class="n">com</span><span class="o">.</span><span class="na">example</span><span class="o">.</span><span class="na">app</span> <span class="o">{</span>
+    <span class="n">requires</span> <span class="n">com</span><span class="o">.</span><span class="na">example</span><span class="o">.</span><span class="na">utils</span><span class="o">;</span>
+    <span class="n">exports</span> <span class="n">com</span><span class="o">.</span><span class="na">example</span><span class="o">.</span><span class="na">app</span><span class="o">;</span> <span class="c1">// Only this package is exported</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="2-key-features-of-modules">2. Key Features of Modules</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">requires</code></td>
+      <td>Declares dependencies on other modules</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">exports</code></td>
+      <td>Specifies which packages are accessible to other modules</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">opens</code></td>
+      <td>Allows runtime reflective access (e.g., for JSON serialization)</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">provides/uses</code></td>
+      <td>Related to the Service Loader mechanism (for SPI)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="3-a-simple-use-case-building-a-multi-module-enterprise-application">3. A Simple Use Case: Building a Multi-Module Enterprise Application</h2>
+
+<p>I am developing an enterprise-level application - an online ordering system. Now I decide to divide it into four modules, including <code class="language-plaintext highlighter-rouge">core</code>, <code class="language-plaintext highlighter-rouge">db</code>, <code class="language-plaintext highlighter-rouge">api</code> and <code class="language-plaintext highlighter-rouge">web</code>.</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">order.core</code>: Core order logic</li>
+  <li><code class="language-plaintext highlighter-rouge">order.db</code>: Database access module</li>
+  <li><code class="language-plaintext highlighter-rouge">order.api</code>: REST API module</li>
+  <li><code class="language-plaintext highlighter-rouge">order.web</code>: Frontend controller</li>
+</ul>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>order.core/
+└── module-info.java
+order.db/
+└── module-info.java
+order.api/
+└── module-info.java
+order.web/
+└── module-info.java
+</code></pre></div></div>
+<p>This is an example of module-info.java for <code class="language-plaintext highlighter-rouge">order.api</code>.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">module</span> <span class="n">order</span><span class="o">.</span><span class="na">api</span> <span class="o">{</span>
+    <span class="n">requires</span> <span class="n">order</span><span class="o">.</span><span class="na">core</span><span class="o">;</span>
+    <span class="n">requires</span> <span class="n">order</span><span class="o">.</span><span class="na">db</span><span class="o">;</span>
+    <span class="n">requires</span> <span class="n">com</span><span class="o">.</span><span class="na">fasterxml</span><span class="o">.</span><span class="na">jackson</span><span class="o">.</span><span class="na">databind</span><span class="o">;</span> <span class="c1">// For JSON serialization</span>
+    <span class="n">exports</span> <span class="n">com</span><span class="o">.</span><span class="na">mycompany</span><span class="o">.</span><span class="na">order</span><span class="o">.</span><span class="na">api</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>By leveraging the module system, any packages not explicitly exported are hidden by default, ensuring strong encapsulation. Dependencies between modules are clearly declared using the requires directive, and each module can be developed, tested, and deployed independently. Additionally, the JVM can validate the module graph at startup, reducing runtime errors.</p>
+
+<p>In conclusion, Java Modules offer at least four key advantages: <strong>Enhanced Encapsulation</strong>, <strong>Clear Dependency Management</strong>, <strong>Faster Startup and Improved Security</strong>, and <strong>Better Scalability for Large-Scale Projects</strong>.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

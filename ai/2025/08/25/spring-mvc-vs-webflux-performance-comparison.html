@@ -1,0 +1,216 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="spring-mvc-vs-webflux-a-practical-look-at-concurrency-and-performance">Spring MVC vs WebFlux: A Practical Look at Concurrency and Performance</h1>
+<p>In the Java backend world, <strong>Spring MVC</strong> has long been the go-to framework. It’s simple, reliable, and works well for most business apps. But as we move into <strong>AI inference</strong>, <strong>video processing</strong>, and <strong>high-concurrency workloads</strong>, a traditional blocking model starts to struggle. That’s where <strong>Spring WebFlux</strong> comes in. <strong>Spring WebFlux</strong> a <strong>reactive, non-blocking programming model</strong> designed to handle thousands of requests without running out of threads.</p>
+
+<p>In this post, I’ll walk through the <strong>key differences between MVC and WebFlux</strong>, share some <strong>benchmark results</strong>, and highlight when you should (or shouldn’t) choose WebFlux.</p>
+
+<hr />
+
+<h2 id="1-thread-model-how-they-handle-requests">1. Thread Model: How They Handle Requests</h2>
+
+<h3 id="spring-mvc-blocking">Spring MVC (Blocking)</h3>
+<ul>
+  <li>Built on <strong>Servlet + Tomcat</strong></li>
+  <li><strong>One request = one thread</strong></li>
+  <li>If a task (e.g., AI inference) takes 300ms, that thread is blocked the whole time</li>
+  <li>With enough concurrent users, the thread pool fills up and requests start waiting</li>
+</ul>
+
+<p>Think of one <strong>waiter</strong> who takes your order and then personally goes to cook and bring your food. Works fine for a few tables, but falls apart in a busy restaurant.</p>
+
+<hr />
+
+<h3 id="spring-webflux-non-blocking">Spring WebFlux (Non-Blocking)</h3>
+<ul>
+  <li>Built on <strong>Netty + Reactor</strong></li>
+  <li>Threads handle incoming requests and <strong>immediately release</strong> them to the reactive pipeline</li>
+  <li>When the result is ready, Reactor finds the correct connection and writes the response</li>
+</ul>
+
+<p>The <strong>waiter only takes orders</strong>, while the <strong>kitchen and another runner</strong> handle food delivery. The waiter is free to serve new customers right away.</p>
+
+<hr />
+
+<h2 id="2-faqs-you-might-wonder-about">2. FAQs You Might Wonder About</h2>
+
+<p><strong>Q1: Where is the connection stored if threads get released?</strong><br />
+Netty manages it. Each request has a channel bound to an event loop. Even if threads change, the channel stays alive.</p>
+
+<p><strong>Q2: Who writes the response back?</strong> 
+When the async task (Mono/Flux) completes, Reactor picks up the right channel and pushes the result.</p>
+
+<hr />
+
+<h2 id="3-code-comparison">3. Code Comparison</h2>
+
+<h3 id="mvc-controller">MVC Controller</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@PostMapping</span><span class="o">(</span><span class="s">"/check"</span><span class="o">)</span>
+<span class="kd">public</span> <span class="nc">ModerationResult</span> <span class="nf">check</span><span class="o">(</span><span class="nd">@RequestPart</span><span class="o">(</span><span class="s">"file"</span><span class="o">)</span> <span class="nc">MultipartFile</span> <span class="n">file</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="na">classify</span><span class="o">(</span><span class="n">file</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="webflux-controller">WebFlux Controller</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@PostMapping</span><span class="o">(</span><span class="s">"/check"</span><span class="o">)</span>
+<span class="kd">public</span> <span class="nc">Mono</span><span class="o">&lt;</span><span class="nc">ModerationResult</span><span class="o">&gt;</span> <span class="nf">check</span><span class="o">(</span><span class="nd">@RequestPart</span><span class="o">(</span><span class="s">"file"</span><span class="o">)</span> <span class="nc">MultipartFile</span> <span class="n">file</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="n">fluxService</span><span class="o">.</span><span class="na">classify</span><span class="o">(</span><span class="n">file</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Looks almost the same — but under the hood, the runtime behaves very differently.</p>
+
+<hr />
+
+<h2 id="4-benchmark-mvc-vs-webflux">4. Benchmark: MVC vs WebFlux</h2>
+<p>We stress-tested both APIs locally with <strong>200 concurrent users</strong> using JMeter.</p>
+
+<p>(<em>Remember:</em> this was <strong>CPU-only</strong>, no GPU acceleration — so the absolute numbers look slow. What matters here is the relative difference.)</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>MVC API</th>
+      <th>WebFlux API</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Requests</td>
+      <td>1018</td>
+      <td><strong>1340</strong></td>
+    </tr>
+    <tr>
+      <td>Errors</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>Avg. Response Time</td>
+      <td>35,853 ms (~36s)</td>
+      <td><strong>26,957 ms (~27s)</strong></td>
+    </tr>
+    <tr>
+      <td>Min Response Time</td>
+      <td>3,232 ms</td>
+      <td><strong>340 ms</strong></td>
+    </tr>
+    <tr>
+      <td>Max Response Time</td>
+      <td><strong>49,187 ms (~49s)</strong></td>
+      <td>141,574 ms (~141s)</td>
+    </tr>
+    <tr>
+      <td>Median</td>
+      <td>36,556 ms</td>
+      <td><strong>23,713 ms</strong></td>
+    </tr>
+    <tr>
+      <td>90th Percentile</td>
+      <td><strong>42,631 ms</strong></td>
+      <td>54,292 ms</td>
+    </tr>
+    <tr>
+      <td>95th Percentile</td>
+      <td><strong>44,824 ms</strong></td>
+      <td>64,867 ms</td>
+    </tr>
+    <tr>
+      <td>99th Percentile</td>
+      <td><strong>46,654 ms</strong></td>
+      <td>86,554 ms</td>
+    </tr>
+    <tr>
+      <td>Throughput</td>
+      <td><strong>4.93 req/s</strong></td>
+      <td>3.31 req/s</td>
+    </tr>
+    <tr>
+      <td>APDEX (500ms / 1.5s)</td>
+      <td>0.000</td>
+      <td><strong>0.002</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="key-takeaways">Key Takeaways</h3>
+<ul>
+  <li><strong>Stability</strong>: Both had zero errors</li>
+  <li><strong>Latency</strong>:
+    <ul>
+      <li>MVC = consistently high (32–47s)</li>
+      <li>WebFlux = much lower on average (~27s) but with a <strong>long tail</strong> (some requests hit ~141s)</li>
+    </ul>
+  </li>
+  <li><strong>Throughput</strong>: MVC slightly higher (because threads were blocking), but not sustainable at scale</li>
+  <li><strong>Scalability</strong>: WebFlux shines — it avoids thread pool exhaustion, which is critical in real production workloads</li>
+</ul>
+
+<hr />
+
+<h2 id="5-when-to-use-webflux">5. When to Use WebFlux</h2>
+
+<p><strong>Great for:</strong></p>
+<ul>
+  <li>AI model inference (image, text, video)</li>
+  <li>Long-running, high-concurrency APIs</li>
+  <li>API gateway layer (routing, rate-limiting, monitoring)</li>
+</ul>
+
+<p><strong>Less ideal for:</strong></p>
+<ul>
+  <li>Simple CRUD apps (MVC is easier)</li>
+  <li>Teams new to reactive programming (steep learning curve)</li>
+</ul>
+
+<hr />
+
+<h2 id="6-conclusion">6. Conclusion</h2>
+<p>Spring MVC and WebFlux are not rivals. In contrast, they are <strong>complementary</strong>.</p>
+<ul>
+  <li><strong>MVC</strong> is perfect for 80% of standard business APIs</li>
+  <li><strong>WebFlux</strong> is better for high-concurrency, resource-intensive workloads</li>
+</ul>
+
+<p>In our benchmark, WebFlux showed <strong>lower average latency and stronger concurrency handling</strong>, even though it suffered from long-tail requests. In real production, with <strong>GPU acceleration, batching, or distributed inference</strong>, WebFlux’s advantage grows even bigger.</p>
+
+<p>The future is <strong>hybrid</strong>: use MVC where it makes sense, and WebFlux where performance and scalability matter most.</p>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+<ul>
+  <li><a href="https://docs.spring.io/spring-framework/reference/web/webflux.html">Spring WebFlux Documentation</a></li>
+  <li><a href="https://projectreactor.io/docs/core/release/reference/">Project Reactor Reference Guide</a></li>
+  <li>Related post: <a href="/ai/2025/08/24/spring-boot-djl-image-moderation-api.html">Building an AI Moderation API with Spring Boot &amp; WebFlux</a></li>
+  <li>Related post: <a href="/ai/2025/08/21/djl-resnet-jni-image-preprocessing.html">JNI Preprocessing for ResNet in Java DJL</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

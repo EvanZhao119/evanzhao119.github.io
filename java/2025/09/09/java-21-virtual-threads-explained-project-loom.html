@@ -1,0 +1,130 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="java-21-feature-virtual-threads-explained-with-examples">Java 21 Feature: Virtual Threads Explained with Examples</h1>
+
+<h2 id="1-background-why-do-we-need-virtual-threads">1. Background: Why Do We Need Virtual Threads?</h2>
+<p>In traditional Java, threads are <strong>platform threads</strong>, which are directly mapped to the operating system (OS) threads.</p>
+
+<p>This model has several drawbacks:</p>
+<ul>
+  <li><strong>High creation cost</strong>: each thread consumes MB-level stack memory.</li>
+  <li><strong>Limited number of threads</strong>: an application may run out of resources with just a few thousand threads.</li>
+  <li><strong>Poor performance under high concurrency</strong>: in I/O-intensive scenarios (such as web servers or database connections), handling tens of thousands of concurrent requests becomes a bottleneck.</li>
+</ul>
+
+<p>To solve these issues, <strong>JDK 21 introduces Virtual Threads</strong> as a standard feature (from <strong>Project Loom</strong>). The goal is to allow Java applications to create <strong>millions of concurrent threads</strong> with minimal overhead.</p>
+
+<hr />
+
+<h2 id="2-what-are-virtual-threads">2. What Are Virtual Threads?</h2>
+<ol>
+  <li>Virtual threads are <strong>lightweight threads managed by the JVM</strong>, not directly bound to OS threads.</li>
+  <li>When a virtual thread performs a blocking I/O operation, the JVM <strong>suspends</strong> it and releases the underlying OS thread for other tasks.</li>
+  <li>The <strong>programming model remains the same</strong>: virtual threads are still <code class="language-plaintext highlighter-rouge">java.lang.Thread</code>. We can keep writing code in the familiar style without learning new APIs.</li>
+</ol>
+
+<hr />
+
+<h2 id="3-how-to-create-virtual-threads">3. How to Create Virtual Threads?</h2>
+<p>JDK 21 provides new APIs.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Create and start a virtual thread</span>
+<span class="nc">Thread</span><span class="o">.</span><span class="na">startVirtualThread</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Hello from: "</span> <span class="o">+</span> <span class="nc">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">());</span>
+<span class="o">});</span>
+</code></pre></div></div>
+<p>A more common approach is to use the <code class="language-plaintext highlighter-rouge">ExecutorService</code> designed for virtual threads.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.util.concurrent.*</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">VirtualThreadExecutorDemo</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">(</span><span class="nc">ExecutorService</span> <span class="n">executor</span> <span class="o">=</span> <span class="nc">Executors</span><span class="o">.</span><span class="na">newVirtualThreadPerTaskExecutor</span><span class="o">())</span> <span class="o">{</span>
+            <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+                <span class="kt">int</span> <span class="n">id</span> <span class="o">=</span> <span class="n">i</span><span class="o">;</span>
+                <span class="n">executor</span><span class="o">.</span><span class="na">submit</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+                    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Running task "</span> <span class="o">+</span> <span class="n">id</span> <span class="o">+</span> <span class="s">" in "</span> <span class="o">+</span> <span class="nc">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">());</span>
+                    <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">500</span><span class="o">);</span> <span class="c1">// simulate blocking</span>
+                    <span class="k">return</span> <span class="n">id</span><span class="o">;</span>
+                <span class="o">});</span>
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="c1">// automatically waits for all tasks to finish</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="4-use-cases">4. Use Cases</h2>
+
+<p><strong>Best for I/O-intensive tasks</strong>:</p>
+<ul>
+  <li>Web requests and APIs</li>
+  <li>Database queries and transactions</li>
+  <li>Real-time event streaming</li>
+  <li><strong>AI inference services</strong> (e.g., running multiple model predictions concurrently without complex async code)</li>
+</ul>
+
+<p><strong>Not ideal for CPU-intensive tasks</strong>:</p>
+<ul>
+  <li>Matrix multiplication and heavy numerical computing</li>
+  <li>Image and video processing</li>
+  <li><strong>Deep learning model training</strong></li>
+</ul>
+
+<p>Here, the bottleneck is CPU power, not thread scheduling, so virtual threads don’t offer significant advantages.</p>
+
+<hr />
+
+<h2 id="5-conclusion">5. Conclusion</h2>
+<p>Virtual threads in <strong>Java 21</strong> make concurrent programming dramatically simpler.</p>
+<ul>
+  <li>We can now scale to <strong>millions of threads</strong> with minimal overhead.</li>
+  <li>They allow developers to write <strong>simple, blocking-style code</strong> that runs efficiently under high concurrency.</li>
+  <li>For <strong>AI engineering</strong>, virtual threads are particularly valuable in.
+    <ul>
+      <li>Serving large volumes of <strong>inference API calls</strong> concurrently</li>
+      <li>Handling <strong>parallel model pipelines</strong> (e.g., NLP + image recognition in the same request)</li>
+      <li>Building <strong>scalable microservices</strong> that integrate machine learning models with databases and external APIs</li>
+    </ul>
+  </li>
+</ul>
+
+<p>If building modern applications, especially <strong>AI-powered services</strong>, please consider using <code class="language-plaintext highlighter-rouge">newVirtualThreadPerTaskExecutor()</code> that lets you keep clean, synchronous code while still scaling to massive concurrency.</p>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+<ul>
+  <li><a href="https://openjdk.org/jeps/444">Project Loom: Virtual Threads</a></li>
+  <li><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/package-summary.html">Java Concurrency API Documentation</a></li>
+  <li><a href="https://inside.java/podcast/">Inside Java Podcast</a></li>
+  <li>Related post: <a href="/ai/2025/08/25/spring-mvc-vs-webflux-performance-comparison.html">Spring MVC vs WebFlux: A Practical Look at Concurrency and Performance</a></li>
+  <li>Related post: <a href="/ai/2025/08/27/spring-webflux-ai-nsfw-moderation-api.html">Building a High-Concurrency AI Moderation Service with Spring WebFlux — From Concept to Production</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

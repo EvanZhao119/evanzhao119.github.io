@@ -1,0 +1,158 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="understanding-softmax-regression-principles-formulas-and-practical-insights">Understanding Softmax Regression: Principles, Formulas, and Practical Insights</h1>
+<p>In classification tasks, the question is often not <em>“how much”</em> but <em>“which one.”</em>
+For example:</p>
+<ul>
+  <li>Is an email spam or not?</li>
+  <li>Is an image showing a cat, dog, horse, or chicken?</li>
+  <li>Which movie will a user choose to watch?</li>
+</ul>
+
+<p>The answer is typically just one category from a set of possible options.
+<strong>Softmax regression</strong> is one of the most popular models for multi-class classification.</p>
+
+<hr />
+
+<h2 id="1-core-idea-of-softmax-regression-for-multi-class-classification">1. Core Idea of Softmax Regression for Multi-Class Classification</h2>
+<p>The main difference between <strong>Softmax regression</strong> and <strong>linear regression</strong> is:</p>
+<ul>
+  <li><strong>Linear regression</strong> predicts continuous values.</li>
+  <li><strong>Softmax regression</strong> predicts a <strong>probability distribution over classes</strong> and chooses the one with the highest probability as the final prediction.</li>
+</ul>
+
+<hr />
+
+<h2 id="2-model-structure-and-computation-flow-in-softmax-regression">2. Model Structure and Computation Flow in Softmax Regression</h2>
+
+<h3 id="1-input-features">(1) Input Features</h3>
+<p>Let’s start with a feature vector:
+<code class="language-plaintext highlighter-rouge">x ∈ Rᵈ</code></p>
+
+<h3 id="2-linear-transformation-affine-transformation">(2) Linear Transformation (Affine Transformation)</h3>
+<p><code class="language-plaintext highlighter-rouge">o = W x + b</code></p>
+<ul>
+  <li><strong>o</strong>: logits (Unnormalized prediction scores, which can be positive or negative)</li>
+  <li><strong>W</strong>: weight matrix, <strong>b</strong>: bias vector</li>
+</ul>
+
+<hr />
+
+<h3 id="3-softmax-transformation">(3) Softmax Transformation</h3>
+<p>We convert logits into a probability distribution: 
+<code class="language-plaintext highlighter-rouge">ŷⱼ = exp(oⱼ) / ∑ₖ exp(oₖ)</code></p>
+<ul>
+  <li>Exponentiation guarantees that all values are non-negative.</li>
+  <li>Normalization ensures the sum of probabilities equals 1.</li>
+</ul>
+
+<hr />
+
+<h3 id="4-predicting-the-class">(4) Predicting the Class</h3>
+<p>Although Softmax produces a probability for each class, the predicted class is simply:</p>
+
+<p><code class="language-plaintext highlighter-rouge">ŷ = arg maxⱼ oⱼ</code></p>
+
+<p>Because Softmax is a monotonically increasing function, the class with the largest logit is also the one with the highest probability.</p>
+
+<hr />
+
+<h2 id="3-mini-batch-computation">3. Mini-batch Computation</h2>
+<p>In deep learning, we typically process multiple samples at a time:</p>
+
+<p><code class="language-plaintext highlighter-rouge">O = XW + b</code></p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">𝐗 ∈ ℝⁿˣᵈ</code>: feature matrix for a batch, with n samples and d features.</li>
+  <li>Softmax is applied <strong>row-wise</strong>, normalizing the logits of each sample independently.</li>
+</ul>
+
+<p>This approach improves computational efficiency and makes full use of GPU parallelism.</p>
+
+<hr />
+
+<h2 id="4-cross-entropy-loss-in-softmax-regression-with-examples">4. Cross-Entropy Loss in Softmax Regression (with Examples)</h2>
+<p>Cross-entropy measures the difference between the predicted probability distribution and the true distribution.</p>
+
+<p><code class="language-plaintext highlighter-rouge">l(y, ŷ) = - ∑ⱼ yⱼ log ŷⱼ</code></p>
+<ul>
+  <li>y is a one-hot label vector, meaning it contains a 1 for the correct class and 0s for all other classes.</li>
+  <li>If the true class is c, the formula simplifies to:</li>
+</ul>
+
+<p><code class="language-plaintext highlighter-rouge">l = −log(ŷᶜ)</code></p>
+<ul>
+  <li>The goal is to <strong>maximize the predicted probability of the true class</strong>.</li>
+</ul>
+
+<p><strong>Example</strong>:</p>
+<ul>
+  <li>ŷᶜ = 0.9 ⇒ l ≈ 0.105 (good prediction)</li>
+  <li>ŷᶜ = 0.2 ⇒ l ≈ 1.609 (poor prediction)</li>
+</ul>
+
+<hr />
+
+<h2 id="5-gradients-of-softmax-regression-with-cross-entropy">5. Gradients of Softmax Regression with Cross-Entropy</h2>
+<p>When Softmax is combined with cross-entropy, the gradient becomes surprisingly simple.</p>
+
+<p><code class="language-plaintext highlighter-rouge">∂l/∂oⱼ = ŷⱼ − yⱼ</code></p>
+<ul>
+  <li>This means: the gradient for each logit is just the predicted probability minus the true label probability.</li>
+  <li>If the predicted probability exceeds the true label probability <strong>→</strong> positive gradient <strong>→</strong> the corresponding logit will be decreased.</li>
+  <li>If the predicted probability is lower than the true label probability <strong>→</strong> negative gradient <strong>→</strong> the corresponding logit will be increased.</li>
+</ul>
+
+<p>This simple gradient formulation makes Softmax regression efficient and stable for multi-class classification.</p>
+
+<hr />
+
+<h2 id="6-intuitive-understanding-of-softmax-regression">6. Intuitive Understanding of Softmax Regression</h2>
+<ol>
+  <li><strong>Logits</strong>: The raw, unnormalized outputs of the model.</li>
+  <li><strong>Softmax</strong>: Converts logits into a probability distribution.</li>
+  <li><strong>Cross-entropy</strong>: Measures the difference between the predicted distribution and the true labels.</li>
+  <li><strong>Gradient</strong>: The difference between prediction and truth, used for parameter updates.</li>
+</ol>
+
+<hr />
+
+<h2 id="7-conclusion">7. Conclusion</h2>
+<p>Softmax regression is a go-to model for <strong>multi-class classification</strong>.<br />
+It extends the idea of linear regression into probability space, uses <strong>Softmax</strong> to obtain a probability distribution, applies <strong>cross-entropy loss</strong> to measure prediction error, and updates parameters with a simple gradient formula.<br />
+Whether in <strong>image classification</strong>, <strong>text classification</strong>, or <strong>recommendation systems</strong>, Softmax regression is a fundamental and highly effective choice.</p>
+
+<hr />
+
+<h2 id="references--related-posts">References &amp; Related Posts</h2>
+<ul>
+  <li>Related post: <a href="/ai/2025/08/05/linear-regression-pytorch-tutorial.html">Linear Regression with PyTorch: Theory and Practice</a></li>
+  <li>Related post: <a href="/ai/2025/07/31/pytorch-image-classification-colab.html">PyTorch Image Classification Tutorial on Google Colab (CIFAR-10 Example)</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

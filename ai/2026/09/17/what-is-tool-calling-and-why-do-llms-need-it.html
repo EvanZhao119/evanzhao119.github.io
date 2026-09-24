@@ -1,0 +1,69 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="what-is-tool-calling-and-why-do-llms-need-it">What Is Tool Calling and Why Do LLMs Need It?</h1>
+
+<p>Large Language Models are good at understanding and generating language, but they cannot automatically access current information or interact with external systems.</p>
+
+<p>For example, when a user asks for the current price of a product, the model should not guess. It needs a reliable way to retrieve that information from another system. This is where <strong>Tool Calling</strong>, also known as <strong>Function Calling</strong>, becomes useful.</p>
+
+<h2 id="what-the-article-covers">What the Article Covers</h2>
+
+<ul>
+  <li>What tool calling means in an LLM application</li>
+  <li>How tools connect an LLM to APIs, databases, search engines, calculators, email services, and internal systems</li>
+  <li>How an LLM determines which tool is needed</li>
+  <li>Why the application executes the tool rather than the LLM</li>
+  <li>How tool results are returned to the model</li>
+  <li>Why tools help an LLM retrieve information or perform actions</li>
+</ul>
+
+<p>For example, an application might provide a function like this:</p>
+
+<pre>
+def get_product_price(product_id):
+    ...
+</pre>
+
+<p>If the user asks for the current price of product <code class="language-plaintext highlighter-rouge">12345</code>, the LLM can request:</p>
+
+<p><code class="language-plaintext highlighter-rouge">get_product_price(product_id="12345")</code></p>
+
+<p>The application executes the function and sends the result back to the LLM, which then uses that information to answer the user.</p>
+
+<p>A useful way to understand this relationship is:</p>
+
+<p><strong>LLM = Brain</strong></p>
+
+<p><strong>Tools = Hands</strong></p>
+
+<p>The model reasons about what needs to happen, while tools allow the application to retrieve data or interact with other systems.</p>
+
+<p><a href="https://macstuforum.top/d/22-what-is-tool-calling-and-why-do-llms-need-it">Read the full article and join the discussion →</a></p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

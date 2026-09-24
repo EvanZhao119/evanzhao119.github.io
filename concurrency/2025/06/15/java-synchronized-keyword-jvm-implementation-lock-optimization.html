@@ -1,0 +1,152 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="understanding-synchronized-in-java-mechanism-and-modern-implementation">Understanding <code class="language-plaintext highlighter-rouge">synchronized</code> in Java: Mechanism and Modern Implementation</h1>
+
+<h2 id="1-overview-of-synchronized">1. Overview of <code class="language-plaintext highlighter-rouge">synchronized</code></h2>
+<p>The <code class="language-plaintext highlighter-rouge">synchronized</code> keyword in Java is a built-in mechanism to ensure synchronization across threads when accessing shared resources.</p>
+<ul>
+  <li>A thread must <strong>acquire the lock (Monitor)</strong> before entering a synchronized block or method.</li>
+  <li>The lock is <strong>automatically released</strong> when the thread exits the block—whether normally or due to an exception.</li>
+  <li><code class="language-plaintext highlighter-rouge">synchronized</code> is a <strong>reentrant lock</strong>, meaning a thread can re-enter a block it already holds the lock for.</li>
+  <li>If a lock is held by one thread, other threads attempting to acquire it will be <strong>blocked</strong> until the lock is released.</li>
+</ul>
+
+<h2 id="2-internal-implementation-of-synchronized">2. Internal Implementation of <code class="language-plaintext highlighter-rouge">synchronized</code></h2>
+<p>Java Virtual Machine (JVM) implements synchronization using <strong>monitors (Monitor objects)</strong>.</p>
+
+<h3 id="21-method-level-synchronization">2.1 Method-Level Synchronization</h3>
+<ul>
+  <li>Declaring a method with <code class="language-plaintext highlighter-rouge">synchronized</code> applies <strong>method-level synchronization</strong>.</li>
+  <li>The synchronization is <strong>implicit</strong>—handled by the JVM without explicit bytecode instructions.</li>
+  <li>In the <code class="language-plaintext highlighter-rouge">.class</code> file, synchronized methods are marked with the <code class="language-plaintext highlighter-rouge">ACC_SYNCHRONIZED</code> flag.</li>
+  <li>Before executing such a method, the JVM checks for this flag and ensures the executing thread has obtained the monitor lock:
+    <ul>
+      <li>For instance methods, the lock is on the <strong>current object instance (<code class="language-plaintext highlighter-rouge">this</code>)</strong>.</li>
+      <li>For static methods, the lock is on the <strong><code class="language-plaintext highlighter-rouge">Class</code> object</strong>.</li>
+    </ul>
+  </li>
+</ul>
+
+<blockquote>
+  <p>From JDK 9+, performance improvements have been introduced in handling monitor acquisition for synchronized methods, especially after a biased or lightweight locking attempt fails.</p>
+</blockquote>
+
+<h3 id="22-block-level-synchronization">2.2 Block-Level Synchronization</h3>
+<ul>
+  <li>Block-level synchronization is achieved via <code class="language-plaintext highlighter-rouge">synchronized(obj)</code> which offers <strong>finer control</strong>.</li>
+  <li>The JVM uses two specific bytecode instructions:
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">monitorenter</code>: Acquires the lock for <code class="language-plaintext highlighter-rouge">obj</code>.</li>
+      <li><code class="language-plaintext highlighter-rouge">monitorexit</code>: Releases the lock.</li>
+    </ul>
+  </li>
+  <li>These instructions wrap the critical section and are always used in pairs to ensure proper lock release even during exceptions.</li>
+</ul>
+
+<h2 id="3-what-really-happens-when-you-use-synchronized">3. What Really Happens When You Use <code class="language-plaintext highlighter-rouge">synchronized</code></h2>
+
+<h3 id="31-mark-word-in-object-header">3.1 Mark Word in Object Header</h3>
+<ul>
+  <li>Every Java object in memory contains an <strong>Object Header</strong> that includes:
+    <ul>
+      <li><strong>Mark Word</strong>: Stores lock state, identity hash code, thread ID, etc.</li>
+      <li><strong>Type Pointer</strong>: Points to class metadata.</li>
+    </ul>
+  </li>
+  <li>The Mark Word is crucial in managing lock status and transitions.</li>
+</ul>
+
+<blockquote>
+  <p><strong>Biased Locking is disabled by default</strong> starting in JDK 15 and has been <strong>completely removed in JDK 21</strong>. The JVM now favors lightweight or heavyweight locks, improving predictability in multi-threaded environments.</p>
+</blockquote>
+
+<h3 id="32-objectmonitor-in-hotspot-jvm">3.2 <code class="language-plaintext highlighter-rouge">ObjectMonitor</code> in HotSpot JVM</h3>
+<ul>
+  <li>In HotSpot JVM (used by most Java distributions), <code class="language-plaintext highlighter-rouge">ObjectMonitor</code> is a C++ structure managing object locking.</li>
+  <li>Every object that requires synchronization may be associated with an <code class="language-plaintext highlighter-rouge">ObjectMonitor</code>.</li>
+  <li>Key fields of <code class="language-plaintext highlighter-rouge">ObjectMonitor</code> include:
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">Owner</code>: Thread currently holding the lock.</li>
+      <li><code class="language-plaintext highlighter-rouge">EntryList</code>: Queue of threads waiting to acquire the lock.</li>
+      <li><code class="language-plaintext highlighter-rouge">WaitSet</code>: Threads that have called <code class="language-plaintext highlighter-rouge">wait()</code> on the object.</li>
+      <li>Other flags and status bits for lock management.</li>
+    </ul>
+  </li>
+</ul>
+
+<blockquote>
+  <p>The internal structure and scheduling logic of <code class="language-plaintext highlighter-rouge">ObjectMonitor</code> have been optimized, including better support for lock elimination, fast-path locking, and improved interaction with <code class="language-plaintext highlighter-rouge">LockSupport</code>’s <code class="language-plaintext highlighter-rouge">park/unpark</code>.</p>
+</blockquote>
+
+<h2 id="4-lock-optimization-techniques">4. Lock Optimization Techniques</h2>
+<p>Java supports multiple lock states to optimize synchronization performance.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Lock Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>No Lock</strong></td>
+      <td>Default state when the object is not locked by any thread.</td>
+    </tr>
+    <tr>
+      <td><strong>Lightweight Lock</strong></td>
+      <td>Utilizes CAS (Compare-And-Swap) to acquire the lock in user space; efficient in low-contention scenarios.</td>
+    </tr>
+    <tr>
+      <td><strong>Biased Lock</strong></td>
+      <td><em>Deprecated</em>: Previously used for non-contending threads, but removed in JDK 21.</td>
+    </tr>
+    <tr>
+      <td><strong>Heavyweight Lock</strong></td>
+      <td>Used under high contention; threads are blocked in OS kernel, involving context switches.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="5-best-practices">5. Best Practices</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">synchronized</code> remains a <strong>safe and reliable</strong> concurrency mechanism in modern Java, especially for simple synchronization needs.</li>
+  <li>For high-concurrency or performance-sensitive applications, consider using tools from <code class="language-plaintext highlighter-rouge">java.util.concurrent</code>, such as:
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">ReentrantLock</code></li>
+      <li><code class="language-plaintext highlighter-rouge">StampedLock</code></li>
+      <li><code class="language-plaintext highlighter-rouge">ReadWriteLock</code></li>
+    </ul>
+  </li>
+  <li>Always minimize the scope of synchronized code to reduce lock contention.</li>
+  <li>Prefer <strong>composition over inheritance</strong> when designing synchronized utilities, and avoid nested synchronized blocks whenever possible.</li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

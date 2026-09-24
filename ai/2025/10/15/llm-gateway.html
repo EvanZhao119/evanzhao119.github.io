@@ -1,0 +1,366 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="llm-gateway-one-endpoint-for-safety-cost-control-and-observability">LLM Gateway: One Endpoint for Safety, Cost Control, and Observability</h1>
+
+<blockquote>
+  <p>This post is written for newcomers who want to <strong>understand and build an LLM Gateway quickly</strong>.</p>
+</blockquote>
+
+<blockquote>
+  <p>We’ll walk through one clear idea: <strong>a single HTTP endpoint <code class="language-plaintext highlighter-rouge">/v1/run</code> plus a configuration file <code class="language-plaintext highlighter-rouge">policy.yaml</code></strong> that brings safety, cost management, and observability to your LLM workflow.</p>
+</blockquote>
+
+<h2 id="1-why-do-we-need-an-llm-gateway">1. Why Do We Need an “LLM Gateway”?</h2>
+<p><strong>What’s an LLM?</strong><br />
+A Large Language Model (GPT, Claude, Llama, etc.) that takes text as input and returns text as output.</p>
+
+<p><strong>The problem:</strong> calling these models directly in production can cause headaches:</p>
+<ol>
+  <li><strong>Privacy risks</strong>: emails or phone numbers left visible in prompts</li>
+  <li><strong>Cost explosions</strong>: long inputs, expensive models</li>
+  <li><strong>Unstable performance</strong>: latency spikes or timeouts</li>
+  <li><strong>No visibility</strong>: no unified logging or traceability</li>
+</ol>
+
+<p><strong>The solution: an LLM Gateway</strong><br />
+It’s a lightweight layer sitting between your business apps and the LLMs.</p>
+
+<p>Just like an <strong>AI front desk</strong>, before sending a request to a model, it will:</p>
+<ul>
+  <li><strong>Ensure safety:</strong> redact PII (Personally Identifiable Information), enforce max input length, check data region.</li>
+  <li><strong>Control cost:</strong> apply daily budgets, automatically choose cheaper or faster models.</li>
+  <li><strong>Enable observability:</strong> generate <code class="language-plaintext highlighter-rouge">requestId</code> and <code class="language-plaintext highlighter-rouge">traceUrl</code> for every call.</li>
+  <li><strong>Manage routing:</strong> dynamically switch providers based on latency or price.</li>
+</ul>
+
+<blockquote>
+  <p><strong>The LLM generates answers. The LLM Gateway keeps those answers safe, affordable, and traceable.</strong></p>
+</blockquote>
+
+<hr />
+
+<h2 id="2-the-fixed-response-format-why-it-matters">2. The Fixed Response Format: Why It Matters</h2>
+<p>Every call to <code class="language-plaintext highlighter-rouge">/v1/run</code> should return the same, predictable JSON response.</p>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"requestId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"req_123"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"output"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"summary"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="w"> </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"metrics"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"latency_ms"</span><span class="p">:</span><span class="w"> </span><span class="mi">812</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"openai/gpt-4.1-mini"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"cost_per_1k"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.9</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"traceUrl"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://localhost:3000/trace/req_123"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Meaning</th>
+      <th>Why it matters</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>requestId</strong></td>
+      <td>Unique ID for each request</td>
+      <td>Enables troubleshooting and cost tracking</td>
+    </tr>
+    <tr>
+      <td><strong>output.summary</strong></td>
+      <td>The model’s main result</td>
+      <td>Upstream systems can parse one consistent field</td>
+    </tr>
+    <tr>
+      <td><strong>metrics</strong></td>
+      <td>Latency and cost info</td>
+      <td>Useful for monitoring and automatic routing</td>
+    </tr>
+    <tr>
+      <td><strong>traceUrl</strong></td>
+      <td>Link to a detailed trace</td>
+      <td>Allows debugging and transparency</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Why a fixed response?</strong><br />
+Even if you switch from GPT to Claude, or change providers and APIs, the <strong>contract stays stable</strong>. Your upstream applications don’t need any code changes.</p>
+
+<p>That’s the essence of a <strong>Stable Contract</strong>: one interface, many interchangeable providers.</p>
+
+<hr />
+
+<h2 id="3-policyyaml-the-heart-of-the-gateway">3. <code class="language-plaintext highlighter-rouge">policy.yaml</code>: The Heart of the Gateway</h2>
+<p>The gateway’s logic doesn’t live in code. It lives in a policy file. This makes it easy to <strong>adjust strategy without redeploying</strong>.</p>
+
+<h3 id="example-policy">Example policy</h3>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">name</span><span class="pi">:</span> <span class="s">finance</span>
+<span class="na">region</span><span class="pi">:</span> <span class="s">ca-central-1</span>
+
+<span class="na">providers</span><span class="pi">:</span>
+  <span class="na">routing</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">when</span><span class="pi">:</span> <span class="s2">"</span><span class="s">latency_p95</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">2000</span><span class="nv"> </span><span class="s">or</span><span class="nv"> </span><span class="s">cost_per_1k</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">2.5"</span>
+      <span class="na">to</span><span class="pi">:</span> <span class="s2">"</span><span class="s">anthropic/claude-3-5"</span>
+    <span class="pi">-</span> <span class="na">default</span><span class="pi">:</span> <span class="s2">"</span><span class="s">openai/gpt-4.1-mini"</span>
+
+<span class="na">guardrails</span><span class="pi">:</span>
+  <span class="na">pii_redaction</span><span class="pi">:</span> <span class="kc">true</span>
+  <span class="na">max_context_tokens</span><span class="pi">:</span> <span class="m">12000</span>
+  <span class="na">cost_cap_usd_per_day</span><span class="pi">:</span> <span class="m">100</span>
+
+<span class="na">observability</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">trace</span><span class="pi">:</span> <span class="nv">true</span> <span class="pi">}</span>
+<span class="na">billing</span><span class="pi">:</span> <span class="pi">{</span> <span class="nv">split_by</span><span class="pi">:</span> <span class="pi">[</span><span class="s2">"</span><span class="s">dept"</span><span class="pi">,</span><span class="s2">"</span><span class="s">project"</span><span class="pi">]</span> <span class="pi">}</span>
+</code></pre></div></div>
+
+<h3 id="field-explanation">Field explanation</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Section</th>
+      <th>Key</th>
+      <th>Purpose</th>
+      <th>Example or effect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Basic info</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">name</code> / <code class="language-plaintext highlighter-rouge">region</code></td>
+      <td>Logical name and allowed region</td>
+      <td>If the incoming request’s region doesn’t match, it will be rejected.</td>
+    </tr>
+    <tr>
+      <td><strong>Routing</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">providers.routing</code></td>
+      <td>Dynamic provider switching</td>
+      <td>If latency or cost exceeds threshold, do switch to backup model</td>
+    </tr>
+    <tr>
+      <td><strong>Guardrails</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">pii_redaction</code></td>
+      <td>Enable email/phone masking</td>
+      <td>Protect privacy before sending data to providers</td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td><code class="language-plaintext highlighter-rouge">max_context_tokens</code></td>
+      <td>Limit input length</td>
+      <td>Automatically truncate long prompts</td>
+    </tr>
+    <tr>
+      <td><strong>Cost control</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">cost_cap_usd_per_day</code></td>
+      <td>Daily budget cap</td>
+      <td>Stop or downgrade when total spend exceeds limit</td>
+    </tr>
+    <tr>
+      <td><strong>Observability</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">trace</code></td>
+      <td>Record detailed traces</td>
+      <td>Access traces via <code class="language-plaintext highlighter-rouge">traceUrl</code></td>
+    </tr>
+    <tr>
+      <td><strong>Billing</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">split_by</code></td>
+      <td>Cost attribution dimensions</td>
+      <td>Split spend by department or project</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="upgrading-without-breaking-anything">Upgrading Without Breaking Anything</h3>
+<p>Policies make upgrades <strong>safe and invisible</strong> to upstream systems.<br />
+Example, You want to:</p>
+<ul>
+  <li>Switch from Claude to GPT-4.1-mini, and</li>
+  <li>Raise the daily budget from $100 to $300.</li>
+</ul>
+
+<p>Simply update:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">providers</span><span class="pi">:</span>
+  <span class="na">routing</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">default</span><span class="pi">:</span> <span class="s2">"</span><span class="s">openai/gpt-4.1-mini"</span>
+<span class="na">guardrails</span><span class="pi">:</span>
+  <span class="na">cost_cap_usd_per_day</span><span class="pi">:</span> <span class="m">300</span>
+</code></pre></div></div>
+<p>Restart or reload the gateway, and you’re done. No code changes, no downtime, and your clients still call <code class="language-plaintext highlighter-rouge">/v1/run</code> the same way. That’s the beauty of <strong>decoupling policy from implementation</strong>.</p>
+
+<hr />
+
+<h2 id="4-a-practical-example-from-input-to-redacted-output">4. A Practical Example: From Input to Redacted Output</h2>
+<p>Imagine a <strong>finance report generator</strong> that sends data to GPT for summarization. The prompt contains personal info, emails and phone numbers, that must not leave your region.</p>
+
+<ul>
+  <li>Auto-redact private data before sending to the LLM</li>
+  <li>Generate a summary</li>
+  <li>Log all cost and latency details</li>
+</ul>
+
+<h3 id="the-request">The request</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-s</span> http://localhost:3000/v1/run   <span class="nt">-H</span> <span class="s2">"Content-Type: application/json"</span>   <span class="nt">-H</span> <span class="s2">"x-region: ca-central-1"</span>   <span class="nt">-H</span> <span class="s2">"x-billing-dept: finance"</span>   <span class="nt">-H</span> <span class="s2">"x-billing-project: daily-report"</span>   <span class="nt">-d</span> <span class="s1">'{
+    "input": {
+      "prompt": "Please summarize our Q3 ARR and contact alice@example.com or call +1-416-555-1234 for details."
+    },
+    "tags": { "usecase": "financial-summary" }
+  }'</span>
+</code></pre></div></div>
+
+<h3 id="the-response">The response</h3>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"requestId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"req_ab12cd"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"output"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"summary"</span><span class="p">:</span><span class="w"> </span><span class="s2">"(openai/gpt-4.1-mini) Summary: Please summarize our Q3 ARR and contact [REDACTED_EMAIL], [REDACTED_PHONE]..."</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"metrics"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"latency_ms"</span><span class="p">:</span><span class="w"> </span><span class="mi">645</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"openai/gpt-4.1-mini"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"cost_per_1k"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.9</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"traceUrl"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://localhost:3000/trace/req_ab12cd"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="what-happened-behind-the-scenes">What happened behind the scenes</h3>
+<ol>
+  <li>The gateway verified region compliance (<code class="language-plaintext highlighter-rouge">ca-central-1</code>)</li>
+  <li>Detected PII and redacted it before sending to the model</li>
+  <li>Selected the provider based on routing rules</li>
+  <li>Checked cost limits before execution</li>
+  <li>Logged latency, cost, and trace details</li>
+</ol>
+
+<p>As a result, the prompt is safe, the response consistent, and the call fully traceable.</p>
+
+<hr />
+
+<h2 id="5-common-questions">5. Common Questions</h2>
+<h3 id="1-why-use-one-unified-v1run-endpoint">1. Why use one unified <code class="language-plaintext highlighter-rouge">/v1/run</code> endpoint?</h3>
+<p>Because it decouples all your business systems from model details. Every app calls the same API. The gateway handles authentication, retries, routing, and observability.</p>
+
+<h3 id="2-how-does-automatic-downgrade-or-routing-work">2. How does automatic downgrade or routing work?</h3>
+<p>The gateway continuously tracks provider metrics like,</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">latency_p95</code>: 95th percentile latency</li>
+  <li><code class="language-plaintext highlighter-rouge">cost_per_1k</code>: average cost per 1,000 tokens</li>
+</ul>
+
+<p>Then it evaluates routing rules, for example,</p>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">when</span><span class="pi">:</span> <span class="s2">"</span><span class="s">latency_p95</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">2000</span><span class="nv"> </span><span class="s">or</span><span class="nv"> </span><span class="s">cost_per_1k</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">2.5"</span>
+<span class="na">to</span><span class="pi">:</span> <span class="s2">"</span><span class="s">anthropic/claude-3-5"</span>
+</code></pre></div></div>
+<p>If OpenAI becomes too slow or expensive, traffic automatically switches to Claude. When performance stabilizes, it switches back.</p>
+
+<h3 id="3-how-does-pii-redaction-work">3. How does PII redaction work?</h3>
+<p>PII (Personally Identifiable Information) includes emails, phone numbers, IDs, etc. When redaction is enabled, the gateway replaces them before sending the prompt out.</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>alice@example.com → [REDACTED_EMAIL]  
++1-416-555-1234  → [REDACTED_PHONE]
+</code></pre></div></div>
+
+<p>In production, you can use more advanced libraries like <strong>Microsoft Presidio</strong> or <strong>AWS Comprehend PII</strong>, but the principle remains the same.</p>
+
+<h3 id="4-how-is-the-cost-cap-enforced">4. How is the cost cap enforced?</h3>
+<p>Before calling a model, the gateway</p>
+<ol>
+  <li>Estimates token count from the input</li>
+  <li>Multiplies by the provider’s price</li>
+  <li>Checks if adding this would exceed <code class="language-plaintext highlighter-rouge">cost_cap_usd_per_day</code></li>
+</ol>
+
+<p>If so, it either blocks the request or switches to a cheaper model.</p>
+
+<p>For Example</p>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">cost_cap_usd_per_day</span><span class="pi">:</span> <span class="m">100</span>
+</code></pre></div></div>
+<p>Once daily spend exceeds $100, any new request gets,</p>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"error"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Daily cost cap reached"</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>This simple mechanism prevents runaway costs and keeps budgets predictable.</p>
+
+<h3 id="5-whats-the-purpose-of-billing-tags">5. What’s the purpose of billing tags?</h3>
+<p>When multiple teams share one gateway, you need cost attribution. You can pass tags in headers.</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>x-billing-dept: finance  
+x-billing-project: daily-report
+</code></pre></div></div>
+
+<p>These tags are recorded in each trace, so monthly reports show,</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Department</th>
+      <th>Project</th>
+      <th>Requests</th>
+      <th>Cost (USD)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Finance</td>
+      <td>daily-report</td>
+      <td>250</td>
+      <td>12.6</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>This makes cost allocation and internal accounting much easier.</p>
+
+<hr />
+
+<h2 id="6-summary">6. Summary</h2>
+<blockquote>
+  <p><strong>An LLM Gateway is your AI firewall.</strong><br />
+It doesn’t generate text, but it ensures every generation is <strong>safe, cost-effective, and auditable</strong>.</p>
+</blockquote>
+
+<p>With it, you can achieve</p>
+<ul>
+  <li>Security and compliance</li>
+  <li>Cost governance</li>
+  <li>Auto failover and routing</li>
+  <li>Full observability</li>
+  <li>Zero-change upgrades for upstream systems</li>
+</ul>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+<ul>
+  <li><a href="/ai/2025/10/12/stable-names-task-contracts-json-schema.html">Stable Names + Task Contracts: Keep Callers Stable While You Evolve Internals</a></li>
+  <li><a href="/ai/2025/10/07/capability-pool-simple-guide.html">The Reuse Layer: Governing AI as a Capability, Not a Credential</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

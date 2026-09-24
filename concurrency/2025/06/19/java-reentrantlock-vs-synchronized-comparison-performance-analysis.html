@@ -1,0 +1,249 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="understand-reentrantlock-how-it-works-and-how-it-differs-from-synchronized">Understand ReentrantLock: How It Works and How It Differs from <code class="language-plaintext highlighter-rouge">synchronized</code></h1>
+<p><code class="language-plaintext highlighter-rouge">ReentrantLock</code> is a powerful synchronization mechanism in Java, part of the <code class="language-plaintext highlighter-rouge">java.util.concurrent.locks</code> package. Compared with the <code class="language-plaintext highlighter-rouge">synchronized</code> keyword, <code class="language-plaintext highlighter-rouge">ReentrantLock</code> offers advanced capabilities and greater flexibility, making it suitable for complex concurrency control scenarios.</p>
+
+<h2 id="reentrantlock-vs-synchronized">ReentrantLock vs. synchronized</h2>
+
+<h3 id="1-performance-comparison">1. Performance Comparison</h3>
+<p>Since <strong>JDK 6</strong>, the performance difference between <code class="language-plaintext highlighter-rouge">ReentrantLock</code> and <code class="language-plaintext highlighter-rouge">synchronized</code> has largely diminished due to JVM-level optimizations such as <strong>biased locking</strong> and <strong>lightweight locking</strong>.</p>
+
+<blockquote>
+  <p><strong>Update (JDK 17+ / 21)</strong>: With the deprecation of biased locking (JEP 374), <code class="language-plaintext highlighter-rouge">synchronized</code> now performs better than <code class="language-plaintext highlighter-rouge">ReentrantLock</code> in most general-use cases. For simple mutual exclusion, prefer <code class="language-plaintext highlighter-rouge">synchronized</code> for its cleaner syntax and built-in lock management.</p>
+</blockquote>
+
+<h3 id="2-feature-comparison">2. Feature Comparison</h3>
+<ul>
+  <li><strong>Interruptible Lock Acquisition</strong>: <code class="language-plaintext highlighter-rouge">synchronized</code> does not support interruptible locking—once a thread starts waiting, it cannot be interrupted. In contrast, <code class="language-plaintext highlighter-rouge">ReentrantLock</code> supports interruptible lock acquisition using <code class="language-plaintext highlighter-rouge">lockInterruptibly()</code>.</li>
+  <li><strong>Timeout for Acquiring Lock</strong>: <code class="language-plaintext highlighter-rouge">synchronized</code> provides no mechanism to time out while trying to acquire a lock. <code class="language-plaintext highlighter-rouge">ReentrantLock</code> allows setting a timeout with <code class="language-plaintext highlighter-rouge">tryLock(long timeout, TimeUnit unit)</code>.</li>
+  <li><strong>Fairness Control</strong>: <code class="language-plaintext highlighter-rouge">synchronized</code> always uses a non-fair locking strategy—threads may acquire the lock out of order. <code class="language-plaintext highlighter-rouge">ReentrantLock</code> offers optional fairness, ensuring first-come-first-served behavior if configured.</li>
+  <li><strong>Multiple Condition Variables</strong>: <code class="language-plaintext highlighter-rouge">synchronized</code> supports only a single monitor condition, accessed via <code class="language-plaintext highlighter-rouge">wait()</code>, <code class="language-plaintext highlighter-rouge">notify()</code>, and <code class="language-plaintext highlighter-rouge">notifyAll()</code>. <code class="language-plaintext highlighter-rouge">ReentrantLock</code> supports multiple <code class="language-plaintext highlighter-rouge">Condition</code> objects through <code class="language-plaintext highlighter-rouge">newCondition()</code>, allowing more fine-grained control.</li>
+  <li><strong>Reentrancy</strong>: Both <code class="language-plaintext highlighter-rouge">synchronized</code> and <code class="language-plaintext highlighter-rouge">ReentrantLock</code> are reentrant, allowing the same thread to acquire the same lock multiple times.</li>
+  <li><strong>Automatic Lock Release</strong>: <code class="language-plaintext highlighter-rouge">synchronized</code> automatically releases the lock when exiting a <code class="language-plaintext highlighter-rouge">synchronized</code> block, even in case of exceptions. With <code class="language-plaintext highlighter-rouge">ReentrantLock</code>, the developer must manually release the lock using <code class="language-plaintext highlighter-rouge">unlock()</code>, typically in a <code class="language-plaintext highlighter-rouge">finally</code> block.</li>
+</ul>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th><code class="language-plaintext highlighter-rouge">synchronized</code></th>
+      <th><code class="language-plaintext highlighter-rouge">ReentrantLock</code></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Interruptible lock acquisition</td>
+      <td>No</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td>Timeout for acquiring lock</td>
+      <td>No</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td>Fairness control</td>
+      <td>No</td>
+      <td>Yes (optional)</td>
+    </tr>
+    <tr>
+      <td>Multiple condition variables</td>
+      <td>No (only <code class="language-plaintext highlighter-rouge">wait/notify</code>)</td>
+      <td>Yes (<code class="language-plaintext highlighter-rouge">newCondition()</code>)</td>
+    </tr>
+    <tr>
+      <td>Reentrancy</td>
+      <td>Yes</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td>Automatic lock release</td>
+      <td>Yes (via block exit)</td>
+      <td>No (must call <code class="language-plaintext highlighter-rouge">unlock()</code>)</td>
+    </tr>
+  </tbody>
+</table>
+
+<blockquote>
+  <p><code class="language-plaintext highlighter-rouge">ReentrantLock</code> remains essential when fine-grained lock control, fairness, or advanced waiting mechanisms are needed.</p>
+</blockquote>
+
+<h2 id="how-to-use-reentrantlock">How to Use ReentrantLock</h2>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Lock</span> <span class="n">lock</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ReentrantLock</span><span class="o">();</span> <span class="c1">// Non-fair lock by default</span>
+<span class="n">lock</span><span class="o">.</span><span class="na">lock</span><span class="o">();</span>
+<span class="k">try</span> <span class="o">{</span>
+    <span class="c1">// Critical section</span>
+<span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+    <span class="n">lock</span><span class="o">.</span><span class="na">unlock</span><span class="o">();</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="fair-lock-example">Fair Lock Example</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">Lock</span> <span class="n">fairLock</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ReentrantLock</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span> <span class="c1">// Explicitly use a fair lock</span>
+</code></pre></div></div>
+
+<h2 id="reentrantlock-source-code-analysis-based-on-jdk-21">ReentrantLock Source Code Analysis (Based on JDK 21)</h2>
+<h3 id="class-structure-overview">Class Structure Overview</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ReentrantLock</span> <span class="kd">implements</span> <span class="nc">Lock</span><span class="o">,</span> <span class="n">java</span><span class="o">.</span><span class="na">io</span><span class="o">.</span><span class="na">Serializable</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="nc">Sync</span> <span class="n">sync</span><span class="o">;</span>
+
+    <span class="kd">abstract</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">Sync</span> <span class="kd">extends</span> <span class="nc">AbstractQueuedSynchronizer</span> <span class="o">{}</span>
+    <span class="kd">static</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">NonfairSync</span> <span class="kd">extends</span> <span class="nc">Sync</span> <span class="o">{}</span>
+    <span class="kd">static</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">FairSync</span> <span class="kd">extends</span> <span class="nc">Sync</span> <span class="o">{}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Internally, <code class="language-plaintext highlighter-rouge">ReentrantLock</code> uses the powerful AQS (AbstractQueuedSynchronizer) framework to manage thread queuing and state.</p>
+
+<h3 id="lock-acquisition-lock">Lock Acquisition (<code class="language-plaintext highlighter-rouge">lock()</code>)</h3>
+<h4 id="nonfair-lock">Nonfair Lock</h4>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kt">void</span> <span class="nf">lock</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">compareAndSetState</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">1</span><span class="o">))</span>
+        <span class="n">setExclusiveOwnerThread</span><span class="o">(</span><span class="nc">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">());</span>
+    <span class="k">else</span>
+        <span class="nf">acquire</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<ul>
+  <li>First, it attempts to acquire the lock using a <strong>CAS</strong> operation.</li>
+  <li>If it fails, the thread enters the AQS queue and waits for the lock.</li>
+</ul>
+
+<h4 id="fair-lock">Fair Lock</h4>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kt">void</span> <span class="nf">lock</span><span class="o">()</span> <span class="o">{</span>
+    <span class="n">acquire</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span> <span class="c1">// Always enqueues the thread to maintain fairness</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>Fair locks check <code class="language-plaintext highlighter-rouge">hasQueuedPredecessors()</code> to determine if the thread should wait in line, ensuring first-come-first-served behavior.</p>
+</blockquote>
+
+<h4 id="tryacquire-logic">tryAcquire() Logic</h4>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="kt">boolean</span> <span class="nf">nonfairTryAcquire</span><span class="o">(</span><span class="kt">int</span> <span class="n">acquires</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kd">final</span> <span class="nc">Thread</span> <span class="n">current</span> <span class="o">=</span> <span class="nc">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">();</span>
+    <span class="kt">int</span> <span class="n">c</span> <span class="o">=</span> <span class="n">getState</span><span class="o">();</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">c</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">compareAndSetState</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">acquires</span><span class="o">))</span> <span class="o">{</span>
+            <span class="n">setExclusiveOwnerThread</span><span class="o">(</span><span class="n">current</span><span class="o">);</span>
+            <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">current</span> <span class="o">==</span> <span class="n">getExclusiveOwnerThread</span><span class="o">())</span> <span class="o">{</span>
+        <span class="kt">int</span> <span class="n">nextc</span> <span class="o">=</span> <span class="n">c</span> <span class="o">+</span> <span class="n">acquires</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">nextc</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">)</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">Error</span><span class="o">(</span><span class="s">"Maximum lock count exceeded"</span><span class="o">);</span>
+        <span class="n">setState</span><span class="o">(</span><span class="n">nextc</span><span class="o">);</span>
+        <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<ul>
+  <li>If the lock is free, it tries to acquire it with CAS.</li>
+  <li>If the current thread already owns the lock, it increases the state (reentrant).</li>
+  <li>Otherwise, the thread enters a <strong>spin-then-block</strong> loop in AQS.</li>
+</ul>
+
+<h3 id="lock-release-unlock">Lock Release (<code class="language-plaintext highlighter-rouge">unlock()</code>)</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kt">boolean</span> <span class="nf">release</span><span class="o">(</span><span class="kt">int</span> <span class="n">arg</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">tryRelease</span><span class="o">(</span><span class="n">arg</span><span class="o">))</span> <span class="o">{</span>
+        <span class="nc">Node</span> <span class="n">h</span> <span class="o">=</span> <span class="n">head</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">h</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">h</span><span class="o">.</span><span class="na">waitStatus</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span>
+            <span class="n">unparkSuccessor</span><span class="o">(</span><span class="n">h</span><span class="o">);</span>
+        <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<h4 id="tryrelease">tryRelease</h4>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kd">final</span> <span class="kt">boolean</span> <span class="nf">tryRelease</span><span class="o">(</span><span class="kt">int</span> <span class="n">releases</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">c</span> <span class="o">=</span> <span class="n">getState</span><span class="o">()</span> <span class="o">-</span> <span class="n">releases</span><span class="o">;</span>
+    <span class="k">if</span> <span class="o">(</span><span class="nc">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">()</span> <span class="o">!=</span> <span class="n">getExclusiveOwnerThread</span><span class="o">())</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalMonitorStateException</span><span class="o">();</span>
+    <span class="kt">boolean</span> <span class="n">free</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">c</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">free</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="n">setExclusiveOwnerThread</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="n">setState</span><span class="o">(</span><span class="n">c</span><span class="o">);</span>
+    <span class="k">return</span> <span class="n">free</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<ul>
+  <li>Only the owning thread can release the lock.</li>
+  <li>If the state drops to 0, the lock is released.</li>
+</ul>
+
+<h4 id="unparksuccessor">unparkSuccessor</h4>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kt">void</span> <span class="nf">unparkSuccessor</span><span class="o">(</span><span class="nc">Node</span> <span class="n">node</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">ws</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">waitStatus</span><span class="o">;</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">ws</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">)</span>
+        <span class="n">compareAndSetWaitStatus</span><span class="o">(</span><span class="n">node</span><span class="o">,</span> <span class="n">ws</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+
+    <span class="nc">Node</span> <span class="n">s</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">next</span><span class="o">;</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">s</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">s</span><span class="o">.</span><span class="na">waitStatus</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="k">for</span> <span class="o">(</span><span class="nc">Node</span> <span class="n">t</span> <span class="o">=</span> <span class="n">tail</span><span class="o">;</span> <span class="n">t</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">t</span> <span class="o">!=</span> <span class="n">node</span><span class="o">;</span> <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="na">prev</span><span class="o">)</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="na">waitStatus</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="o">)</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">t</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">s</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span>
+        <span class="nc">LockSupport</span><span class="o">.</span><span class="na">unpark</span><span class="o">(</span><span class="n">s</span><span class="o">.</span><span class="na">thread</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<ul>
+  <li>This wakes up the next thread in the queue to try acquiring the lock.</li>
+</ul>
+
+<h2 id="summary--best-practices">Summary &amp; Best Practices</h2>
+<h3 id="when-to-use-what">When to Use What?</h3>
+<ul>
+  <li><strong>Use <code class="language-plaintext highlighter-rouge">synchronized</code> when</strong>
+    <ul>
+      <li>You need simple and readable lock logic.</li>
+      <li>You want the JVM to manage lock lifecycle.</li>
+      <li>Performance is not a concern in fine-tuned scenarios.</li>
+    </ul>
+  </li>
+  <li><strong>Use <code class="language-plaintext highlighter-rouge">ReentrantLock</code> when</strong>
+    <ul>
+      <li>You need timed or interruptible lock attempts.</li>
+      <li>You require fairness or multiple conditions.</li>
+      <li>You need non-block-structured locking.</li>
+    </ul>
+  </li>
+</ul>
+
+<blockquote>
+  <p><code class="language-plaintext highlighter-rouge">synchronized</code> continues to receive JVM-level optimizations and is recommended for general locking needs. <code class="language-plaintext highlighter-rouge">ReentrantLock</code> shines in advanced scenarios.</p>
+</blockquote>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

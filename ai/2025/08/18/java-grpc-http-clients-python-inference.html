@@ -1,0 +1,186 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="java-grpc-and-http-clients-for-python-ai-inference-service">Java gRPC and HTTP Clients for Python AI Inference Service</h1>
+<p>When deploying AI models in production, we often ask:</p>
+
+<p><strong>Should we call the inference server via gRPC or HTTP?</strong></p>
+
+<p>In this post, I build <strong>two Java clients</strong> —one using <strong>gRPC</strong> and one using <strong>HTTP</strong>— to call a <strong><a href="/ai/2025/08/16/python-inference-service-fastapi-grpc.html">Python AI inference service</a></strong> running a ResNet18 model.</p>
+
+<p>The Python server provides <strong>two endpoints</strong>:</p>
+<ul>
+  <li>A <strong>gRPC service</strong> for high-performance, structured communication</li>
+  <li>An <strong>HTTP API</strong> for compatibility with tools like <code class="language-plaintext highlighter-rouge">curl</code> or browser requests</li>
+</ul>
+
+<p>Finally, we’ll see a working Java project that can talk to the Python server using either RPC or HTTP.</p>
+
+<hr />
+
+<h2 id="1-project-overview">1. Project Overview</h2>
+
+<ul>
+  <li>Build a <strong>Java client</strong> to send image data to the server and receive <strong>Top-K classification predictions</strong>.</li>
+  <li>Support both <strong>gRPC calls</strong> and <strong>HTTP requests</strong>.</li>
+</ul>
+
+<p>Project Structure Below
+<img src="/assets/images/2025_08_18_project_structure.png" alt="Java gRPC and HTTP Client Project Structure" title="Java gRPC and HTTP Client Project Structure" /></p>
+
+<hr />
+
+<h2 id="2-java-project-setup-maven-dependencies">2. Java Project Setup (Maven Dependencies)</h2>
+<p>Key libraries:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">grpc-netty-shaded</code>, <code class="language-plaintext highlighter-rouge">grpc-protobuf</code>, <code class="language-plaintext highlighter-rouge">grpc-stub</code></li>
+  <li><code class="language-plaintext highlighter-rouge">protobuf-java</code></li>
+  <li><code class="language-plaintext highlighter-rouge">okhttp</code> (HTTP client)</li>
+  <li><code class="language-plaintext highlighter-rouge">jackson-databind</code> (JSON parsing)</li>
+</ul>
+
+<p>Example snippet from <code class="language-plaintext highlighter-rouge">pom.xml</code>:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;dependencies&gt;</span>
+    <span class="c">&lt;!-- gRPC --&gt;</span>
+    <span class="nt">&lt;dependency&gt;</span>
+        <span class="nt">&lt;groupId&gt;</span>io.grpc<span class="nt">&lt;/groupId&gt;</span>
+        <span class="nt">&lt;artifactId&gt;</span>grpc-netty-shaded<span class="nt">&lt;/artifactId&gt;</span>
+        <span class="nt">&lt;version&gt;</span>1.63.0<span class="nt">&lt;/version&gt;</span>
+    <span class="nt">&lt;/dependency&gt;</span>
+    <span class="nt">&lt;dependency&gt;</span>
+        <span class="nt">&lt;groupId&gt;</span>io.grpc<span class="nt">&lt;/groupId&gt;</span>
+        <span class="nt">&lt;artifactId&gt;</span>grpc-protobuf<span class="nt">&lt;/artifactId&gt;</span>
+        <span class="nt">&lt;version&gt;</span>1.63.0<span class="nt">&lt;/version&gt;</span>
+    <span class="nt">&lt;/dependency&gt;</span>
+    <span class="nt">&lt;dependency&gt;</span>
+        <span class="nt">&lt;groupId&gt;</span>io.grpc<span class="nt">&lt;/groupId&gt;</span>
+        <span class="nt">&lt;artifactId&gt;</span>grpc-stub<span class="nt">&lt;/artifactId&gt;</span>
+        <span class="nt">&lt;version&gt;</span>1.63.0<span class="nt">&lt;/version&gt;</span>
+    <span class="nt">&lt;/dependency&gt;</span>
+
+    <span class="c">&lt;!-- Protobuf runtime --&gt;</span>
+    <span class="nt">&lt;dependency&gt;</span>
+        <span class="nt">&lt;groupId&gt;</span>com.google.protobuf<span class="nt">&lt;/groupId&gt;</span>
+        <span class="nt">&lt;artifactId&gt;</span>protobuf-java<span class="nt">&lt;/artifactId&gt;</span>
+        <span class="nt">&lt;version&gt;</span>3.25.3<span class="nt">&lt;/version&gt;</span>
+    <span class="nt">&lt;/dependency&gt;</span>
+
+    <span class="c">&lt;!-- HTTP client &amp; JSON --&gt;</span>
+    <span class="nt">&lt;dependency&gt;</span>
+        <span class="nt">&lt;groupId&gt;</span>com.squareup.okhttp3<span class="nt">&lt;/groupId&gt;</span>
+        <span class="nt">&lt;artifactId&gt;</span>okhttp<span class="nt">&lt;/artifactId&gt;</span>
+        <span class="nt">&lt;version&gt;</span>4.12.0<span class="nt">&lt;/version&gt;</span>
+    <span class="nt">&lt;/dependency&gt;</span>
+    <span class="nt">&lt;dependency&gt;</span>
+        <span class="nt">&lt;groupId&gt;</span>com.fasterxml.jackson.core<span class="nt">&lt;/groupId&gt;</span>
+        <span class="nt">&lt;artifactId&gt;</span>jackson-databind<span class="nt">&lt;/artifactId&gt;</span>
+        <span class="nt">&lt;version&gt;</span>2.17.1<span class="nt">&lt;/version&gt;</span>
+    <span class="nt">&lt;/dependency&gt;</span>
+<span class="nt">&lt;/dependencies&gt;</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="3-implementing-the-grpc-client-in-java">3. Implementing the gRPC Client in Java</h2>
+<p><strong><code class="language-plaintext highlighter-rouge">Client.java</code></strong> reads an image file, sends it to the Python gRPC server, and prints predictions.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">ManagedChannel</span> <span class="n">channel</span> <span class="o">=</span> <span class="nc">ManagedChannelBuilder</span>
+    <span class="o">.</span><span class="na">forAddress</span><span class="o">(</span><span class="s">"127.0.0.1"</span><span class="o">,</span> <span class="mi">50051</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">usePlaintext</span><span class="o">()</span>
+    <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+
+<span class="nc">ClassifierGrpc</span><span class="o">.</span><span class="na">ClassifierBlockingStub</span> <span class="n">stub</span> <span class="o">=</span> <span class="nc">ClassifierGrpc</span><span class="o">.</span><span class="na">newBlockingStub</span><span class="o">(</span><span class="n">channel</span><span class="o">);</span>
+
+<span class="nc">ImageRequest</span> <span class="n">request</span> <span class="o">=</span> <span class="nc">ImageRequest</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">()</span>
+    <span class="o">.</span><span class="na">setImage</span><span class="o">(</span><span class="nc">ByteString</span><span class="o">.</span><span class="na">copyFrom</span><span class="o">(</span><span class="nc">Files</span><span class="o">.</span><span class="na">readAllBytes</span><span class="o">(</span><span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">imagePath</span><span class="o">))))</span>
+    <span class="o">.</span><span class="na">setTopk</span><span class="o">(</span><span class="n">topk</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+
+<span class="nc">PredictionResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="n">stub</span><span class="o">.</span><span class="na">predict</span><span class="o">(</span><span class="n">request</span><span class="o">);</span>
+<span class="n">resp</span><span class="o">.</span><span class="na">getTopkList</span><span class="o">().</span><span class="na">forEach</span><span class="o">(</span><span class="n">p</span> <span class="o">-&gt;</span>
+    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">printf</span><span class="o">(</span><span class="s">"%-30s %.4f%n"</span><span class="o">,</span> <span class="n">p</span><span class="o">.</span><span class="na">getLabel</span><span class="o">(),</span> <span class="n">p</span><span class="o">.</span><span class="na">getProb</span><span class="o">())</span>
+<span class="o">);</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="4-implementing-the-http-client-in-java">4. Implementing the HTTP Client in Java</h2>
+<p>Our <code class="language-plaintext highlighter-rouge">FastAPI</code> endpoint expects:</p>
+<ul>
+  <li><strong>POST</strong> to <code class="language-plaintext highlighter-rouge">/predict/file?topk=5</code></li>
+  <li><code class="language-plaintext highlighter-rouge">multipart/form-data</code> with <code class="language-plaintext highlighter-rouge">file=@image</code></li>
+</ul>
+
+<p><strong><code class="language-plaintext highlighter-rouge">HttpTester.java</code></strong>:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kt">void</span> <span class="nf">predictMultipart</span><span class="o">(</span><span class="nc">String</span> <span class="n">imagePath</span><span class="o">,</span> <span class="kt">int</span> <span class="n">topk</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+    <span class="nc">File</span> <span class="n">img</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">File</span><span class="o">(</span><span class="n">imagePath</span><span class="o">);</span>
+    <span class="nc">RequestBody</span> <span class="n">fileBody</span> <span class="o">=</span> <span class="nc">RequestBody</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="n">img</span><span class="o">,</span> <span class="nc">MediaType</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="s">"image/*"</span><span class="o">));</span>
+
+    <span class="nc">MultipartBody</span> <span class="n">requestBody</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">MultipartBody</span><span class="o">.</span><span class="na">Builder</span><span class="o">()</span>
+            <span class="o">.</span><span class="na">setType</span><span class="o">(</span><span class="nc">MultipartBody</span><span class="o">.</span><span class="na">FORM</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">addFormDataPart</span><span class="o">(</span><span class="s">"file"</span><span class="o">,</span> <span class="n">img</span><span class="o">.</span><span class="na">getName</span><span class="o">(),</span> <span class="n">fileBody</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+
+    <span class="nc">String</span> <span class="n">urlWithParam</span> <span class="o">=</span> <span class="nc">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="s">"%s?topk=%d"</span><span class="o">,</span> <span class="n">endpoint</span><span class="o">,</span> <span class="n">topk</span><span class="o">);</span>
+
+    <span class="nc">Request</span> <span class="n">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Request</span><span class="o">.</span><span class="na">Builder</span><span class="o">()</span>
+            <span class="o">.</span><span class="na">url</span><span class="o">(</span><span class="n">urlWithParam</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">post</span><span class="o">(</span><span class="n">requestBody</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">addHeader</span><span class="o">(</span><span class="s">"accept"</span><span class="o">,</span> <span class="s">"application/json"</span><span class="o">)</span>
+            <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+
+    <span class="k">try</span> <span class="o">(</span><span class="nc">Response</span> <span class="n">resp</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">newCall</span><span class="o">(</span><span class="n">request</span><span class="o">).</span><span class="na">execute</span><span class="o">())</span> <span class="o">{</span>
+        <span class="nc">String</span> <span class="n">json</span> <span class="o">=</span> <span class="n">resp</span><span class="o">.</span><span class="na">body</span><span class="o">().</span><span class="na">string</span><span class="o">();</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">json</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="5-results-and-performance-insights">5. Results and Performance Insights</h2>
+<p>This project implements HTTP and gRPC clients against the same Python inference server.</p>
+
+<ul>
+  <li><strong>gRPC</strong> delivered faster responses with smaller payloads</li>
+  <li><strong>HTTP</strong> was simpler to test and integrate during development</li>
+</ul>
+
+<p>With gRPC and HTTP clients in Java, we can connect to the same AI inference server in whichever way makes the most sense for our scenario.</p>
+
+<hr />
+
+<h2 id="6-related-resources">6. Related Resources</h2>
+<ul>
+  <li>Related post: <a href="/ai/2025/08/16/python-inference-service-fastapi-grpc.html">Implementing a Python Inference Service with HTTP (FastAPI) and gRPC</a></li>
+  <li>Related post: <a href="/ai/2025/08/14/deploy-resnet-java-djl-tutorial.html">Deploying ResNet Models with Java DJL – From Zero to Hero</a></li>
+  <li><a href="https://grpc.io/docs/languages/java/">gRPC Java Documentation</a></li>
+  <li><a href="https://square.github.io/okhttp/">OkHttp Guide</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

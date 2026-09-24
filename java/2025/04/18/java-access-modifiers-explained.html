@@ -1,0 +1,123 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="understanding-java-access-modifiers">Understanding Java Access Modifiers</h1>
+
+<h2 id="access-modifier-table">Access Modifier Table</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Modifier</th>
+      <th>Same Class</th>
+      <th>Same Package</th>
+      <th>Subclass</th>
+      <th>Other Package</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>private</strong></td>
+      <td>✅</td>
+      <td>❌</td>
+      <td>❌</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <td><strong>default</strong></td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>❌</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <td><strong>protected</strong></td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <td><strong>public</strong></td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>✅</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="1-private-access-modifier">1. <strong><code class="language-plaintext highlighter-rouge">private</code> Access Modifier</strong></h2>
+<ul>
+  <li><strong>Visibility</strong>: The <strong><code class="language-plaintext highlighter-rouge">private</code></strong> modifier restricts access to the members of the class only. <strong>Only the class where it is declared can access it.</strong></li>
+  <li><strong>Use Case</strong>: It’s typically used to implement <strong>encapsulation</strong> by hiding the details of an object.</li>
+</ul>
+
+<h3 id="example">Example:</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">class</span> <span class="nc">MyClass</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kt">int</span> <span class="n">value</span><span class="o">;</span>  <span class="c1">// Only accessible within MyClass</span>
+
+    <span class="kd">private</span> <span class="kt">void</span> <span class="nf">displayValue</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">value</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setValue</span><span class="o">(</span><span class="kt">int</span> <span class="n">value</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">;</span>  <span class="c1">// Allowed, because it's within the same class</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="2-default-package-private-access-modifier">2. <code class="language-plaintext highlighter-rouge">default</code> (Package-Private) Access Modifier</h2>
+<ul>
+  <li><strong>Visibility</strong>: When no access modifier is specified, it has <strong>default</strong> access (package-private). Members with this modifier are <strong>only accessible within classes in the same package.</strong></li>
+  <li><strong>Use Case</strong>: It is used when you want to restrict access to a package but allow any class within that package to access it.</li>
+</ul>
+
+<h2 id="3-protected-access-modifier">3. <code class="language-plaintext highlighter-rouge">protected</code> Access Modifier</h2>
+
+<ul>
+  <li><strong>Visibility</strong>: The protected modifier allows access to members from: <strong>The same package and Any subclass (even if it’s in a different package).</strong></li>
+  <li><strong>Use Case</strong>: <code class="language-plaintext highlighter-rouge">protected</code> is used when a member should be available to subclasses and package members, but not to other classes outside the package and inheritance hierarchy.</li>
+</ul>
+
+<h2 id="4-public-access-modifier">4. <code class="language-plaintext highlighter-rouge">public</code> Access Modifier</h2>
+
+<ul>
+  <li><strong>Visibility</strong>: The <code class="language-plaintext highlighter-rouge">public</code> modifier allows members to be accessible from any other class in any package.</li>
+  <li><strong>Use Case</strong>: <code class="language-plaintext highlighter-rouge">public</code> is used when you want to make a class, method, or variable accessible globally. This is the most permissive modifier.</li>
+</ul>
+
+<h2 id="5-best-practices">5. Best Practices</h2>
+<ul>
+  <li><strong>Encapsulation</strong>: Use <code class="language-plaintext highlighter-rouge">private</code> for fields and methods to restrict access and provide public getter/setter methods if needed.</li>
+  <li><strong>Package-level visibility</strong>: Use the default access modifier for classes and methods that should only be used within the same package.</li>
+  <li><strong>Inheritance</strong>: Use <code class="language-plaintext highlighter-rouge">protected</code> for members that should be accessed by subclasses.</li>
+  <li><strong>Global access</strong>: Use <code class="language-plaintext highlighter-rouge">public</code> only when you need to expose functionality to the whole project or the external world.</li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

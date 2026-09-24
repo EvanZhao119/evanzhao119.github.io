@@ -1,0 +1,283 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="java-concurrency-tools-what-i-use-and-why">Java Concurrency Tools: What I Use and Why</h1>
+<blockquote>
+  <p>Featuring <code class="language-plaintext highlighter-rouge">Semaphore</code>, <code class="language-plaintext highlighter-rouge">CyclicBarrier</code>, <code class="language-plaintext highlighter-rouge">CountDownLatch</code>, and modern concurrency tools like <code class="language-plaintext highlighter-rouge">Phaser</code>, <code class="language-plaintext highlighter-rouge">Exchanger</code>, and <code class="language-plaintext highlighter-rouge">CompletableFuture</code>.</p>
+</blockquote>
+
+<h2 id="1-semaphore">1. Semaphore</h2>
+<p>A <code class="language-plaintext highlighter-rouge">Semaphore</code> is a concurrency utility that controls access to a resource by managing a set number of permits. Threads must acquire a permit before proceeding and release it afterward. It is useful for limiting concurrent access.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.util.concurrent.Semaphore</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">SemaphoreStudy</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">Semaphore</span> <span class="n">sp</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Semaphore</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="n">cnt</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">){</span>
+        <span class="nc">Runnable</span> <span class="n">r1</span> <span class="o">=</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="o">;</span> <span class="o">++</span><span class="n">i</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">sp</span><span class="o">.</span><span class="na">acquire</span><span class="o">();</span>
+                    <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+                    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"R1 "</span> <span class="o">+</span> <span class="nc">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">()</span> <span class="o">+</span> <span class="s">" "</span> <span class="o">+</span> <span class="n">cnt</span><span class="o">++);</span>
+                    <span class="n">sp</span><span class="o">.</span><span class="na">release</span><span class="o">();</span>
+                <span class="o">}</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">};</span>
+
+        <span class="nc">Runnable</span> <span class="n">r2</span> <span class="o">=</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="o">;</span> <span class="o">++</span><span class="n">i</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">sp</span><span class="o">.</span><span class="na">acquire</span><span class="o">();</span>
+                    <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+                    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"R2 "</span> <span class="o">+</span> <span class="nc">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">()</span> <span class="o">+</span> <span class="s">" "</span> <span class="o">+</span> <span class="n">cnt</span><span class="o">++);</span>
+                    <span class="n">sp</span><span class="o">.</span><span class="na">release</span><span class="o">();</span>
+                <span class="o">}</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">};</span>
+
+        <span class="k">new</span> <span class="nf">Thread</span><span class="o">(</span><span class="n">r1</span><span class="o">).</span><span class="na">start</span><span class="o">();</span>
+        <span class="k">new</span> <span class="nf">Thread</span><span class="o">(</span><span class="n">r2</span><span class="o">).</span><span class="na">start</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Two threads update a shared variable <code class="language-plaintext highlighter-rouge">cnt</code> concurrently. Only one thread can access the critical section at a time, due to the semaphore with one permit.</p>
+
+<p><strong>Sample Output (truncated)</strong></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>R1 1712205844441 0  
+R2 1712205844442 1  
+R1 1712205844443 2  
+...
+</code></pre></div></div>
+
+<h2 id="2-cyclicbarrier">2. CyclicBarrier</h2>
+<p><code class="language-plaintext highlighter-rouge">CyclicBarrier</code> is used to synchronize a fixed number of threads at a common barrier point. All threads must call <code class="language-plaintext highlighter-rouge">await()</code> before any of them proceeds. After release, the barrier is reset for reuse.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.util.concurrent.BrokenBarrierException</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.concurrent.CyclicBarrier</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">CyclicBarrierStudy</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="nc">CyclicBarrier</span> <span class="n">cb</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">CyclicBarrier</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"CyclicBarrierStudy finish."</span><span class="o">);</span>
+    <span class="o">});</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">){</span>
+        <span class="nc">Runnable</span> <span class="n">r1</span> <span class="o">=</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"R1 running."</span><span class="o">);</span>
+                <span class="n">cb</span><span class="o">.</span><span class="na">await</span><span class="o">();</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"R1 finish."</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">InterruptedException</span> <span class="o">|</span> <span class="nc">BrokenBarrierException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">};</span>
+
+        <span class="nc">Runnable</span> <span class="n">r2</span> <span class="o">=</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"R2 running."</span><span class="o">);</span>
+                <span class="n">cb</span><span class="o">.</span><span class="na">await</span><span class="o">();</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"R2 finish."</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">InterruptedException</span> <span class="o">|</span> <span class="nc">BrokenBarrierException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">};</span>
+
+        <span class="k">new</span> <span class="nf">Thread</span><span class="o">(</span><span class="n">r1</span><span class="o">).</span><span class="na">start</span><span class="o">();</span>
+        <span class="k">new</span> <span class="nf">Thread</span><span class="o">(</span><span class="n">r2</span><span class="o">).</span><span class="na">start</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Two threads reach a common barrier. Once both call <code class="language-plaintext highlighter-rouge">await()</code>, a predefined action is executed, and then they both proceed.</p>
+
+<p><strong>Sample Output</strong></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>R1 running.  
+R2 running.  
+CyclicBarrierStudy finish.  
+R2 finish.  
+R1 finish.  
+</code></pre></div></div>
+
+<h2 id="3-countdownlatch">3. CountDownLatch</h2>
+<p><code class="language-plaintext highlighter-rouge">CountDownLatch</code> allows one or more threads to wait until a set of events has occurred. A counter is reduced by <code class="language-plaintext highlighter-rouge">countDown()</code> and threads await its value reaching zero using <code class="language-plaintext highlighter-rouge">await()</code>.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.util.concurrent.CountDownLatch</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">CountDownLatchStudy</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">CountDownLatch</span> <span class="n">cdl</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">CountDownLatch</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">){</span>
+        <span class="nc">Runnable</span> <span class="n">r1</span> <span class="o">=</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"R1 waiting."</span><span class="o">);</span>
+                <span class="n">cdl</span><span class="o">.</span><span class="na">await</span><span class="o">();</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"R1 finish."</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">};</span>
+
+        <span class="nc">Runnable</span> <span class="n">r2</span> <span class="o">=</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"R2 running."</span><span class="o">);</span>
+            <span class="n">cdl</span><span class="o">.</span><span class="na">countDown</span><span class="o">();</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"R2 finish."</span><span class="o">);</span>
+        <span class="o">};</span>
+
+        <span class="k">new</span> <span class="nf">Thread</span><span class="o">(</span><span class="n">r1</span><span class="o">).</span><span class="na">start</span><span class="o">();</span>
+        <span class="k">new</span> <span class="nf">Thread</span><span class="o">(</span><span class="n">r2</span><span class="o">).</span><span class="na">start</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Thread <code class="language-plaintext highlighter-rouge">r1</code> waits until thread <code class="language-plaintext highlighter-rouge">r2</code> calls <code class="language-plaintext highlighter-rouge">countDown()</code>. Once the latch reaches zero, <code class="language-plaintext highlighter-rouge">r1</code> continues execution.
+<strong>Sample Output</strong></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>R1 waiting.  
+R2 running.  
+R2 finish.  
+R1 finish.  
+</code></pre></div></div>
+
+<h2 id="4-phaser">4. Phaser</h2>
+<p><code class="language-plaintext highlighter-rouge">Phaser</code> is a flexible and reusable synchronization barrier supporting dynamic thread registration and multi-phase coordination. It is often a better choice than <code class="language-plaintext highlighter-rouge">CyclicBarrier</code> or <code class="language-plaintext highlighter-rouge">CountDownLatch</code> in many use cases.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.util.concurrent.Phaser</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">PhaserStudy</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Phaser</span> <span class="n">phaser</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Phaser</span><span class="o">(</span><span class="mi">3</span><span class="o">);</span> <span class="c1">// Register 3 parties</span>
+
+        <span class="nc">Runnable</span> <span class="n">task</span> <span class="o">=</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="nc">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">" phase 1"</span><span class="o">);</span>
+            <span class="n">phaser</span><span class="o">.</span><span class="na">arriveAndAwaitAdvance</span><span class="o">();</span>
+
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="nc">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">" phase 2"</span><span class="o">);</span>
+            <span class="n">phaser</span><span class="o">.</span><span class="na">arriveAndAwaitAdvance</span><span class="o">();</span>
+        <span class="o">};</span>
+
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+            <span class="k">new</span> <span class="nf">Thread</span><span class="o">(</span><span class="n">task</span><span class="o">).</span><span class="na">start</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Three threads synchronize at each of two phases. The <code class="language-plaintext highlighter-rouge">Phaser</code> handles advancing to the next phase automatically after all threads arrive.</p>
+
+<p><strong>Sample Output</strong></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Thread-0 phase 1  
+Thread-1 phase 1  
+Thread-2 phase 1  
+Thread-2 phase 2  
+Thread-1 phase 2  
+Thread-0 phase 2  
+</code></pre></div></div>
+
+<h2 id="5-exchanger">5. Exchanger</h2>
+<p><code class="language-plaintext highlighter-rouge">Exchanger</code> is used for exchanging data between two threads at a synchronization point.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.util.concurrent.Exchanger</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ExchangerStudy</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Exchanger</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">exchanger</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Exchanger</span><span class="o">&lt;&gt;();</span>
+
+        <span class="k">new</span> <span class="nf">Thread</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="nc">String</span> <span class="n">msg</span> <span class="o">=</span> <span class="n">exchanger</span><span class="o">.</span><span class="na">exchange</span><span class="o">(</span><span class="s">"From A"</span><span class="o">);</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"A got: "</span> <span class="o">+</span> <span class="n">msg</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">}).</span><span class="na">start</span><span class="o">();</span>
+
+        <span class="k">new</span> <span class="nf">Thread</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="nc">String</span> <span class="n">msg</span> <span class="o">=</span> <span class="n">exchanger</span><span class="o">.</span><span class="na">exchange</span><span class="o">(</span><span class="s">"From B"</span><span class="o">);</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"B got: "</span> <span class="o">+</span> <span class="n">msg</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">}).</span><span class="na">start</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Two threads exchange messages using a synchronization point. Each receives the message sent by the other.</p>
+
+<p><strong>Sample Output</strong></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>B got: From A  
+A got: From B  
+</code></pre></div></div>
+
+<h2 id="6-completablefuture">6. CompletableFuture</h2>
+<p>Introduced in Java 8, <code class="language-plaintext highlighter-rouge">CompletableFuture</code> is a powerful framework for asynchronous programming. It supports chaining, combining, and composing tasks.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.util.concurrent.*</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">CompletableFutureStudy</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">CompletableFuture</span><span class="o">.</span><span class="na">supplyAsync</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="s">"Step 1"</span><span class="o">;</span>
+        <span class="o">}).</span><span class="na">thenApply</span><span class="o">(</span><span class="n">result</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="n">result</span> <span class="o">+</span> <span class="s">" -&gt; Step 2"</span><span class="o">;</span>
+        <span class="o">}).</span><span class="na">thenAccept</span><span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">::</span><span class="n">println</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>An asynchronous task runs in the background and is chained with another computation. Final result is printed at the end.</p>
+
+<p><strong>Sample Output</strong></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Step 1 -&gt; Step 2  
+</code></pre></div></div>
+
+<h2 id="summary-when-to-use-each-java-concurrency-tools">Summary: When to Use Each Java Concurrency Tools</h2>
+
+<h3 id="semaphore"><code class="language-plaintext highlighter-rouge">Semaphore</code></h3>
+<p>Use it when you need to <strong>limit access to a shared resource</strong>, like controlling the number of threads accessing a database or connection pool.<br />
+It’s ideal for implementing <strong>rate-limiting</strong> or <strong>resource permits</strong>.</p>
+
+<h3 id="countdownlatch"><code class="language-plaintext highlighter-rouge">CountDownLatch</code></h3>
+<p>Best for <strong>one-time event coordination</strong>, such as making one thread wait until a set of other threads finish their tasks<br />
+<em>(e.g., wait for multiple services to initialize before proceeding).</em></p>
+
+<h3 id="cyclicbarrier"><code class="language-plaintext highlighter-rouge">CyclicBarrier</code></h3>
+<p>Choose this when you want a <strong>fixed group of threads to wait for each other and then proceed together</strong>, often used in <strong>multi-threaded computation phases</strong> <em>(e.g., matrix processing)</em>.</p>
+
+<h3 id="phaser"><code class="language-plaintext highlighter-rouge">Phaser</code></h3>
+<p>A more flexible alternative to <code class="language-plaintext highlighter-rouge">CyclicBarrier</code> and <code class="language-plaintext highlighter-rouge">CountDownLatch</code>, great for <strong>multi-phase tasks</strong> with <strong>dynamic thread participation</strong>.<br />
+Use it when <strong>thread count may change</strong> or when <strong>multiple rounds of coordination</strong> are needed.</p>
+
+<h3 id="exchanger"><code class="language-plaintext highlighter-rouge">Exchanger</code></h3>
+<p>Best suited for <strong>two-thread collaboration</strong>, where each thread needs to <strong>exchange data at a synchronization point</strong>.<br />
+Useful in <strong>pipeline stages</strong> or <strong>producer-consumer pairs</strong>.</p>
+
+<h3 id="completablefuture"><code class="language-plaintext highlighter-rouge">CompletableFuture</code></h3>
+<p>Ideal for <strong>asynchronous programming</strong> and <strong>task chaining</strong>.<br />
+Use it when you need to <strong>run tasks in parallel</strong>, <strong>handle dependencies</strong>, and <strong>process results in a non-blocking way</strong><br />
+<em>(e.g., combining multiple API calls)</em>.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

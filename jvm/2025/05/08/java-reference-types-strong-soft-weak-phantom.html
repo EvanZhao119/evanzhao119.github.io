@@ -1,0 +1,76 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="understanding-java-reference-types-from-strong-to-phantom-references-and-their-practical-applications">Understanding Java Reference Types: From Strong to Phantom References and Their Practical Applications</h1>
+
+<p>From JDK 1.2, Java introduced different types of references: <strong>Strong Reference</strong>, <strong>Soft Reference</strong>, <strong>Weak Reference</strong>, and <strong>Phantom Reference</strong>.</p>
+
+<blockquote>
+  <p>The hierarchy of references is as follows:<br />
+<strong>Strong Reference &gt; Soft Reference &gt; Weak Reference &gt; Phantom Reference</strong></p>
+</blockquote>
+
+<p>In practice, different types of references offer a wide range of functionalities. For example:</p>
+<ul>
+  <li><strong>Netty</strong> framework introduced a reference counting mechanism for message management by weak references starting with version 4.x.</li>
+  <li>The <code class="language-plaintext highlighter-rouge">ThreadLocal</code> implementation in the JDK stores its references as weak references in a map associated with the Thread object.</li>
+  <li>Perhaps we can implement our own caching mechanism, where objects are reclaimed when memory is running low.</li>
+</ul>
+
+<h2 id="1-strong-reference">1. Strong Reference</h2>
+<p>A <strong>strong reference</strong> is the traditional reference assignment in Java. As long as the reference exists, the garbage collector will not reclaim the object.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**-------Strong Reference--------**/</span>
+<span class="kt">int</span><span class="o">[]</span> <span class="n">t1</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="mi">10240000</span><span class="o">];</span>
+<span class="nc">System</span><span class="o">.</span><span class="na">gc</span><span class="o">();</span><span class="c1">// Full GC will not reclaim the objects</span>
+</code></pre></div></div>
+
+<h2 id="2-soft-reference">2. Soft Reference</h2>
+<p>A <strong>soft reference</strong> is used to refer to objects that should only be reclaimed when the JVM is low on memory. The object is eligible for garbage collection before an OutOfMemoryError occurs.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**-------Soft Reference-----------**/</span>
+<span class="nc">SoftReference</span> <span class="n">t2</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">SoftReference</span><span class="o">&lt;&gt;(</span><span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="mi">10240000</span><span class="o">]);</span>
+<span class="nc">System</span><span class="o">.</span><span class="na">gc</span><span class="o">();</span><span class="c1">// The object referenced by the soft reference remains intact</span>
+</code></pre></div></div>
+
+<p>Next, the code is modified to continuously allocate large objects. The soft reference objects will be reclaimed only before the memory overflows (when allocation fails).</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**-------Soft Reference-----------**/</span>
+<span class="nc">SoftReference</span> <span class="n">t2</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">SoftReference</span><span class="o">&lt;&gt;(</span><span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="mi">512000000</span><span class="o">]);</span>
+<span class="nc">SoftReference</span> <span class="n">t3</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">SoftReference</span><span class="o">&lt;&gt;(</span><span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="mi">512000000</span><span class="o">]);</span>
+<span class="nc">System</span><span class="o">.</span><span class="na">gc</span><span class="o">();</span>
+</code></pre></div></div>
+
+<h2 id="3-weak-reference">3. Weak Reference</h2>
+<p>A <strong>weak reference</strong> allows the referenced object to live only until the next garbage collection. Regardless of whether the system has enough memory, the object will be reclaimed when the garbage collection occurs.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**-------Weak Reference-----------**/</span>
+<span class="nc">WeakReference</span> <span class="n">t3</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">WeakReference</span><span class="o">&lt;&gt;(</span><span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="mi">10240000</span><span class="o">]);</span>
+<span class="nc">System</span><span class="o">.</span><span class="na">gc</span><span class="o">();</span><span class="c1">//The weak reference object will be reclaimed after the garbage collection process.</span>
+</code></pre></div></div>
+
+<h2 id="4-phantom-reference">4. Phantom Reference</h2>
+<p>A <strong>phantom reference</strong> does not affect the lifetime of the referenced object. It cannot be used to retrieve the object itself. The sole purpose of a phantom reference is to notify when the object is about to be garbage collected.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

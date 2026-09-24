@@ -1,0 +1,109 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="stable-names--task-contracts-keep-callers-stable-while-you-evolve-internals">Stable Names + Task Contracts: Keep Callers Stable While You Evolve Internals</h1>
+
+<p><em>A practical guide with a tiny JSON Schema, validation tips, and evolution rules—using <code class="language-plaintext highlighter-rouge">report.generate</code> as the example.</em></p>
+
+<h2 id="1-background-and-problem">1 Background and Problem</h2>
+<p>In fast-moving teams, services evolve often. If callers bind to ad-hoc fields or specific implementations, upgrades break downstream systems.</p>
+
+<p><strong>The fix:</strong> To give each reusable capability a <strong>Stable Name</strong> (e.g., <code class="language-plaintext highlighter-rouge">report.generate</code>) and define a <strong>Task Contract</strong> with <strong>JSON Schema</strong>. The stable name is the unchanging entry point; the contract is the machine-checkable definition of inputs/outputs/errors. Internals can change freely as long as they continue to honor the contract.</p>
+
+<hr />
+
+<h2 id="2-core-ideas">2 Core Ideas</h2>
+<ul>
+  <li><strong>Stable Name</strong>: A permanent entry point (e.g., <code class="language-plaintext highlighter-rouge">report.generate</code>). Implementations, versions, or engines can change without breaking the interface callers use.</li>
+  <li><strong>Task Contract (JSON Schema)</strong>: A single source of truth describing input/output/error shape, required fields, enums, defaults, and constraints.</li>
+  <li><strong>Backward-Compatible Evolution</strong>: Prefer additive changes (new optional fields, relaxed constraints). Use versioning (e.g., <code class="language-plaintext highlighter-rouge">v2</code>) for breaking changes and provide a migration window.</li>
+</ul>
+
+<hr />
+
+<h2 id="3-minimal-schema">3 Minimal Schema</h2>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"$schema"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://json-schema.org/draft/2020-12/schema"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"report.generate"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"period"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span><span class="p">,</span><span class="w"> </span><span class="nl">"pattern"</span><span class="p">:</span><span class="w"> </span><span class="s2">"^</span><span class="se">\\</span><span class="s2">d{4}-</span><span class="se">\\</span><span class="s2">d{2}$"</span><span class="w"> </span><span class="p">},</span><span class="w">
+    </span><span class="nl">"sourceIds"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span><span class="p">,</span><span class="w"> </span><span class="nl">"minItems"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nl">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span><span class="w">
+    </span><span class="nl">"outputFormat"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span><span class="p">,</span><span class="w"> </span><span class="nl">"enum"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"pdf"</span><span class="p">,</span><span class="w"> </span><span class="s2">"docx"</span><span class="p">,</span><span class="w"> </span><span class="s2">"md"</span><span class="p">],</span><span class="w"> </span><span class="nl">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"pdf"</span><span class="w"> </span><span class="p">}</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"required"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"period"</span><span class="p">,</span><span class="w"> </span><span class="s2">"sourceIds"</span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<ul>
+  <li><strong>Object shape</strong>: The request must be a JSON object.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">period</code> (required)</strong>: Must match <code class="language-plaintext highlighter-rouge">YYYY-MM</code> (e.g., <code class="language-plaintext highlighter-rouge">2025-09</code>) to lock reporting granularity.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">sourceIds</code> (required)</strong>: A non-empty array of stable source IDs.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">outputFormat</code> (optional)</strong>: One of <code class="language-plaintext highlighter-rouge">pdf | docx | md</code>. The default is <code class="language-plaintext highlighter-rouge">pdf</code>.</li>
+  <li><strong>Examples</strong>
+    <ul>
+      <li>Valid: <code class="language-plaintext highlighter-rouge">{"period":"2025-09","sourceIds":["sales"],"outputFormat":"pdf"}</code></li>
+      <li>Invalid: <code class="language-plaintext highlighter-rouge">{"period":"2025/09","sourceIds":[]}</code> (wrong date format; empty source list)</li>
+    </ul>
+  </li>
+  <li><strong>Extension hooks (when needed)</strong>: Add <code class="language-plaintext highlighter-rouge">additionalProperties:false</code> to prevent drift, and use <code class="language-plaintext highlighter-rouge">$defs.Success / $defs.Error</code> to standardize responses for output validation.</li>
+</ul>
+
+<hr />
+
+<h2 id="4-why-this-works">4 Why This Works</h2>
+<ul>
+  <li><strong>No downstream breakage</strong>: As long as the implementation respects the schema, callers don’t change.</li>
+  <li><strong>Early incompatibility detection</strong>: Schema validation and schema-diff checks catch breaking changes in dev, CI, or at the gateway before they hit production.</li>
+  <li><strong>Consistent error semantics</strong>: Standard error codes.</li>
+  <li><strong>Lower integration cost</strong>: The schema serves as documentation and powers type/SDK/mock generation.</li>
+</ul>
+
+<hr />
+
+<h2 id="5-compatibility-and-evolution-rules">5 Compatibility and Evolution Rules</h2>
+<p><strong>Backward-compatible (allowed)</strong></p>
+<ul>
+  <li>Add <strong>optional</strong> fields.</li>
+  <li><strong>Extend</strong> enums (e.g., later add <code class="language-plaintext highlighter-rouge">"html"</code> to <code class="language-plaintext highlighter-rouge">outputFormat</code>).</li>
+  <li>Relax constraints (e.g., <code class="language-plaintext highlighter-rouge">patterns</code>, <code class="language-plaintext highlighter-rouge">minItems</code>, etc.).</li>
+  <li>Add non-breaking output fields (e.g., <code class="language-plaintext highlighter-rouge">warnings</code>, <code class="language-plaintext highlighter-rouge">bytes</code>, <code class="language-plaintext highlighter-rouge">checksum</code>).</li>
+</ul>
+
+<p><strong>Potentially breaking (version it)</strong></p>
+<ul>
+  <li>Remove fields or make optional fields required.</li>
+  <li>Shrink enums or tighten constraints.</li>
+  <li>Change a field’s meaning.</li>
+  <li>Restructure key objects.</li>
+</ul>
+
+<hr />
+
+<p><strong>Takeaway:</strong> Pin the entry point with a <strong>Stable Name</strong> and pin the boundaries with a <strong>Task Contract</strong>. Validate in dev/CI/gateway. Evolve additively by default, version when necessary. You’ll move fast internally without toppling your callers.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

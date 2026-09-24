@@ -1,0 +1,216 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="spring-boot--djl-build-a-high-performance-image-moderation-api">Spring Boot + DJL: Build a High-Performance Image Moderation API</h1>
+<p>In this post, we walk through how to design and implement a <strong>high-performance Image Moderation API</strong> using <strong>Spring Boot</strong> and <strong>Deep Java Library (DJL)</strong>.</p>
+
+<p>The focus is on <strong>DJL memory management</strong>, <strong>Java concurrency optimization with Spring Boot</strong>, and building a scalable <strong>AI-powered Image Moderation API</strong> ready for production workloads.</p>
+
+<h2 id="why-use-spring-boot-and-djl-for-building-an-ai-image-moderation-api">Why Use Spring Boot and DJL for Building an AI Image Moderation API?</h2>
+<ul>
+  <li><strong>Spring Boot</strong> provides a lightweight, production-ready Java framework.</li>
+  <li><strong>DJL (Deep Java Library)</strong> allows you to run AI/ML models natively in Java.</li>
+  <li>Perfect for <strong>AI-powered content moderation</strong>, e.g., detecting NSFW or unsafe images.</li>
+</ul>
+
+<h2 id="architecture-of-spring-boot--djl-image-moderation-api">Architecture of Spring Boot + DJL Image Moderation API</h2>
+<p>The system consists of:</p>
+<ol>
+  <li><strong>Spring Boot REST API</strong> – handles HTTP requests.</li>
+  <li><strong>DJL Model Service</strong> – loads and reuses pre-trained models.</li>
+  <li><strong>Async Thread Pool</strong> – improves concurrency handling.</li>
+  <li><strong>Memory Management Layer</strong> – ensures efficient predictor lifecycle.</li>
+</ol>
+
+<h3 id="core-modules">Core Modules</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Module</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">NsfwModelConfig</code></td>
+      <td>Loads the PyTorch model once and registers it as a global singleton bean</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">ModerationService</code></td>
+      <td>Handles image preprocessing and prediction, supports sync and async modes</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">AsyncConfig</code></td>
+      <td>Configures thread pool and enables Spring’s <code class="language-plaintext highlighter-rouge">@Async</code> annotation</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">ModerationController</code></td>
+      <td>Defines RESTful endpoints for image moderation</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">GlobalExceptionHandler</code></td>
+      <td>Catches and formats all exceptions with consistent error responses</td>
+    </tr>
+    <tr>
+      <td>Swagger Integration</td>
+      <td>Generates interactive API documentation for easy testing and collaboration</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<h2 id="memory-management-in-djl-for-ai-image">Memory Management in DJL for AI Image</h2>
+<ol>
+  <li><strong>Singleton Model Loading</strong> → load once, reuse across predictors.</li>
+  <li><strong>Predictor Lifecycle</strong> → managed via <code class="language-plaintext highlighter-rouge">try-with-resources</code> to prevent memory leaks.</li>
+  <li><strong>Batch Processing</strong> → reduce redundant overhead.</li>
+</ol>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Bean</span>
+<span class="kd">public</span> <span class="nc">ZooModel</span><span class="o">&lt;</span><span class="nc">NDList</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="nf">nsfwModel</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="n">model</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="java-concurrency-optimization-with-spring-boot-async">Java Concurrency Optimization with Spring Boot Async</h2>
+
+<p>Using Spring’s async capabilities, we move model inference to a background thread, freeing up the request-handling thread immediately.</p>
+
+<h3 id="async-thread-pool-configuration">Async Thread Pool Configuration</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@EnableAsync</span>
+<span class="nd">@Configuration</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">AsyncConfig</span> <span class="o">{</span>
+    <span class="nd">@Bean</span><span class="o">(</span><span class="s">"aiTaskExecutor"</span><span class="o">)</span>
+    <span class="kd">public</span> <span class="nc">Executor</span> <span class="nf">taskExecutor</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">ThreadPoolTaskExecutor</span> <span class="n">executor</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ThreadPoolTaskExecutor</span><span class="o">();</span>
+        <span class="n">executor</span><span class="o">.</span><span class="na">setCorePoolSize</span><span class="o">(</span><span class="mi">8</span><span class="o">);</span>
+        <span class="n">executor</span><span class="o">.</span><span class="na">setMaxPoolSize</span><span class="o">(</span><span class="mi">16</span><span class="o">);</span>
+        <span class="n">executor</span><span class="o">.</span><span class="na">setQueueCapacity</span><span class="o">(</span><span class="mi">100</span><span class="o">);</span>
+        <span class="n">executor</span><span class="o">.</span><span class="na">setThreadNamePrefix</span><span class="o">(</span><span class="s">"Async-Task-"</span><span class="o">);</span>
+        <span class="n">executor</span><span class="o">.</span><span class="na">initialize</span><span class="o">();</span>
+        <span class="k">return</span> <span class="n">executor</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="async-method">Async Method</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Async</span><span class="o">(</span><span class="s">"aiTaskExecutor"</span><span class="o">)</span>
+<span class="kd">public</span> <span class="nc">CompletableFuture</span><span class="o">&lt;</span><span class="nc">ModerationResult</span><span class="o">&gt;</span> <span class="nf">classifyAsync</span><span class="o">(</span><span class="nc">MultipartFile</span> <span class="n">file</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="nc">CompletableFuture</span><span class="o">.</span><span class="na">completedFuture</span><span class="o">(</span><span class="n">classify</span><span class="o">(</span><span class="n">file</span><span class="o">));</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="benefits">Benefits:</h3>
+<ul>
+  <li>The main thread is released immediately.</li>
+  <li>The model inference happens in a background thread from the pool.</li>
+  <li>Ideal for batch processing or high-frequency image upload scenarios.</li>
+</ul>
+
+<hr />
+
+<h2 id="performance-benchmark-sync-vs-async-api-in-spring-boot">Performance Benchmark: Sync vs Async API in Spring Boot</h2>
+<p>I tested <code class="language-plaintext highlighter-rouge">/check</code> and <code class="language-plaintext highlighter-rouge">/check-async</code> with 30 concurrent requests using <code class="language-plaintext highlighter-rouge">ApacheBench</code>.</p>
+
+<ul>
+  <li>The async version significantly outperforms the sync version in throughput and latency.</li>
+  <li>Non-200 responses are expected due to missing files in the test payload — validation works as intended.</li>
+</ul>
+
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th><code class="language-plaintext highlighter-rouge">/check</code> (Sync)</th>
+      <th><code class="language-plaintext highlighter-rouge">/check-async</code> (Async)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Total Time</td>
+      <td>0.040 sec</td>
+      <td>0.028 sec</td>
+    </tr>
+    <tr>
+      <td>Requests per second</td>
+      <td>757.58 req/sec</td>
+      <td>1064.96 req/sec</td>
+    </tr>
+    <tr>
+      <td>Avg Response Time</td>
+      <td>6.6 ms</td>
+      <td>4.7 ms</td>
+    </tr>
+    <tr>
+      <td>Max Response Time</td>
+      <td>11 ms</td>
+      <td>5 ms</td>
+    </tr>
+    <tr>
+      <td>Non-200 Responses</td>
+      <td>31</td>
+      <td>31</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>These results confirm that using Spring Boot with DJL can deliver high-performance AI content moderation in Java, especially when combined with proper concurrency and memory optimization techniques.</p>
+
+<hr />
+
+<h2 id="best-practices-for-building-ai-powered-image-moderation-apis">Best Practices for Building AI-Powered Image Moderation APIs</h2>
+
+<ol>
+  <li><strong>Efficient model reuse</strong> was achieved by loading the DJL model once during application startup and registering it as a Spring singleton bean. This avoids the overhead of reloading the model on every request.</li>
+  <li>I ensured <strong>safe memory management</strong> by using <code class="language-plaintext highlighter-rouge">try-with-resources</code> when creating <code class="language-plaintext highlighter-rouge">Predictor</code> instances, which automatically closes and releases resources after each inference task.</li>
+  <li>To handle <strong>high concurrency</strong>, we enabled asynchronous processing with Spring’s <code class="language-plaintext highlighter-rouge">@Async</code> annotation and a custom thread pool. This allows the system to process multiple image classification tasks in parallel without blocking the main thread.</li>
+  <li>The API was designed with a <strong>developer-friendly REST structure</strong>, and integrated with <code class="language-plaintext highlighter-rouge">Swagger</code> for automatically generated, interactive API documentation.</li>
+  <li>Finally, a <strong>centralized global exception handler</strong> was implemented to catch and return consistent, clean error messages across the entire application, improving maintainability and user experience.</li>
+</ol>
+
+<hr />
+
+<p>So far, we have demonstrated how <strong>Java + DJL + Spring Boot</strong> can serve as a powerful combo for deploying scalable AI services. To take this project further, we can continue to upgrade the model (e.g., CLIP) for improved accuracy and integrate OpenCV for better image preprocessing. Adding message queue support like Kafka will enable async task handling at scale. Finally, containerizing the service with Docker and deploying it on Kubernetes will enhance scalability and make the system cloud-ready.</p>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+<ul>
+  <li><a href="https://docs.djl.ai/">DJL Official Documentation</a></li>
+  <li><a href="https://spring.io/guides/gs/async-method/">Spring Boot Async Guide</a></li>
+  <li>Related post: <a href="/ai/2025/08/14/deploy-resnet-java-djl-tutorial.html">Deploying ResNet Models with Java DJL – From Zero to Hero</a></li>
+  <li>Related post: <a href="/ai/2025/08/18/java-grpc-http-clients-python-inference.html">Java gRPC &amp; HTTP Clients for Python Inference</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

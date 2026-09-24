@@ -1,0 +1,67 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="bytecode-instructions-in-class-files">Bytecode Instructions in <code class="language-plaintext highlighter-rouge">.class</code> files</h1>
+
+<h2 id="1-introduction">1. Introduction</h2>
+<p>During the compilation process, Java code is transformed into bytecode (.class files), which consists of instructions represented by operation codes (opcodes) and operands.</p>
+
+<p>These bytecode instructions control the flow of the Java program. JVM uses an operand stack architecture, meaning all operations are executed using the operand stack.</p>
+
+<h2 id="2-overview-of-bytecode-instructions">2. Overview of Bytecode Instructions</h2>
+
+<p>A JVM bytecode instruction is primarily composed of an <strong>opcode</strong> and an <strong>operand</strong>. The opcode specifies the operation to be performed, while the operand provides additional data necessary for the operation.</p>
+
+<ul>
+  <li><strong>Load and Store Instructions</strong>: These instructions transfer data between the local variable table in a stack frame and the operand stack, or load and store data in object fields and array elements.</li>
+  <li><strong>Arithmetic Instructions</strong>: These instructions perform operations on two values on the operand stack and push the result back onto the top of the stack.</li>
+  <li><strong>Type Conversion Instructions</strong>: These instructions convert data types, such as converting an integer to a floating-point number.</li>
+  <li><strong>Object Creation and Access Instructions</strong>: These instructions handle the creation of new objects and access to fields or array elements.</li>
+  <li><strong>Control Transfer Instructions</strong>: These instructions manage the program’s flow, such as conditional jumps and loops.</li>
+  <li><strong>Method Call and Return Instructions</strong>: These instructions handle method calls, parameter passing, and return value handling.</li>
+  <li><strong>Exception Handling Instructions</strong>: These instructions deal with exception handling, including throwing and catching exceptions.</li>
+  <li><strong>Synchronization Instructions</strong>: These instructions handle thread synchronization, ensuring thread safety in multi-threaded environments.</li>
+</ul>
+
+<h2 id="3-understanding-synchronization-instructions">3. Understanding Synchronization Instructions</h2>
+
+<p>Synchronization instructions are used for thread synchronization, ensuring thread safety in multi-threaded environments. JVM uses the <strong>monitor</strong> mechanism to implement synchronization.</p>
+
+<ul>
+  <li><strong>Method-level Synchronization</strong>: Methods marked with <code class="language-plaintext highlighter-rouge">ACC_SYNCHRONIZED</code> are synchronized. When such a method is called, the JVM checks if the method is synchronized. If so, the thread must acquire the corresponding monitor lock before executing the method.</li>
+  <li><strong>Block-level Synchronization</strong>: Achieved through the <code class="language-plaintext highlighter-rouge">monitorenter</code> and <code class="language-plaintext highlighter-rouge">monitorexit</code> instructions. These instructions acquire and release a lock on an object for synchronized blocks of code. The bytecode instructions between these two operations form the synchronized block.</li>
+</ul>
+
+<p><strong>Updated Section</strong>:</p>
+<ul>
+  <li>In the latest versions of Java, the <strong><code class="language-plaintext highlighter-rouge">monitorenter</code></strong> and <strong><code class="language-plaintext highlighter-rouge">monitorexit</code></strong> instructions remain the primary mechanism for implementing synchronized blocks. However, with Java 8’s enhancements to the <code class="language-plaintext highlighter-rouge">synchronized</code> keyword and JVM’s support for compressed instruction sets (such as <code class="language-plaintext highlighter-rouge">invokestatic</code>), performance has significantly improved.</li>
+</ul>
+
+<p><strong>Recent Developments</strong>: With Java 9, improvements such as <strong><code class="language-plaintext highlighter-rouge">Compact Strings</code></strong> and enhancements to <strong>Garbage Collection (GC)</strong> indirectly optimize synchronization mechanisms. The introduction of new concurrency control mechanisms like <code class="language-plaintext highlighter-rouge">StampedLock</code> further reduces the need for manual synchronization in some use cases, improving overall system performance.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

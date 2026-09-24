@@ -1,0 +1,181 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="spring-cloud-config-server-explained-behind-the-scenes-with-source-code">Spring Cloud Config Server Explained: Behind the Scenes with Source Code</h1>
+<p>A Spring Cloud Config Server serves as a central place to manage external configuration for applications across all environments. Here is a walkthrough of the source code behind a Spring Cloud Config Server instance and highlights the key components, initialization process, and request handling flow.</p>
+
+<h2 id="1-bootstrapping-a-config-server">1. Bootstrapping a Config Server</h2>
+<p>The following Java class launches a Config Server.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@EnableEurekaClient</span>
+<span class="nd">@EnableConfigServer</span>
+<span class="nd">@SpringBootApplication</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ConfigCenterApplication</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">SpringApplication</span><span class="o">.</span><span class="na">run</span><span class="o">(</span><span class="nc">ConfigCenterApplication</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p><strong>Note:</strong> <code class="language-plaintext highlighter-rouge">@EnableEurekaClient</code> is used for service discovery with Eureka (which is now considered legacy). For new systems, Spring recommends using <strong>Spring Cloud DiscoveryClient abstraction</strong> or <strong>Kubernetes-native service discovery</strong>. It is not important here, because I only focus on <code class="language-plaintext highlighter-rouge">Config Server</code> implementation.</p>
+
+<p>Before running the server, configuration is needed, typically in <code class="language-plaintext highlighter-rouge">application.yml</code>.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">spring</span><span class="pi">:</span>
+  <span class="na">cloud</span><span class="pi">:</span>
+    <span class="na">config</span><span class="pi">:</span>
+      <span class="na">server</span><span class="pi">:</span>
+        <span class="na">bootstrap</span><span class="pi">:</span> <span class="kc">true</span>
+        <span class="na">native</span><span class="pi">:</span>
+          <span class="na">search-locations</span><span class="pi">:</span> <span class="s">file:/Users/configs</span>
+</code></pre></div></div>
+
+<h2 id="2-enableconfigserver-annotation">2. <code class="language-plaintext highlighter-rouge">@EnableConfigServer</code> Annotation</h2>
+<p>This annotation marks the application as a Config Server. Under the hood, it only registers a <code class="language-plaintext highlighter-rouge">Marker</code> bean.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Target</span><span class="o">(</span><span class="nc">ElementType</span><span class="o">.</span><span class="na">TYPE</span><span class="o">)</span>
+<span class="nd">@Retention</span><span class="o">(</span><span class="nc">RetentionPolicy</span><span class="o">.</span><span class="na">RUNTIME</span><span class="o">)</span>
+<span class="nd">@Documented</span>
+<span class="nd">@Import</span><span class="o">(</span><span class="nc">ConfigServerConfiguration</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+<span class="kd">public</span> <span class="nd">@interface</span> <span class="nc">EnableConfigServer</span> <span class="o">{</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Configuration</span><span class="o">(</span><span class="n">proxyBeanMethods</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ConfigServerConfiguration</span> <span class="o">{</span>
+  <span class="nd">@Bean</span>
+  <span class="kd">public</span> <span class="nc">Marker</span> <span class="nf">enableConfigServerMarker</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="nf">Marker</span><span class="o">();</span>
+  <span class="o">}</span>
+
+  <span class="kd">static</span> <span class="kd">class</span> <span class="nc">Marker</span> <span class="o">{}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="3-springs-spi-like-mechanism-springfactories">3. Spring’s SPI-like Mechanism: <code class="language-plaintext highlighter-rouge">spring.factories</code></h2>
+<p>Spring Boot uses a mechanism similar to Java’s Service Provider Interface (SPI), defined in <code class="language-plaintext highlighter-rouge">META-INF/spring.factories</code>. This loads auto-configuration classes during startup:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>org.springframework.boot.autoconfigure.EnableAutoConfiguration
+=org.springframework.cloud.config.server.config.ConfigServerAutoConfiguration
+</code></pre></div></div>
+<p><code class="language-plaintext highlighter-rouge">ConfigServerAutoConfiguration</code> is the main entry point.</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">@ConditionalOnBean(Marker.class)</code>: Ensures configuration activates only if <code class="language-plaintext highlighter-rouge">@EnableConfigServer</code> was declared.</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Configuration</span><span class="o">(</span><span class="n">proxyBeanMethods</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+<span class="nd">@ConditionalOnBean</span><span class="o">(</span><span class="nc">ConfigServerConfiguration</span><span class="o">.</span><span class="na">Marker</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+<span class="nd">@EnableConfigurationProperties</span><span class="o">(</span><span class="nc">ConfigServerProperties</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+<span class="nd">@Import</span><span class="o">({</span>
+  <span class="nc">EnvironmentRepositoryConfiguration</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
+  <span class="nc">CompositeConfiguration</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
+  <span class="nc">ResourceRepositoryConfiguration</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
+  <span class="nc">ConfigServerEncryptionConfiguration</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
+  <span class="nc">ConfigServerMvcConfiguration</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
+  <span class="nc">ResourceEncryptorConfiguration</span><span class="o">.</span><span class="na">class</span>
+<span class="o">})</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ConfigServerAutoConfiguration</span> <span class="o">{</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<ul>
+  <li>The <code class="language-plaintext highlighter-rouge">@Import(...)</code> annotation in <code class="language-plaintext highlighter-rouge">ConfigServerAutoConfiguration</code> brings several configuration classes into the Spring context. Each of them plays a specific role in how the Config Server operates.
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">EnvironmentRepositoryConfiguration</code>: Sets up the environment repository based on the configured backend (e.g., Git, local file system, SVN, JDBC, etc.).</li>
+      <li><code class="language-plaintext highlighter-rouge">ResourceRepositoryConfiguration</code>: Registers a <code class="language-plaintext highlighter-rouge">ResourceRepository</code> bean to load configuration content as Spring Resource objects, supporting raw file-based access.</li>
+      <li><code class="language-plaintext highlighter-rouge">ConfigServerEncryptionConfiguration</code>: Adds encryption and decryption capabilities. It registers the <code class="language-plaintext highlighter-rouge">EncryptionController</code> for handling secure config requests (e.g., encrypting or decrypting property values).</li>
+      <li><code class="language-plaintext highlighter-rouge">ConfigServerMvcConfiguration</code>: Provides web-layer configuration. It registers the <code class="language-plaintext highlighter-rouge">EnvironmentController</code> which handles HTTP requests to fetch configuration properties.</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">@EnableConfigurationProperties(ConfigServerProperties.class)</code>: Binds <code class="language-plaintext highlighter-rouge">spring.cloud.config.server.*</code> from the config file to Java objects.</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@ConfigurationProperties</span><span class="o">(</span><span class="s">"spring.cloud.config.server"</span><span class="o">)</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ConfigServerProperties</span> <span class="o">{</span>
+  <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">bootstrap</span><span class="o">;</span>
+  <span class="kd">private</span> <span class="nc">String</span> <span class="n">prefix</span><span class="o">;</span>
+  <span class="kd">private</span> <span class="nc">String</span> <span class="n">defaultLabel</span><span class="o">;</span>
+  <span class="c1">// Other properties omitted for brevity</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="4-environment-repository-configuration">4. Environment Repository Configuration</h2>
+<p>This section handles loading configuration data from various backends (Git, filesystem, JDBC, etc.)</p>
+<h3 id="jgitfactoryconfig--initializes-the-git-based-repository-factory"><code class="language-plaintext highlighter-rouge">JGitFactoryConfig</code> – Initializes the Git-based repository factory</h3>
+<p>This configuration class is only loaded when the class <code class="language-plaintext highlighter-rouge">TransportConfigCallback</code> is present (usually when JGit is on the classpath). It defines a bean for <code class="language-plaintext highlighter-rouge">MultipleJGitEnvironmentRepositoryFactory</code>, which is responsible for creating Git-based environment repositories. This factory supports additional features like custom HTTP connections or SSH-based Git access.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Configuration</span><span class="o">(</span><span class="n">proxyBeanMethods</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+<span class="nd">@ConditionalOnClass</span><span class="o">(</span><span class="nc">TransportConfigCallback</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+<span class="kd">static</span> <span class="kd">class</span> <span class="nc">JGitFactoryConfig</span> <span class="o">{</span>
+  <span class="nd">@Bean</span>
+  <span class="kd">public</span> <span class="nc">MultipleJGitEnvironmentRepositoryFactory</span> <span class="nf">gitEnvironmentRepositoryFactory</span><span class="o">(...)</span> <span class="o">{</span>
+    <span class="c1">// Initialize the JGit repository factory</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="nf">MultipleJGitEnvironmentRepositoryFactory</span><span class="o">(...);</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<h3 id="defaultrepositoryconfiguration--creates-the-default-environment"><code class="language-plaintext highlighter-rouge">DefaultRepositoryConfiguration</code> – Creates the default environment</h3>
+<p>This class defines the default <code class="language-plaintext highlighter-rouge">EnvironmentRepository</code> bean used by the Config Server if no other implementation is provided. It builds a <code class="language-plaintext highlighter-rouge">MultipleJGitEnvironmentRepository</code> from the factory, which is capable of managing multiple Git locations and branches for configuration sources.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Configuration</span><span class="o">(</span><span class="n">proxyBeanMethods</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+<span class="nd">@ConditionalOnMissingBean</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="nc">EnvironmentRepository</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+<span class="kd">class</span> <span class="nc">DefaultRepositoryConfiguration</span> <span class="o">{</span>
+  <span class="nd">@Bean</span>
+  <span class="kd">public</span> <span class="nc">MultipleJGitEnvironmentRepository</span> <span class="nf">defaultEnvironmentRepository</span><span class="o">(...)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="n">gitEnvironmentRepositoryFactory</span><span class="o">.</span><span class="na">build</span><span class="o">(</span><span class="n">environmentProperties</span><span class="o">);</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<blockquote>
+  <p>While <code class="language-plaintext highlighter-rouge">JGit</code> is still available, Spring Cloud Config Server now offers native support for popular source control platforms like <strong>Azure Repos</strong>, <strong>GitHub (using GraphQL API v4)</strong>, and <strong>GitLab</strong>. These newer integrations usually work faster and more smoothly than traditional Git-over-HTTP methods.</p>
+</blockquote>
+
+<h2 id="5-http-request-handling-with-environmentcontroller">5. HTTP Request Handling with <code class="language-plaintext highlighter-rouge">EnvironmentController</code></h2>
+<p>This controller responds to HTTP GET requests for configurations.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@RestController</span>
+<span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">method</span> <span class="o">=</span> <span class="nc">RequestMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">,</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="s">"${spring.cloud.config.server.prefix:}"</span><span class="o">)</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">EnvironmentController</span> <span class="o">{</span>
+
+  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">path</span> <span class="o">=</span> <span class="s">"/{name}/{profiles}/{label:.*}"</span><span class="o">,</span> <span class="n">produces</span> <span class="o">=</span> <span class="nc">MediaType</span><span class="o">.</span><span class="na">APPLICATION_JSON_VALUE</span><span class="o">)</span>
+  <span class="kd">public</span> <span class="nc">Environment</span> <span class="nf">labelled</span><span class="o">(</span><span class="nd">@PathVariable</span> <span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="nd">@PathVariable</span> <span class="nc">String</span> <span class="n">profiles</span><span class="o">,</span>
+                              <span class="nd">@PathVariable</span> <span class="nc">String</span> <span class="n">label</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="nf">getEnvironment</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">profiles</span><span class="o">,</span> <span class="n">label</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+  <span class="o">}</span>
+
+  <span class="kd">public</span> <span class="nc">Environment</span> <span class="nf">getEnvironment</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="nc">String</span> <span class="n">profiles</span><span class="o">,</span> <span class="nc">String</span> <span class="n">label</span><span class="o">,</span>
+                                    <span class="kt">boolean</span> <span class="n">includeOrigin</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="na">replace</span><span class="o">(</span><span class="s">"(_)"</span><span class="o">,</span> <span class="s">"/"</span><span class="o">);</span>
+    <span class="n">label</span> <span class="o">=</span> <span class="n">label</span><span class="o">.</span><span class="na">replace</span><span class="o">(</span><span class="s">"(_)"</span><span class="o">,</span> <span class="s">"/"</span><span class="o">);</span>
+    
+    <span class="nc">Environment</span> <span class="n">environment</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">repository</span><span class="o">.</span><span class="na">findOne</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">profiles</span><span class="o">,</span> <span class="n">label</span><span class="o">,</span> <span class="n">includeOrigin</span><span class="o">);</span>
+    
+    <span class="k">if</span> <span class="o">(!</span><span class="k">this</span><span class="o">.</span><span class="na">acceptEmpty</span> <span class="o">&amp;&amp;</span> <span class="o">(</span><span class="n">environment</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">environment</span><span class="o">.</span><span class="na">getPropertySources</span><span class="o">().</span><span class="na">isEmpty</span><span class="o">()))</span> <span class="o">{</span>
+      <span class="k">throw</span> <span class="k">new</span> <span class="nf">EnvironmentNotFoundException</span><span class="o">(</span><span class="s">"Profile Not found"</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="n">environment</span><span class="o">;</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>When a configuration file is requested, the request is handled by the <code class="language-plaintext highlighter-rouge">EnvironmentController</code>, specifically through the <code class="language-plaintext highlighter-rouge">labelled(...)</code> method. Every time a client sends a request, the controller fetches the latest configuration from the repository (such as Git or file system) and returns it dynamically.</p>
+
+<p>This ensures that the client always receives the most up-to-date configuration without needing to restart the server.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

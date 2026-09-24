@@ -1,0 +1,206 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="introducing-java-23-whats-new-in-the-latest-release">Introducing Java 23: What’s New in the Latest Release?</h1>
+<p>JDK 23 is the latest release of the Java SE Platform. Until March 2025, JDK 24 will be released.</p>
+
+<p>Java 23 is here, bringing <strong>exciting new features and enhancements</strong> that improve performance, code readability, and developer productivity. Let’s take a look at some of the <strong>key updates</strong> in this release!</p>
+
+<h2 id="primitive-types-in-patterns-instanceof-and-switch-preview">Primitive Types in Patterns, <code class="language-plaintext highlighter-rouge">instanceof</code>, and <code class="language-plaintext highlighter-rouge">switch</code> (Preview)</h2>
+<p>Java 23 <strong>enhances pattern matching</strong> by allowing <strong>primitive types</strong> in <code class="language-plaintext highlighter-rouge">instanceof</code> checks and <code class="language-plaintext highlighter-rouge">switch</code> statements. This makes pattern-based programming more <strong>expressive and efficient</strong>. To eliminate manual casting and improves code readability.</p>
+
+<h3 id="example">Example:</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">test</span><span class="o">(</span><span class="nc">Object</span> <span class="n">obj</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">obj</span> <span class="k">instanceof</span> <span class="kt">int</span> <span class="n">i</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Integer: "</span> <span class="o">+</span> <span class="n">i</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="class-file-api-second-preview">Class-File API (Second Preview)</h2>
+<p>A new API for working with Java class files! This gives better introspection capabilities for frameworks and tools that need to analyze or modify bytecode. To help library and tool developers with efficient class file parsing and modification.</p>
+
+<h3 id="example-1">Example:</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+* Read MyClass.class from disk.
+* Parse the class structure using ClassFileParser.parse(classBytes).
+* Extract and print the class name and method names.
+**/</span>
+
+<span class="kn">import</span> <span class="nn">java.lang.classfile.ClassFile</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.lang.classfile.ClassFileParser</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Files</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.Path</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ReadClassFile</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="c1">// Load a .class file (Example: "MyClass.class")</span>
+        <span class="nc">Path</span> <span class="n">classFilePath</span> <span class="o">=</span> <span class="nc">Path</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">"MyClass.class"</span><span class="o">);</span>
+        <span class="kt">byte</span><span class="o">[]</span> <span class="n">classBytes</span> <span class="o">=</span> <span class="nc">Files</span><span class="o">.</span><span class="na">readAllBytes</span><span class="o">(</span><span class="n">classFilePath</span><span class="o">);</span>
+
+        <span class="c1">// Parse the class file</span>
+        <span class="nc">ClassFile</span> <span class="n">classFile</span> <span class="o">=</span> <span class="nc">ClassFileParser</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="n">classBytes</span><span class="o">);</span>
+
+        <span class="c1">// Print class name</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Class Name: "</span> <span class="o">+</span> <span class="n">classFile</span><span class="o">.</span><span class="na">thisClass</span><span class="o">().</span><span class="na">name</span><span class="o">());</span>
+
+        <span class="c1">// Print method names</span>
+        <span class="n">classFile</span><span class="o">.</span><span class="na">methods</span><span class="o">().</span><span class="na">forEach</span><span class="o">(</span><span class="n">method</span> <span class="o">-&gt;</span> 
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Method: "</span> <span class="o">+</span> <span class="n">method</span><span class="o">.</span><span class="na">name</span><span class="o">())</span>
+        <span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<h2 id="markdown-documentation-comments">Markdown Documentation Comments</h2>
+<p>Javadoc now supports Markdown, making documentation cleaner and easier to read. Developers can write structured and readable documentation directly in Java.</p>
+
+<h3 id="example-2">Example:</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+ * # My Class
+ * This class does something **amazing**.
+ *
+ * - Supports markdown
+ * - Easier to format
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyClass</span> <span class="o">{</span> <span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="vector-api-eighth-incubator">Vector API (Eighth Incubator)</h2>
+<p>Java’s Vector API continues to evolve, providing better performance for numerical and data-processing applications. To enable hardware-optimized computations, speeding up AI, ML, and scientific applications.</p>
+<h3 id="example-3">Example:</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">jdk.incubator.vector.*</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">VectorAddition</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">// Choose a specific vector species (platform-dependent size)</span>
+        <span class="nc">VectorSpecies</span><span class="o">&lt;</span><span class="nc">Float</span><span class="o">&gt;</span> <span class="n">species</span> <span class="o">=</span> <span class="nc">FloatVector</span><span class="o">.</span><span class="na">SPECIES_PREFERRED</span><span class="o">;</span>
+
+        <span class="c1">// Define two float arrays</span>
+        <span class="kt">float</span><span class="o">[]</span> <span class="n">a</span> <span class="o">=</span> <span class="o">{</span><span class="mf">1.0f</span><span class="o">,</span> <span class="mf">2.0f</span><span class="o">,</span> <span class="mf">3.0f</span><span class="o">,</span> <span class="mf">4.0f</span><span class="o">};</span>
+        <span class="kt">float</span><span class="o">[]</span> <span class="n">b</span> <span class="o">=</span> <span class="o">{</span><span class="mf">5.0f</span><span class="o">,</span> <span class="mf">6.0f</span><span class="o">,</span> <span class="mf">7.0f</span><span class="o">,</span> <span class="mf">8.0f</span><span class="o">};</span>
+        <span class="kt">float</span><span class="o">[]</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">float</span><span class="o">[</span><span class="n">species</span><span class="o">.</span><span class="na">length</span><span class="o">()];</span>
+
+        <span class="c1">// Load the arrays into vector registers</span>
+        <span class="nc">FloatVector</span> <span class="n">va</span> <span class="o">=</span> <span class="nc">FloatVector</span><span class="o">.</span><span class="na">fromArray</span><span class="o">(</span><span class="n">species</span><span class="o">,</span> <span class="n">a</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+        <span class="nc">FloatVector</span> <span class="n">vb</span> <span class="o">=</span> <span class="nc">FloatVector</span><span class="o">.</span><span class="na">fromArray</span><span class="o">(</span><span class="n">species</span><span class="o">,</span> <span class="n">b</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+
+        <span class="c1">// Perform vectorized addition</span>
+        <span class="nc">FloatVector</span> <span class="n">vc</span> <span class="o">=</span> <span class="n">va</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">vb</span><span class="o">);</span>
+
+        <span class="c1">// Store the result back into an array</span>
+        <span class="n">vc</span><span class="o">.</span><span class="na">intoArray</span><span class="o">(</span><span class="n">result</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+
+        <span class="c1">// Print results</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Vector Addition Result:"</span><span class="o">);</span>
+        <span class="k">for</span> <span class="o">(</span><span class="kt">float</span> <span class="n">v</span> <span class="o">:</span> <span class="n">result</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">v</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="stream-gatherers-second-preview">Stream Gatherers (Second Preview)</h2>
+<p>New stream processing capabilities that allow grouping and restructuring data more flexibly. To enhance custom stream operations for data transformation.</p>
+<h3 id="example-4">Example:</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="nc">Stream</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">"apple"</span><span class="o">,</span> <span class="s">"banana"</span><span class="o">,</span> <span class="s">"cherry"</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">gather</span><span class="o">((</span><span class="n">word</span><span class="o">,</span> <span class="n">sink</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">sink</span><span class="o">.</span><span class="na">accept</span><span class="o">(</span><span class="n">word</span><span class="o">.</span><span class="na">toUpperCase</span><span class="o">()))</span>
+    <span class="o">.</span><span class="na">toList</span><span class="o">();</span>
+</code></pre></div></div>
+
+<h2 id="deprecated-memory-access-methods-in-sunmiscunsafe">Deprecated Memory-Access Methods in sun.misc.Unsafe</h2>
+<p>Java officially deprecates certain unsafe memory-access methods, pushing developers towards safer APIs. To encourage secure memory handling and better compatibility across JVM implementations.</p>
+
+<h2 id="zgc-generational-mode-by-default">ZGC: Generational Mode by Default</h2>
+<p>The Z Garbage Collector (ZGC) now uses generational mode by default, reducing pause times and improving memory efficiency. Faster and more efficient garbage collection for large-scale applications.</p>
+
+<h2 id="module-import-declarations-preview">Module Import Declarations (Preview)</h2>
+<p>Modules can now be imported in a cleaner way, simplifying dependency management. To improve code organization and module usability.</p>
+<h3 id="example-5">Example:</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">module</span> <span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">;</span>  <span class="c1">// Import the java.sql module</span>
+
+<span class="kn">import</span> <span class="nn">java.sql.Connection</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.sql.DriverManager</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">DatabaseExample</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="nc">Connection</span> <span class="n">conn</span> <span class="o">=</span> <span class="nc">DriverManager</span><span class="o">.</span><span class="na">getConnection</span><span class="o">(</span><span class="s">"jdbc:h2:mem:test"</span><span class="o">);</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Connected: "</span> <span class="o">+</span> <span class="o">(</span><span class="n">conn</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">));</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="implicitly-declared-classes-and-instance-main-methods">Implicitly Declared Classes and Instance Main Methods</h2>
+<p>A major quality-of-life improvement for beginner-friendly Java coding! Java now allows implicit class definitions in <strong>single-file programs</strong>. Simplifing Java for scripting and educational purposes.</p>
+<h3 id="example-6">Example:</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">main</span><span class="o">()</span> <span class="o">{</span>
+    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Hello, Java 23!"</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="structured-concurrency-third-preview">Structured Concurrency (Third Preview)</h2>
+<p>Java 23 continues to improve concurrency handling, making multi-threaded code more predictable. To reduce bugs and race conditions in parallel programming.</p>
+
+<h2 id="scoped-values-third-preview">Scoped Values (Third Preview)</h2>
+<p>Scoped values replace thread-local variables with a safer alternative, improving performance and security in concurrent applications. More efficient resource management in multi-threaded environments.</p>
+<h3 id="example-7">Example:</h3>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.lang.scoped.*</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ScopedValueThreadExample</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">ScopedValue</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="no">REQUEST_ID</span> <span class="o">=</span> <span class="nc">ScopedValue</span><span class="o">.</span><span class="na">newInstance</span><span class="o">();</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">ScopedValue</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="no">REQUEST_ID</span><span class="o">,</span> <span class="s">"REQ-456"</span><span class="o">).</span><span class="na">run</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="k">new</span> <span class="nf">Thread</span><span class="o">(</span><span class="nl">ScopedValueThreadExample:</span><span class="o">:</span><span class="n">handleRequest</span><span class="o">).</span><span class="na">start</span><span class="o">();</span>
+        <span class="o">});</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">handleRequest</span><span class="o">()</span> <span class="o">{</span>
+        <span class="c1">// ScopedValue is NOT inherited by the new thread</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Handling request with ID: "</span> <span class="o">+</span> <span class="o">(</span><span class="no">REQUEST_ID</span><span class="o">.</span><span class="na">isBound</span><span class="o">()</span> <span class="o">?</span> <span class="no">REQUEST_ID</span><span class="o">.</span><span class="na">get</span><span class="o">()</span> <span class="o">:</span> <span class="s">"No Scoped Value"</span><span class="o">));</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="flexible-constructor-bodies-second-preview">Flexible Constructor Bodies (Second Preview)</h2>
+<p>Java 23 introduces greater flexibility in constructors, allowing custom logic before initializing fields. More control over object initialization.</p>
+<ul>
+  <li>You can now initialize fields and perform computations before calling super().</li>
+  <li>You can now calculate values dynamically before calling super().</li>
+  <li>You can apply logic before calling super().</li>
+  <li>You can call instance methods to process data before superclass initialization.</li>
+</ul>
+
+<h2 id="final-thoughts">Final Thoughts</h2>
+<p>Java 23 enhances developer productivity with safer, faster, and more expressive features. Whether you’re working on high-performance computing, multi-threading, or modernizing Java applications, these improvements make Java more powerful than ever!</p>
+
+<h2 id="feel-free-to-contact-me">Feel Free to Contact Me</h2>
+<p>If you have any questions, comments, or disagreements with anything, feel free to send me an email. You can find my email address on the my page.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

@@ -1,0 +1,136 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="concurrenthashmap-evolution-in-java"><code class="language-plaintext highlighter-rouge">ConcurrentHashMap</code> Evolution in Java</h1>
+<p><code class="language-plaintext highlighter-rouge">ConcurrentHashMap</code> is a high-performance, thread-safe Map implementation from the java.util.concurrent package.</p>
+
+<h2 id="evolution-in-jdk7-and-jdk8">Evolution in Jdk7 and Jdk8</h2>
+
+<h3 id="jdk-7-segmented-locking">JDK 7: Segmented Locking</h3>
+<p>In JDK 7, <code class="language-plaintext highlighter-rouge">ConcurrentHashMap</code> <strong>adopted lock</strong> striping (a form of segmented locking).</p>
+<ul>
+  <li>Internally uses a <code class="language-plaintext highlighter-rouge">Segment[] segments</code> array, where each segment manages a subset of the key space and has its own lock.</li>
+  <li>Allows up to 16 threads (by default) to write concurrently to different segments.</li>
+  <li>Each segment is a reentrant lock and holds a small hash table of entries.</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="no">V</span> <span class="nf">put</span><span class="o">(</span><span class="no">K</span> <span class="n">key</span><span class="o">,</span> <span class="no">V</span> <span class="n">value</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">Segment</span><span class="o">&lt;</span><span class="no">K</span><span class="o">,</span><span class="no">V</span><span class="o">&gt;</span> <span class="n">s</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">hash</span> <span class="o">=</span> <span class="n">hash</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+    <span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="o">(</span><span class="n">hash</span> <span class="o">&gt;&gt;&gt;</span> <span class="n">segmentShift</span><span class="o">)</span> <span class="o">&amp;</span> <span class="n">segmentMask</span><span class="o">;</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">ensureSegment</span><span class="o">(</span><span class="n">j</span><span class="o">);</span>
+    <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">hash</span><span class="o">,</span> <span class="n">value</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="jdk-8-cas--synchronized--red-black-trees">JDK 8+: CAS + synchronized + Red-Black Trees</h3>
+<p>JDK 8 restructured <code class="language-plaintext highlighter-rouge">ConcurrentHashMap</code>.</p>
+<ul>
+  <li>Replacing <code class="language-plaintext highlighter-rouge">Segment[]</code><code class="language-plaintext highlighter-rouge"> with a simple </code>Node[] table`.</li>
+  <li>Using CAS (Compare-And-Swap) to insert into empty bins without locking.</li>
+  <li>Using <code class="language-plaintext highlighter-rouge">synchronized</code> to lock individual bins when necessary.</li>
+  <li><strong>Treeifying</strong> bins (to red-black trees) when the number of items in a bin exceeds a threshold (default: 8).</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">final</span> <span class="no">V</span> <span class="nf">putVal</span><span class="o">(</span><span class="no">K</span> <span class="n">key</span><span class="o">,</span> <span class="no">V</span> <span class="n">value</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">onlyIfAbsent</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">hash</span> <span class="o">=</span> <span class="n">spread</span><span class="o">(</span><span class="n">key</span><span class="o">.</span><span class="na">hashCode</span><span class="o">());</span>
+    <span class="k">for</span> <span class="o">(</span><span class="nc">Node</span><span class="o">&lt;</span><span class="no">K</span><span class="o">,</span><span class="no">V</span><span class="o">&gt;[]</span> <span class="n">tab</span> <span class="o">=</span> <span class="n">table</span><span class="o">;;)</span> <span class="o">{</span>
+        <span class="o">...</span>
+        <span class="k">else</span> <span class="nf">if</span> <span class="o">((</span><span class="n">f</span> <span class="o">=</span> <span class="n">tabAt</span><span class="o">(</span><span class="n">tab</span><span class="o">,</span> <span class="n">i</span> <span class="o">=</span> <span class="o">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">&amp;</span> <span class="n">hash</span><span class="o">))</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">casTabAt</span><span class="o">(</span><span class="n">tab</span><span class="o">,</span> <span class="n">i</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="k">new</span> <span class="nc">Node</span><span class="o">&lt;</span><span class="no">K</span><span class="o">,</span><span class="no">V</span><span class="o">&gt;(</span><span class="n">hash</span><span class="o">,</span> <span class="n">key</span><span class="o">,</span> <span class="n">value</span><span class="o">,</span> <span class="kc">null</span><span class="o">)))</span>
+                <span class="k">break</span><span class="o">;</span> <span class="c1">// CAS avoids locking for empty bin</span>
+        <span class="o">}</span> 
+        <span class="k">else</span> <span class="nf">if</span> <span class="o">((</span><span class="n">fh</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="na">hash</span><span class="o">)</span> <span class="o">==</span> <span class="no">MOVED</span><span class="o">)</span>
+            <span class="n">tab</span> <span class="o">=</span> <span class="n">helpTransfer</span><span class="o">(</span><span class="n">tab</span><span class="o">,</span> <span class="n">f</span><span class="o">);</span><span class="c1">//Help resize and treeify</span>
+        <span class="k">else</span> <span class="o">{</span>
+            <span class="kd">synchronized</span> <span class="o">(</span><span class="n">f</span><span class="o">)</span> <span class="o">{</span> <span class="c1">//Lock only first node of bin</span>
+                <span class="o">...</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p><strong>JDK 8 completely removed the Segment class. CAS + fine-grained synchronized blocks significantly improved performance. Treeification further improved lookup speed for highly-collided keys.</strong></p>
+
+<h3 id="resizing-in-jdk-7-vs-jdk-8">Resizing in JDK 7 vs JDK 8</h3>
+<h4 id="jdk-7-resizing">JDK 7 Resizing</h4>
+<ul>
+  <li>Each <code class="language-plaintext highlighter-rouge">Segment</code> resizes independently.</li>
+  <li>Parallel resizing across segments is possible but not coordinated.</li>
+</ul>
+
+<h4 id="jdk-8-resizing">JDK 8 Resizing</h4>
+<ul>
+  <li>Introduces a <code class="language-plaintext highlighter-rouge">ForwardingNode</code> to indicate in-progress resizing in a bin.</li>
+  <li>If a thread encounters a <code class="language-plaintext highlighter-rouge">ForwardingNode</code>, it helps complete the resize (<code class="language-plaintext highlighter-rouge">helpTransfer()</code>).</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">else</span> <span class="k">if</span> <span class="o">((</span><span class="n">fh</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="na">hash</span><span class="o">)</span> <span class="o">==</span> <span class="no">MOVED</span><span class="o">)</span>
+    <span class="n">tab</span> <span class="o">=</span> <span class="n">helpTransfer</span><span class="o">(</span><span class="n">tab</span><span class="o">,</span> <span class="n">f</span><span class="o">);</span> <span class="c1">// Assist with resizing</span>
+</code></pre></div></div>
+
+<p>In JDK8, if a thread sees that a bin is being resized, it doesn’t just wait. It actively helps with the resizing process, which reduces blocking and speeds things up.</p>
+
+<h2 id="additional-enhancements-in-jdk-9-to-jdk-21">Additional Enhancements in JDK 9 to JDK 21</h2>
+<p>While the core structure introduced in JDK 8 remains intact, newer JDKs have introduced several performance and usability improvements.</p>
+<ol>
+  <li><strong>Compact Memory Layout</strong></li>
+</ol>
+
+<ul>
+  <li>Reduced padding and redundant fields to improve CPU cache friendliness.</li>
+</ul>
+
+<ol>
+  <li><strong>False Sharing Mitigation</strong></li>
+</ol>
+
+<ul>
+  <li>Use of <code class="language-plaintext highlighter-rouge">@Contended</code> (requires <code class="language-plaintext highlighter-rouge">-XX:-RestrictContended</code> flag) to isolate hot fields and prevent false sharing between threads.</li>
+</ul>
+
+<ol>
+  <li><strong>Optimized Tree Handling</strong></li>
+</ol>
+
+<ul>
+  <li>Improved treeification/de-treeification logic for performance.</li>
+</ul>
+
+<ol>
+  <li><strong>Enhanced Parallelism Support</strong></li>
+</ol>
+
+<ul>
+  <li>Added <code class="language-plaintext highlighter-rouge">forEach</code>, <code class="language-plaintext highlighter-rouge">reduce</code>, and <code class="language-plaintext highlighter-rouge">search</code> methods for parallel computation using ForkJoinPool.</li>
+</ul>
+
+<p>In the future, Java will keep on optimizing <code class="language-plaintext highlighter-rouge">ConcurrentHashMap</code>.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

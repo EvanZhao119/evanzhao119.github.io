@@ -1,0 +1,283 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="understanding-aop-in-spring-boot-how-proxies-are-created-during-bean-initialization">Understanding AOP in Spring Boot: How Proxies Are Created During Bean Initialization</h1>
+<p>Here is a clear explanation of how Spring Boot uses AOP (Aspect-Oriented Programming) to create dynamic proxy objects during the <code class="language-plaintext highlighter-rouge">refresh()</code> method. It walks through the full process of how and when these proxies are generated during bean initialization, and highlights changes and deprecated features in newer Spring Boot versions.</p>
+
+<h2 id="overview-proxy-creation-during-refresh">Overview: Proxy Creation During <code class="language-plaintext highlighter-rouge">refresh()</code></h2>
+<p>The <code class="language-plaintext highlighter-rouge">refresh()</code> method in the Spring container plays a key role in setting up the application context. As part of this process, the <code class="language-plaintext highlighter-rouge">finishBeanFactoryInitialization()</code> step uses reflection to create new bean instances. After the beans are created, Spring Boot fills in their properties and performs initialization. If the bean is affected by AOP (Aspect-Oriented Programming), Spring Boot will automatically create a proxy for it using either <strong>JDK dynamic proxies (for interface-based beans) or CGLIB (for class-based beans)</strong>.</p>
+
+<h2 id="jdk-vs-cglib-dynamic-proxies">JDK vs. CGLIB Dynamic Proxies</h2>
+<ul>
+  <li>If the class implements an interface, <strong>JDK dynamic proxy</strong> is used.</li>
+  <li>If it’s a regular class without interfaces, <strong>CGLIB</strong> is used to create a subclass-based proxy.</li>
+</ul>
+
+<table>
+  <thead>
+    <tr>
+      <th>Criteria</th>
+      <th>JDK Dynamic Proxy</th>
+      <th>CGLIB Proxy</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Requirement</td>
+      <td>Target must implement an interface</td>
+      <td>Target can be any class (non-final)</td>
+    </tr>
+    <tr>
+      <td>Proxy Creation Mechanism</td>
+      <td><code class="language-plaintext highlighter-rouge">java.lang.reflect.Proxy</code></td>
+      <td>Bytecode generation via CGLIB</td>
+    </tr>
+    <tr>
+      <td>Performance</td>
+      <td>Slightly faster for interfaces</td>
+      <td>Slightly slower; more flexible</td>
+    </tr>
+  </tbody>
+</table>
+
+<blockquote>
+  <p><strong>Note</strong>: From Spring 5, CGLIB is integrated into Spring Core and does not require an external dependency.</p>
+</blockquote>
+
+<h2 id="enabling-aop-in-spring-boot">Enabling AOP in Spring Boot</h2>
+<p>Spring Boot enables AOP by default when you include the <code class="language-plaintext highlighter-rouge">spring-boot-starter-aop</code> dependency. This starter brings in <strong>spring-aop</strong> and <strong>aspectjweaver</strong> libraries.</p>
+
+<h3 id="proxy-creation-in-refresh-flow">Proxy Creation in <code class="language-plaintext highlighter-rouge">refresh()</code> Flow</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">refresh</span><span class="o">()</span> 
+  <span class="o">-&gt;</span> <span class="n">finishBeanFactoryInitialization</span><span class="o">()</span> 
+    <span class="o">-&gt;</span> <span class="n">createBean</span><span class="o">()</span> 
+      <span class="o">-&gt;</span> <span class="n">doCreateBean</span><span class="o">()</span> 
+        <span class="o">-&gt;</span> <span class="n">initializeBean</span><span class="o">()</span> 
+          <span class="o">-&gt;</span> <span class="n">applyBeanPostProcessorsAfterInitialization</span><span class="o">()</span> 
+            <span class="o">-&gt;</span> <span class="n">postProcessAfterInitialization</span><span class="o">()</span> <span class="o">(</span><span class="n">by</span> <span class="nc">AnnotationAwareAspectJAutoProxyCreator</span><span class="o">)</span>
+</code></pre></div></div>
+<h3 id="registerbeanpostprocessors-method"><code class="language-plaintext highlighter-rouge">registerBeanPostProcessors()</code> Method</h3>
+<p>This method registers <code class="language-plaintext highlighter-rouge">AnnotationAwareAspectJAutoProxyCreator</code>, a special <code class="language-plaintext highlighter-rouge">BeanPostProcessor</code> responsible for creating proxies.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">beanFactory</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="n">ppName</span><span class="o">,</span> <span class="nc">BeanPostProcessor</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</code></pre></div></div>
+
+<h3 id="docreatebean-method"><code class="language-plaintext highlighter-rouge">doCreateBean()</code> Method</h3>
+<p>The heart of bean instantiation. Uses <code class="language-plaintext highlighter-rouge">createBeanInstance()</code> via reflection, then proceeds with:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">populateBean()</code> - Field injection using processors like <code class="language-plaintext highlighter-rouge">AutowiredAnnotationBeanPostProcessor</code></li>
+  <li><code class="language-plaintext highlighter-rouge">initializeBean()</code> - Includes AOP proxy creation</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="nc">Object</span> <span class="nf">doCreateBean</span><span class="o">(</span><span class="kd">final</span> <span class="nc">String</span> <span class="n">beanName</span><span class="o">,</span> <span class="kd">final</span> <span class="nc">RootBeanDefinition</span> <span class="n">mbd</span><span class="o">,</span> <span class="kd">final</span> <span class="nc">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span>
+      <span class="kd">throws</span> <span class="nc">BeanCreationException</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">instanceWrapper</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">instanceWrapper</span> <span class="o">=</span> <span class="n">createBeanInstance</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">mbd</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="c1">//...</span>
+    <span class="c1">// Initialize the bean instance.</span>
+    <span class="nc">Object</span> <span class="n">exposedObject</span> <span class="o">=</span> <span class="n">bean</span><span class="o">;</span>
+    <span class="k">try</span> <span class="o">{</span>
+      <span class="n">populateBean</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">mbd</span><span class="o">,</span> <span class="n">instanceWrapper</span><span class="o">);</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">exposedObject</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">exposedObject</span> <span class="o">=</span> <span class="n">initializeBean</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">exposedObject</span><span class="o">,</span> <span class="n">mbd</span><span class="o">);</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="c1">// ...</span>
+
+    <span class="k">return</span> <span class="n">exposedObject</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="populatebean-method"><code class="language-plaintext highlighter-rouge">populateBean()</code> Method</h3>
+<p>The <code class="language-plaintext highlighter-rouge">populateBean()</code><code class="language-plaintext highlighter-rouge"> method handles dependency injection for newly created bean instances. It processes annotations like </code>@Autowired<code class="language-plaintext highlighter-rouge"> and </code>@Value`, ensuring all required fields, setters, and config values are properly assigned before the bean is fully initialized.</p>
+
+<p>During this step, Spring iterates through all registered BeanPostProcessors—especially <code class="language-plaintext highlighter-rouge">InstantiationAwareBeanPostProcessor</code> implementations like <code class="language-plaintext highlighter-rouge">AutowiredAnnotationBeanPostProcessor</code>.</p>
+
+<p>A key internal class here is <code class="language-plaintext highlighter-rouge">AutowiredFieldElement</code>, which injects values into fields marked with <code class="language-plaintext highlighter-rouge">@Autowired</code>, using reflection:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">field</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">bean</span><span class="o">,</span> <span class="n">value</span><span class="o">);</span>
+</code></pre></div></div>
+<p>This sets a (possibly private) field on the bean using a resolved dependency from the Spring context.</p>
+
+<h4 id="key-steps">Key Steps:</h4>
+<ul>
+  <li><strong>Scanning Metadata</strong>: Spring finds all fields annotated with <code class="language-plaintext highlighter-rouge">@Autowired</code> or <code class="language-plaintext highlighter-rouge">@Value</code>.</li>
+  <li><strong>Resolving Dependencies</strong>: It uses <code class="language-plaintext highlighter-rouge">resolveDependency()</code> to fetch matching beans from the container.</li>
+  <li><strong>Injecting via Reflection:</strong>
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">ReflectionUtils</span><span class="o">.</span><span class="na">makeAccessible</span><span class="o">(</span><span class="n">field</span><span class="o">);</span>
+<span class="n">field</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">bean</span><span class="o">,</span> <span class="n">resolvedDependency</span><span class="o">);</span>
+</code></pre></div>    </div>
+  </li>
+  <li><strong>Caching</strong>: Injection metadata is cached to avoid re-scanning on repeated injections (e.g., for singletons).</li>
+</ul>
+
+<h3 id="initializebean-method"><code class="language-plaintext highlighter-rouge">initializeBean()</code> Method</h3>
+<p>The <code class="language-plaintext highlighter-rouge">initializeBean()</code> method is the final step in the Spring bean lifecycle before the bean is considered ready for use. It performs three key operations:</p>
+<ol>
+  <li><strong>Invokes Aware interfaces</strong> (e.g., <code class="language-plaintext highlighter-rouge">BeanNameAware</code>, <code class="language-plaintext highlighter-rouge">ApplicationContextAware</code>)</li>
+  <li><strong>Calls initialization methods</strong> (like <code class="language-plaintext highlighter-rouge">@PostConstruct</code> or <code class="language-plaintext highlighter-rouge">afterPropertiesSet()</code>)</li>
+  <li><strong>Applies <code class="language-plaintext highlighter-rouge">BeanPostProcessors</code> after initialization, where AOP proxy creation happens</strong></li>
+</ol>
+
+<h3 id="aop-integration-happens-here">AOP Integration Happens Here</h3>
+<p>The crucial step for AOP is:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">wrappedBean</span> <span class="o">=</span> <span class="n">applyBeanPostProcessorsAfterInitialization</span><span class="o">(</span><span class="n">wrappedBean</span><span class="o">,</span> <span class="n">beanName</span><span class="o">);</span>
+</code></pre></div></div>
+<p>This line tells Spring to apply all registered <code class="language-plaintext highlighter-rouge">BeanPostProcessors</code> to the bean after it has been initialized. <strong>Among them is the <code class="language-plaintext highlighter-rouge">AnnotationAwareAspectJAutoProxyCreator</code>, which is responsible for creating AOP proxies.</strong></p>
+
+<p>Internally, this process looks like:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">AnnotationAwareAspectJAutoProxyCreator</span> 
+   <span class="err">⟶</span> <span class="nc">AbstractAutoProxyCreator</span><span class="o">.</span><span class="na">postProcessAfterInitialization</span><span class="o">()</span>
+</code></pre></div></div>
+<p>If the bean matches AOP criteria (e.g., it has methods annotated with <code class="language-plaintext highlighter-rouge">@Around</code>, <code class="language-plaintext highlighter-rouge">@Before</code>, <code class="language-plaintext highlighter-rouge">@After</code>, etc.), this method will:</p>
+
+<ul>
+  <li><strong>Determine if a proxy is needed</strong> (<code class="language-plaintext highlighter-rouge">wrapIfNecessary()</code>)</li>
+  <li><strong>Build a proxy object</strong> using JDK dynamic proxy or CGLIB</li>
+  <li><strong>Return the proxy instead of the original bean</strong></li>
+</ul>
+
+<p>So, after <code class="language-plaintext highlighter-rouge">initializeBean()</code>, the object stored in the Spring container is no longer the raw bean, but a proxy that wraps it and intercepts method calls to apply cross-cutting logic (like logging, transactions, etc.).</p>
+
+<blockquote>
+  <p>In short: <code class="language-plaintext highlighter-rouge">initializeBean()</code> completes the setup of the bean and applies AOP if necessary, ensuring any method with advice will be executed through a proxy.</p>
+</blockquote>
+
+<h2 id="aop-proxy-creation-logic-summary">AOP Proxy Creation Logic Summary</h2>
+<h3 id="wrapifnecessary"><code class="language-plaintext highlighter-rouge">wrapIfNecessary()</code></h3>
+<p>Determines if a proxy is needed for the bean. If yes:</p>
+<ul>
+  <li>Constructs <code class="language-plaintext highlighter-rouge">PointcutAdvisor</code> instances (e.g., <code class="language-plaintext highlighter-rouge">InstantiationModelAwarePointcutAdvisorImpl</code>)</li>
+  <li>Calls <code class="language-plaintext highlighter-rouge">createProxy()</code></li>
+</ul>
+
+<h3 id="createproxy"><code class="language-plaintext highlighter-rouge">createProxy()</code></h3>
+<p>Creates the proxy via <code class="language-plaintext highlighter-rouge">ProxyFactory</code>. It uses <code class="language-plaintext highlighter-rouge">JdkDynamicAopProxy</code> or <code class="language-plaintext highlighter-rouge">ObjenesisCglibAopProxy</code>:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">return</span> <span class="n">proxyFactory</span><span class="o">.</span><span class="na">getProxy</span><span class="o">(</span><span class="n">getProxyClassLoader</span><span class="o">());</span>
+</code></pre></div></div>
+
+<h3 id="defaultaopproxyfactorycreateaopproxy"><code class="language-plaintext highlighter-rouge">DefaultAopProxyFactory.createAopProxy()</code></h3>
+<p>Determines proxy mechanism:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="o">(</span><span class="n">targetClass</span><span class="o">.</span><span class="na">isInterface</span><span class="o">()</span> <span class="o">||</span> <span class="nc">Proxy</span><span class="o">.</span><span class="na">isProxyClass</span><span class="o">(</span><span class="n">targetClass</span><span class="o">))</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="nf">JdkDynamicAopProxy</span><span class="o">(</span><span class="n">config</span><span class="o">);</span>
+<span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="nf">ObjenesisCglibAopProxy</span><span class="o">(</span><span class="n">config</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<blockquote>
+  <p><strong>Deprecated Note</strong>: Spring Boot 1.5.x relied heavily on external CGLIB. As of Spring 5, internal support for CGLIB (via ASM) is used and the old <code class="language-plaintext highlighter-rouge">cglib-nodep</code> is no longer necessary.</p>
+</blockquote>
+
+<h3 id="cglibaopproxygetproxy"><code class="language-plaintext highlighter-rouge">CglibAopProxy.getProxy()</code></h3>
+<p>Generates the subclass via ASM bytecode generation:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">enhancer</span><span class="o">.</span><span class="na">setSuperclass</span><span class="o">(</span><span class="n">proxySuperClass</span><span class="o">);</span>
+<span class="n">enhancer</span><span class="o">.</span><span class="na">setInterfaces</span><span class="o">(</span><span class="nc">AopProxyUtils</span><span class="o">.</span><span class="na">completeProxiedInterfaces</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">advised</span><span class="o">));</span>
+<span class="k">return</span> <span class="n">enhancer</span><span class="o">.</span><span class="na">create</span><span class="o">();</span>
+</code></pre></div></div>
+
+<h2 id="debugging-order-summary-updated-for-spring-5">Debugging Order Summary (Updated for Spring 5+)</h2>
+<p>This table serves as a quick reference to help you locate the key methods involved in Spring Boot’s AOP proxy creation process. It’s especially useful when debugging the bean initialization flow, allowing you to trace the sequence of method calls across core Spring classes — from <code class="language-plaintext highlighter-rouge">refresh()</code> all the way to the proxy object being created.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Class</th>
+      <th>Method</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>AbstractApplicationContext</td>
+      <td><code class="language-plaintext highlighter-rouge">refresh()</code></td>
+    </tr>
+    <tr>
+      <td>DefaultListableBeanFactory</td>
+      <td><code class="language-plaintext highlighter-rouge">preInstantiateSingletons()</code></td>
+    </tr>
+    <tr>
+      <td>AbstractBeanFactory</td>
+      <td><code class="language-plaintext highlighter-rouge">doGetBean()</code></td>
+    </tr>
+    <tr>
+      <td>AbstractAutowireCapableBeanFactory</td>
+      <td><code class="language-plaintext highlighter-rouge">createBean()</code></td>
+    </tr>
+    <tr>
+      <td>AbstractAutowireCapableBeanFactory</td>
+      <td><code class="language-plaintext highlighter-rouge">doCreateBean()</code></td>
+    </tr>
+    <tr>
+      <td>AbstractAutowireCapableBeanFactory</td>
+      <td><code class="language-plaintext highlighter-rouge">initializeBean()</code></td>
+    </tr>
+    <tr>
+      <td>AbstractAutowireCapableBeanFactory</td>
+      <td><code class="language-plaintext highlighter-rouge">applyBeanPostProcessorsAfterInitialization()</code></td>
+    </tr>
+    <tr>
+      <td>AbstractAutoProxyCreator</td>
+      <td><code class="language-plaintext highlighter-rouge">postProcessAfterInitialization()</code></td>
+    </tr>
+    <tr>
+      <td>AbstractAutoProxyCreator</td>
+      <td><code class="language-plaintext highlighter-rouge">wrapIfNecessary()</code></td>
+    </tr>
+    <tr>
+      <td>AbstractAutoProxyCreator</td>
+      <td><code class="language-plaintext highlighter-rouge">createProxy()</code></td>
+    </tr>
+    <tr>
+      <td>ProxyFactory</td>
+      <td><code class="language-plaintext highlighter-rouge">getProxy()</code></td>
+    </tr>
+    <tr>
+      <td>CglibAopProxy / JdkDynamicAopProxy</td>
+      <td><code class="language-plaintext highlighter-rouge">getProxy()</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="a-summary-at-last">A Summary At Last</h2>
+<p>Spring Boot uses a sophisticated and extensible AOP mechanism. During bean initialization in the <code class="language-plaintext highlighter-rouge">refresh()</code> method.</p>
+<ul>
+  <li>Beans are created and populated</li>
+  <li><code class="language-plaintext highlighter-rouge">BeanPostProcessors</code> like <code class="language-plaintext highlighter-rouge">AnnotationAwareAspectJAutoProxyCreator</code> determine if a bean requires proxying</li>
+  <li>AOP proxies are created using JDK dynamic proxies or CGLIB, depending on interface presence</li>
+</ul>
+
+<blockquote>
+  <p><strong>Updated for Spring Boot 2.x+</strong></p>
+
+  <ul>
+    <li><strong>CGLIB Integration</strong>: Now part of Spring Core, no need for separate dependencies</li>
+    <li><strong>Proxy Caching &amp; Efficiency</strong>: Optimizations have improved bean startup time and proxy reuse</li>
+    <li><strong>AOT Compilation (Spring Boot 3)</strong>: Native image support changes some dynamics (e.g., use of proxies with limitations)</li>
+  </ul>
+</blockquote>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

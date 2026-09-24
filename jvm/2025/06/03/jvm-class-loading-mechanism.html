@@ -1,0 +1,140 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="how-java-loads-classes-inside-the-jvm-class-loading-mechanism">How Java Loads Classes: Inside the JVM Class Loading Mechanism</h1>
+
+<h2 id="1-what-is-class-loading">1. What Is Class Loading?</h2>
+<p>Class loading refers to the process by which the Java Virtual Machine (JVM) loads class definitions (from <code class="language-plaintext highlighter-rouge">.class</code> files) into memory, verifies, transforms, resolves, and initializes them into runtime structures that the JVM can directly use.</p>
+
+<p>Unlike many other languages, Java performs type loading, linking, and initialization <strong>at runtime</strong>, enabling dynamic loading and execution.</p>
+
+<h2 id="2-class-loading-process-overview">2. Class Loading Process Overview</h2>
+<p>The JVM defines <strong>five main phases</strong> in the class loading process:</p>
+<ol>
+  <li><strong>Loading</strong></li>
+  <li><strong>Verification</strong></li>
+  <li><strong>Preparation</strong></li>
+  <li><strong>Resolution</strong></li>
+  <li><strong>Initialization</strong></li>
+</ol>
+
+<blockquote>
+  <p>The first three stages are part of the loading process. The latter two are part of the linking phase.</p>
+</blockquote>
+
+<h3 id="21-loading">2.1 Loading</h3>
+<ul>
+  <li>The JVM uses the <strong>fully qualified name</strong> (e.g., <code class="language-plaintext highlighter-rouge">java/lang/String</code>) to locate the corresponding <code class="language-plaintext highlighter-rouge">.class</code> file.</li>
+  <li>The class file is read into a <strong>binary byte stream</strong>.</li>
+  <li>The byte stream is parsed into <strong>runtime data structures</strong>, typically stored in the <strong>method area</strong> (now <strong>Metaspace</strong>).</li>
+  <li>A <code class="language-plaintext highlighter-rouge">java.lang.Class</code> object is created on the <strong>heap</strong> to serve as an access point to the class’s metadata.</li>
+</ul>
+
+<blockquote>
+  <p><strong>Java 8 Update</strong>:<br />
+The <strong>PermGen space was removed</strong> and replaced by <strong>Metaspace</strong>, which resides in native memory.</p>
+</blockquote>
+
+<blockquote>
+  <p><strong>Java 15 Update</strong>:<br />
+The introduction of <strong>Hidden Classes</strong> allows dynamically generated classes to be used internally without being exposed through a <code class="language-plaintext highlighter-rouge">ClassLoader</code>.</p>
+</blockquote>
+
+<h3 id="22-verification">2.2 Verification</h3>
+<p>Ensures the class file is safe and conforms to the JVM specification.</p>
+<ul>
+  <li><strong>File format verification</strong> (e.g., magic number, version)</li>
+  <li><strong>Metadata verification</strong> (e.g., class hierarchy validity)</li>
+  <li><strong>Bytecode verification</strong> (e.g., control flow, instruction correctness)</li>
+  <li><strong>Symbolic reference verification</strong></li>
+</ul>
+
+<blockquote>
+  <p>This step guarantees runtime security and prevents JVM crashes due to malformed classes.</p>
+</blockquote>
+
+<h3 id="23-preparation">2.3 Preparation</h3>
+<ul>
+  <li>Allocates <strong>memory for class variables (static fields)</strong> and sets them to default values (<code class="language-plaintext highlighter-rouge">0</code>, <code class="language-plaintext highlighter-rouge">null</code>, <code class="language-plaintext highlighter-rouge">false</code>, etc.).</li>
+  <li><strong>Instance fields are not included</strong> here; they are allocated during object instantiation.</li>
+</ul>
+
+<blockquote>
+  <p>Java 8 and beyond: Static variables are stored on the heap along with the <code class="language-plaintext highlighter-rouge">Class</code> object rather than in the method area.</p>
+</blockquote>
+
+<h3 id="24-resolution">2.4 Resolution</h3>
+<ul>
+  <li>Converts <strong>symbolic references</strong> in the constant pool (e.g., <code class="language-plaintext highlighter-rouge">"java/lang/Object"</code>) into <strong>direct references</strong> (pointers or memory addresses).</li>
+  <li>Applies to class references, field references, method references, and interface references.</li>
+</ul>
+
+<blockquote>
+  <p>Resolution can be <strong>eager (at load time)</strong> or <strong>lazy (when first used)</strong> depending on the JVM implementation.</p>
+</blockquote>
+
+<h3 id="25-initialization">2.5 Initialization</h3>
+<ul>
+  <li>Executes the class’s <strong><code class="language-plaintext highlighter-rouge">&lt;clinit&gt;()</code> method</strong>, which:
+    <ul>
+      <li>Assigns values to static variables</li>
+      <li>Executes static blocks (<code class="language-plaintext highlighter-rouge">static {}</code>)</li>
+    </ul>
+  </li>
+</ul>
+
+<blockquote>
+  <p><code class="language-plaintext highlighter-rouge">&lt;clinit&gt;()</code> is <strong>not always present</strong>. If there are no static initializations or static blocks, it won’t be generated.</p>
+</blockquote>
+
+<h4 id="thread-safety">Thread-Safety</h4>
+<ul>
+  <li>JVM ensures that <code class="language-plaintext highlighter-rouge">&lt;clinit&gt;()</code> is <strong>executed atomically and once</strong> per class, even in multithreaded environments.</li>
+</ul>
+
+<h4 id="parent-class-initialization-order">Parent Class Initialization Order</h4>
+<p>The parent class is always initialized before the child class.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">class</span> <span class="nc">Parent</span> <span class="o">{</span>
+    <span class="kd">static</span> <span class="o">{</span> <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Parent static"</span><span class="o">);</span> <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kd">class</span> <span class="nc">Child</span> <span class="kd">extends</span> <span class="nc">Parent</span> <span class="o">{</span>
+    <span class="kd">static</span> <span class="o">{</span> <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Child static"</span><span class="o">);</span> <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Test</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">new</span> <span class="nf">Child</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+<span class="c1">//Output:</span>
+<span class="c1">//Parent static</span>
+<span class="c1">//Child static</span>
+</code></pre></div></div>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

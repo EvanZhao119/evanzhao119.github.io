@@ -1,0 +1,165 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="deploying-resnet-models-with-java-and-djl-deep-java-library">Deploying ResNet Models with Java and DJL (Deep Java Library)</h1>
+<p>In the Java world, deep learning often sounds like something you must do with Python. In reality, <strong>DJL (Deep Java Library)</strong> allows you to run deep learning models such as <code class="language-plaintext highlighter-rouge">ResNet</code> and <code class="language-plaintext highlighter-rouge">BERT</code> directly in a pure Java environment(no extra Python service required). This reduces deployment costs and eliminates network latency.</p>
+
+<hr />
+
+<h2 id="1-why-use-djl-for-deep-learning-in-java">1. Why Use DJL for Deep Learning in Java?</h2>
+<p>Compared to cross-language calls (gRPC/HTTP API), DJL offers:</p>
+<ul>
+  <li><strong>No extra service</strong>: Run models directly in the Java process</li>
+  <li><strong>Low latency</strong>: No network transfer overhead</li>
+  <li><strong>Easy deployment</strong>: Package as a single Jar file</li>
+</ul>
+
+<p><em>The downside is that models need to be converted to formats like <code class="language-plaintext highlighter-rouge">.pt</code> or <code class="language-plaintext highlighter-rouge">.onnx</code> that DJL can read.</em></p>
+
+<hr />
+
+<h2 id="2-environment-setup-for-java--djl">2. Environment Setup for Java + DJL</h2>
+<p>Let’s start from environment setup.</p>
+<ol>
+  <li><strong>Install JDK 17+</strong></li>
+  <li><strong>Create a Maven project</strong> (or Gradle)</li>
+  <li><strong>Add dependencies</strong> (Maven example above)</li>
+</ol>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;properties&gt;</span>
+    <span class="nt">&lt;djl.version&gt;</span>0.26.0<span class="nt">&lt;/djl.version&gt;</span>
+<span class="nt">&lt;/properties&gt;</span>
+
+<span class="nt">&lt;dependencies&gt;</span>
+    <span class="c">&lt;!-- DJL Core API --&gt;</span>
+    <span class="nt">&lt;dependency&gt;</span>
+        <span class="nt">&lt;groupId&gt;</span>ai.djl<span class="nt">&lt;/groupId&gt;</span>
+        <span class="nt">&lt;artifactId&gt;</span>api<span class="nt">&lt;/artifactId&gt;</span>
+    <span class="nt">&lt;/dependency&gt;</span>
+
+    <span class="c">&lt;!-- PyTorch Engine --&gt;</span>
+    <span class="nt">&lt;dependency&gt;</span>
+        <span class="nt">&lt;groupId&gt;</span>ai.djl.pytorch<span class="nt">&lt;/groupId&gt;</span>
+        <span class="nt">&lt;artifactId&gt;</span>pytorch-engine<span class="nt">&lt;/artifactId&gt;</span>
+    <span class="nt">&lt;/dependency&gt;</span>
+
+    <span class="nt">&lt;dependency&gt;</span>
+        <span class="nt">&lt;groupId&gt;</span>ai.djl<span class="nt">&lt;/groupId&gt;</span>
+        <span class="nt">&lt;artifactId&gt;</span>model-zoo<span class="nt">&lt;/artifactId&gt;</span>
+    <span class="nt">&lt;/dependency&gt;</span>
+
+    <span class="nt">&lt;dependency&gt;</span>
+        <span class="nt">&lt;groupId&gt;</span>org.slf4j<span class="nt">&lt;/groupId&gt;</span>
+        <span class="nt">&lt;artifactId&gt;</span>slf4j-simple<span class="nt">&lt;/artifactId&gt;</span>
+        <span class="nt">&lt;version&gt;</span>1.7.36<span class="nt">&lt;/version&gt;</span>
+    <span class="nt">&lt;/dependency&gt;</span>
+<span class="nt">&lt;/dependencies&gt;</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="3-loading-and-deploying-a-resnet-model-in-java">3. Loading and Deploying a ResNet Model in Java</h2>
+<p>The code below shows how to load a local ResNet-18 model (TorchScript format) with DJL and classify an image.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// The translator defines preprocessing steps for input images, postprocessing steps for model outputs,</span>
+<span class="c1">// and optional settings such as applying softmax and loading class labels (synset).</span>
+<span class="nc">Translator</span><span class="o">&lt;</span><span class="nc">Image</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">translator</span> <span class="o">=</span>
+    <span class="n">ai</span><span class="o">.</span><span class="na">djl</span><span class="o">.</span><span class="na">modality</span><span class="o">.</span><span class="na">cv</span><span class="o">.</span><span class="na">translator</span><span class="o">.</span><span class="na">ImageClassificationTranslator</span><span class="o">.</span><span class="na">builder</span><span class="o">()</span>
+    <span class="c1">// Resize the shorter side of the image to 256 pixels while keeping aspect ratio</span>
+    <span class="o">.</span><span class="na">addTransform</span><span class="o">(</span><span class="k">new</span> <span class="nc">Resize</span><span class="o">(</span><span class="mi">256</span><span class="o">))</span>
+    <span class="c1">// Crop the center 224x224 pixels (standard ImageNet input size)</span>
+    <span class="o">.</span><span class="na">addTransform</span><span class="o">(</span><span class="k">new</span> <span class="nc">CenterCrop</span><span class="o">(</span><span class="mi">224</span><span class="o">,</span> <span class="mi">224</span><span class="o">))</span>
+    <span class="c1">// Convert image to tensor format for model consumption</span>
+    <span class="o">.</span><span class="na">addTransform</span><span class="o">(</span><span class="k">new</span> <span class="nc">ToTensor</span><span class="o">())</span>
+    <span class="c1">// Normalize pixel values using ImageNet's mean and standard deviation</span>
+    <span class="o">.</span><span class="na">addTransform</span><span class="o">(</span><span class="k">new</span> <span class="nc">Normalize</span><span class="o">(</span>
+        <span class="k">new</span> <span class="kt">float</span><span class="o">[]</span> <span class="o">{</span><span class="mf">0.485f</span><span class="o">,</span> <span class="mf">0.456f</span><span class="o">,</span> <span class="mf">0.406f</span><span class="o">},</span>   <span class="c1">// mean (R, G, B)</span>
+        <span class="k">new</span> <span class="kt">float</span><span class="o">[]</span> <span class="o">{</span><span class="mf">0.229f</span><span class="o">,</span> <span class="mf">0.224f</span><span class="o">,</span> <span class="mf">0.225f</span><span class="o">}))</span> <span class="c1">// std deviation (R, G, B)</span>
+    <span class="c1">// Apply softmax to convert raw logits into probability values</span>
+    <span class="o">.</span><span class="na">optApplySoftmax</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span>
+    <span class="c1">// Provide the path to the class labels file (synset)</span>
+    <span class="c1">// Here we load it from the project's resources folder</span>
+    <span class="c1">// Download from https://raw.githubusercontent.com/pytorch/hub/master/imagenet_classes.txt</span>
+    <span class="o">.</span><span class="na">optSynsetUrl</span><span class="o">(</span><span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"/path/to/your/synset.txt"</span><span class="o">).</span><span class="na">toUri</span><span class="o">().</span><span class="na">toString</span><span class="o">())</span>
+    <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+
+<span class="c1">// This should point to where the TorchScript model file (traced_resnet18.pt) is stored.</span>
+<span class="c1">// Download from https://resources.djl.ai/test-models/traced_resnet18.pt</span>
+<span class="nc">Path</span> <span class="n">modelDir</span> <span class="o">=</span> <span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"/path/to/your/resnet18"</span><span class="o">);</span>
+
+<span class="c1">// Criteria describes the requirements for the model to be loaded from the Model Zoo or local path.</span>
+<span class="nc">Criteria</span><span class="o">&lt;</span><span class="nc">Image</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">criteria</span> <span class="o">=</span> <span class="nc">Criteria</span><span class="o">.</span><span class="na">builder</span><span class="o">()</span>
+    <span class="o">.</span><span class="na">optEngine</span><span class="o">(</span><span class="s">"PyTorch"</span><span class="o">)</span>                                 <span class="c1">// Force the PyTorch engine</span>
+    <span class="o">.</span><span class="na">optApplication</span><span class="o">(</span><span class="nc">Application</span><span class="o">.</span><span class="na">CV</span><span class="o">.</span><span class="na">IMAGE_CLASSIFICATION</span><span class="o">)</span>  <span class="c1">// Specify application domain</span>
+    <span class="o">.</span><span class="na">setTypes</span><span class="o">(</span><span class="nc">Image</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>         <span class="c1">// Input type: Image, Output type: Classifications</span>
+    <span class="o">.</span><span class="na">optModelPath</span><span class="o">(</span><span class="n">modelDir</span><span class="o">)</span>                               <span class="c1">// Path to the model directory</span>
+    <span class="o">.</span><span class="na">optModelName</span><span class="o">(</span><span class="s">"traced_resnet18"</span><span class="o">)</span>                      <span class="c1">// Model file name (without .pt extension)</span>
+    <span class="o">.</span><span class="na">optTranslator</span><span class="o">(</span><span class="n">translator</span><span class="o">)</span>                            <span class="c1">// Attach the translator for preprocessing/postprocessing</span>
+    <span class="o">.</span><span class="na">optProgress</span><span class="o">(</span><span class="k">new</span> <span class="nc">ProgressBar</span><span class="o">())</span>                       <span class="c1">// Show progress bar during model loading</span>
+    <span class="o">.</span><span class="na">build</span><span class="o">();</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="4-running-inference-and-printing-output">4. Running Inference and Printing Output</h2>
+<p>Once the model and <code class="language-plaintext highlighter-rouge">Predictor</code> are ready, you can run inference on an image and print the top-5 predictions.</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">try</span> <span class="o">(</span><span class="nc">ZooModel</span><span class="o">&lt;</span><span class="nc">Image</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">model</span> <span class="o">=</span> <span class="nc">ModelZoo</span><span class="o">.</span><span class="na">loadModel</span><span class="o">(</span><span class="n">criteria</span><span class="o">);</span>
+     <span class="nc">Predictor</span><span class="o">&lt;</span><span class="nc">Image</span><span class="o">,</span> <span class="nc">Classifications</span><span class="o">&gt;</span> <span class="n">predictor</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="na">newPredictor</span><span class="o">())</span> <span class="o">{</span>
+    <span class="c1">// Attempt to load a local image</span>
+    <span class="nc">Image</span> <span class="n">img</span> <span class="o">=</span> <span class="nc">ImageFactory</span><span class="o">.</span><span class="na">getInstance</span><span class="o">().</span><span class="na">fromFile</span><span class="o">(</span><span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">"/path/to/your/image.png"</span><span class="o">));</span>
+    <span class="c1">// Pass the image to the predictor and receive the classification results.</span>
+    <span class="nc">Classifications</span> <span class="n">result</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="na">predict</span><span class="o">(</span><span class="n">img</span><span class="o">);</span>
+    <span class="c1">// Display the top 5 predictions with their probabilities.</span>
+    <span class="n">result</span><span class="o">.</span><span class="na">topK</span><span class="o">(</span><span class="mi">5</span><span class="o">).</span><span class="na">forEach</span><span class="o">(</span><span class="n">c</span> <span class="o">-&gt;</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">printf</span><span class="o">(</span><span class="s">"Class: %-25s | Probability: %.5f%n"</span><span class="o">,</span>
+            <span class="n">c</span><span class="o">.</span><span class="na">getClassName</span><span class="o">(),</span> <span class="n">c</span><span class="o">.</span><span class="na">getProbability</span><span class="o">())</span>
+    <span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Result Examples:
+<img src="/assets/images/2025_08_14_djl_result_example.png" alt="DJL ResNet result example on image classification" /></p>
+
+<hr />
+
+<h2 id="5-workflow-and-summary">5. Workflow and Summary</h2>
+<blockquote>
+  <p>Java Application -&gt; ImageFactory loads the image -&gt; Translator applies preprocessing -&gt; DJL (PyTorch engine) runs inference -&gt; Translator applies postprocessing -&gt; Output classification results</p>
+</blockquote>
+
+<p>With DJL, we can efficiently run deep learning models in Java without relying on Python services, making it ideal for low-latency, Java-based environments. However, if models change frequently or require support for multiple programming languages, gRPC or HTTP may be a better choice.</p>
+
+<hr />
+
+<h2 id="related-posts">Related posts</h2>
+<ul>
+  <li><a href="/ai/2025/08/11/pytorch-softmax-regression-colab-demo.html">Learn Softmax Regression with PyTorch: A Google Colab Demo</a></li>
+  <li><a href="/ai/2025/08/09/softmax-regression-tutorial.html">Understanding Softmax Regression: Principles, Formulas, and Practical Insights</a></li>
+  <li><a href="/ai/2025/08/16/python-inference-service-fastapi-grpc.html">Implementing a Python Inference Service with HTTP (FastAPI) and RPC (gRPC)</a></li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

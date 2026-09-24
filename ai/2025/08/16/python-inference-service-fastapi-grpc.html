@@ -1,0 +1,331 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="implementing-a-python-inference-service-with-http-fastapi-and-rpc-grpc-interfaces">Implementing a Python Inference Service with HTTP (FastAPI) and RPC (gRPC) Interfaces</h1>
+
+<h2 id="introduction">Introduction</h2>
+<p>When deploying AI models in production, we often face a choice:</p>
+
+<p><strong>Should we expose the service via HTTP (REST/JSON) or RPC (gRPC)?</strong></p>
+
+<p>This tutorial walks through building a <strong>Python inference service</strong> with both <strong>FastAPI (HTTP)</strong> and <strong>gRPC</strong>, then compares their performance and usability.</p>
+
+<p>In modern AI applications, it’s common to deploy machine learning models as services so that different systems and programming languages can use them easily. For example, a Java backend system might need to use a PyTorch-trained model. Deploying the model in a Python service and exposing an API allows the Java system to send input data and receive predictions.</p>
+
+<p>In this project, we built a <strong>Python inference service</strong> that supports <strong>two interface types</strong>:</p>
+<ol>
+  <li><strong>HTTP Interface</strong> using FastAPI (supports JSON and multipart/form-data requests)</li>
+  <li><strong>gRPC Interface</strong> using Protocol Buffers (efficient binary RPC calls)</li>
+</ol>
+
+<p>Finally it provides a hands-on guide for machine learning API deployment using Python, showing how to serve AI models with both REST (FastAPI) and gRPC for production-grade inference services.</p>
+
+<hr />
+
+<h2 id="project-setup-loading-resnet18-and-api-interfaces">Project Setup: Loading ResNet18 and API Interfaces</h2>
+<ul>
+  <li><strong>Load the ResNet18 model from local weights</strong> (avoiding online download and SSL issues).</li>
+  <li>Accept an image from the client, perform preprocessing, run inference, and return the top-K classification results.</li>
+  <li>Implement both <strong>HTTP (FastAPI)</strong> and <strong>gRPC</strong> interfaces.</li>
+</ul>
+
+<hr />
+
+<h2 id="technology-stack-for-python-inference-service-fastapi--grpc">Technology Stack for Python Inference Service (FastAPI + gRPC)</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Technology</th>
+      <th>Purpose</th>
+      <th>Why Chosen</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>PyTorch / torchvision</strong></td>
+      <td>Model loading &amp; inference</td>
+      <td>Industry-standard deep learning framework with torchvision for pretrained models and transforms.</td>
+    </tr>
+    <tr>
+      <td><strong>FastAPI</strong></td>
+      <td>HTTP service framework</td>
+      <td>Asynchronous, high-performance web framework with automatic OpenAPI documentation.</td>
+    </tr>
+    <tr>
+      <td><strong>gRPC</strong></td>
+      <td>High-performance RPC</td>
+      <td>Compact binary protocol, HTTP/2, language-neutral, ideal for low-latency microservices.</td>
+    </tr>
+    <tr>
+      <td><strong>Pillow (PIL)</strong></td>
+      <td>Image processing</td>
+      <td>Easy to load and manipulate images before feeding them to the model.</td>
+    </tr>
+    <tr>
+      <td><strong>python-multipart</strong></td>
+      <td>HTTP file uploads</td>
+      <td>Required for multipart/form-data in FastAPI.</td>
+    </tr>
+    <tr>
+      <td><strong>NumPy (&lt;2)</strong></td>
+      <td>Tensor operations compatibility</td>
+      <td>Ensures compatibility with PyTorch 2.x, which is compiled against NumPy 1.x.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Project Structure Below:
+<img src="/assets/images/2025_08_16_project_structure.png" alt="Project Structure for Python Inference Service with FastAPI and gRPC" /></p>
+
+<hr />
+
+<h2 id="building-the-http-inference-api-with-fastapi">Building the HTTP Inference API with FastAPI</h2>
+
+<h3 id="api-design">API Design</h3>
+
+<ul>
+  <li><strong>POST <code class="language-plaintext highlighter-rouge">/predict/file</code></strong>: Accepts an uploaded image file via <code class="language-plaintext highlighter-rouge">multipart/form-data</code>.</li>
+  <li><strong>POST <code class="language-plaintext highlighter-rouge">/predict/b64</code></strong>: Accepts a base64-encoded image string (useful for mobile or cross-language scenarios).</li>
+</ul>
+
+<h3 id="core-inference-code-fastapi_appinferpy">Core Inference Code (<code class="language-plaintext highlighter-rouge">fastapi_app/infer.py</code>)</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">torch</span>
+<span class="kn">from</span> <span class="n">torchvision</span> <span class="kn">import</span> <span class="n">models</span>
+<span class="kn">from</span> <span class="n">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">from</span> <span class="n">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="n">_MODEL</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="n">_TRANSFORM</span> <span class="o">=</span> <span class="bp">None</span>
+
+<span class="k">def</span> <span class="nf">_load_model</span><span class="p">():</span>
+    <span class="k">global</span> <span class="n">_MODEL</span><span class="p">,</span> <span class="n">_TRANSFORM</span>
+    <span class="k">if</span> <span class="n">_MODEL</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">weights_path</span> <span class="o">=</span> <span class="sh">"</span><span class="s">/path/to/resnet18-f37072fd.pth</span><span class="sh">"</span>
+        <span class="n">_MODEL</span> <span class="o">=</span> <span class="n">models</span><span class="p">.</span><span class="nf">resnet18</span><span class="p">()</span>
+        <span class="n">state_dict</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">load</span><span class="p">(</span><span class="n">weights_path</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="n">torch</span><span class="p">.</span><span class="nf">device</span><span class="p">(</span><span class="sh">"</span><span class="s">cpu</span><span class="sh">"</span><span class="p">))</span>
+        <span class="n">_MODEL</span><span class="p">.</span><span class="nf">load_state_dict</span><span class="p">(</span><span class="n">state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="n">_MODEL</span><span class="p">.</span><span class="nf">eval</span><span class="p">()</span>
+
+        <span class="n">default_weights</span> <span class="o">=</span> <span class="n">models</span><span class="p">.</span><span class="n">ResNet18_Weights</span><span class="p">.</span><span class="n">DEFAULT</span>
+        <span class="n">_TRANSFORM</span> <span class="o">=</span> <span class="n">default_weights</span><span class="p">.</span><span class="nf">transforms</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_MODEL</span><span class="p">,</span> <span class="n">_TRANSFORM</span>
+
+<span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span><span class="n">img</span><span class="p">:</span> <span class="n">Image</span><span class="p">.</span><span class="n">Image</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="p">.</span><span class="n">Tensor</span><span class="p">:</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">transform</span> <span class="o">=</span> <span class="nf">_load_model</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nf">transform</span><span class="p">(</span><span class="n">img</span><span class="p">).</span><span class="nf">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="nd">@torch.inference_mode</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="n">img</span><span class="p">:</span> <span class="n">Image</span><span class="p">.</span><span class="n">Image</span><span class="p">,</span> <span class="n">topk</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+    <span class="n">model</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="nf">_load_model</span><span class="p">()</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="nf">preprocess</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="nf">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">probs</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">topk_probs</span><span class="p">,</span> <span class="n">topk_idxs</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">topk</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">topk</span><span class="p">)</span>
+    <span class="n">classes</span> <span class="o">=</span> <span class="n">models</span><span class="p">.</span><span class="n">ResNet18_Weights</span><span class="p">.</span><span class="n">DEFAULT</span><span class="p">.</span><span class="n">meta</span><span class="p">[</span><span class="sh">"</span><span class="s">categories</span><span class="sh">"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">[(</span><span class="n">classes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nf">float</span><span class="p">(</span><span class="n">topk_probs</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">topk_idxs</span><span class="p">)]</span>
+</code></pre></div></div>
+
+<h3 id="fastapi-app-entrypoint-fastapi_appapppy">FastAPI App Entrypoint (<code class="language-plaintext highlighter-rouge">fastapi_app/app.py</code>)</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">fastapi</span> <span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">UploadFile</span><span class="p">,</span> <span class="n">File</span>
+<span class="kn">from</span> <span class="n">fastapi.responses</span> <span class="kn">import</span> <span class="n">JSONResponse</span>
+<span class="kn">from</span> <span class="n">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span> <span class="n">infer</span> <span class="kn">import</span> <span class="n">predict</span>
+<span class="kn">from</span> <span class="n">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span> <span class="n">base64</span><span class="p">,</span> <span class="n">io</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="nc">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="sh">"</span><span class="s">ResNet18 Inference Service</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">B64ImageRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">image_base64</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">topk</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>
+
+<span class="nd">@app.post</span><span class="p">(</span><span class="sh">"</span><span class="s">/predict/file</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">predict_file</span><span class="p">(</span><span class="nb">file</span><span class="p">:</span> <span class="n">UploadFile</span> <span class="o">=</span> <span class="nc">File</span><span class="p">(...),</span> <span class="n">topk</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">):</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">Image</span><span class="p">.</span><span class="nf">open</span><span class="p">(</span><span class="nb">file</span><span class="p">.</span><span class="nb">file</span><span class="p">).</span><span class="nf">convert</span><span class="p">(</span><span class="sh">"</span><span class="s">RGB</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="nf">predict</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">topk</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nc">JSONResponse</span><span class="p">({</span><span class="sh">"</span><span class="s">topk</span><span class="sh">"</span><span class="p">:</span> <span class="p">[{</span><span class="sh">"</span><span class="s">label</span><span class="sh">"</span><span class="p">:</span> <span class="n">l</span><span class="p">,</span> <span class="sh">"</span><span class="s">prob</span><span class="sh">"</span><span class="p">:</span> <span class="n">p</span><span class="p">}</span> <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">res</span><span class="p">]})</span>
+
+<span class="nd">@app.post</span><span class="p">(</span><span class="sh">"</span><span class="s">/predict/b64</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">predict_b64</span><span class="p">(</span><span class="n">req</span><span class="p">:</span> <span class="n">B64ImageRequest</span><span class="p">):</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">Image</span><span class="p">.</span><span class="nf">open</span><span class="p">(</span><span class="n">io</span><span class="p">.</span><span class="nc">BytesIO</span><span class="p">(</span><span class="n">base64</span><span class="p">.</span><span class="nf">b64decode</span><span class="p">(</span><span class="n">req</span><span class="p">.</span><span class="n">image_base64</span><span class="p">))).</span><span class="nf">convert</span><span class="p">(</span><span class="sh">"</span><span class="s">RGB</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="nf">predict</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">req</span><span class="p">.</span><span class="n">topk</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nc">JSONResponse</span><span class="p">({</span><span class="sh">"</span><span class="s">topk</span><span class="sh">"</span><span class="p">:</span> <span class="p">[{</span><span class="sh">"</span><span class="s">label</span><span class="sh">"</span><span class="p">:</span> <span class="n">l</span><span class="p">,</span> <span class="sh">"</span><span class="s">prob</span><span class="sh">"</span><span class="p">:</span> <span class="n">p</span><span class="p">}</span> <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">res</span><span class="p">]})</span>
+</code></pre></div></div>
+
+<h3 id="testing-with-curl">Testing with <code class="language-plaintext highlighter-rouge">curl</code></h3>
+<p>It is easy to test using <code class="language-plaintext highlighter-rouge">curl</code> command.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-X</span> POST <span class="s2">"http://127.0.0.1:8000/predict/file?topk=5"</span>   
+	<span class="nt">-F</span> <span class="s2">"file=@/path/to/image.jpg"</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="implementing-the-grpc-inference-api-with-protocol-buffers">Implementing the gRPC Inference API with Protocol Buffers</h2>
+
+<h3 id="protocol-buffers-definition-grpc_appprotosclassifyproto">Protocol Buffers Definition (<code class="language-plaintext highlighter-rouge">grpc_app/protos/classify.proto</code>)</h3>
+
+<div class="language-proto highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">syntax</span> <span class="o">=</span> <span class="s">"proto3"</span><span class="p">;</span>
+
+<span class="kn">package</span> <span class="nn">classify</span><span class="p">;</span>
+
+<span class="kd">service</span> <span class="n">Classifier</span> <span class="p">{</span>
+  <span class="k">rpc</span> <span class="n">Predict</span> <span class="p">(</span><span class="n">ImageRequest</span><span class="p">)</span> <span class="k">returns</span> <span class="p">(</span><span class="n">PredictionResponse</span><span class="p">)</span> <span class="p">{}</span>
+<span class="p">}</span>
+
+<span class="kd">message</span> <span class="nc">ImageRequest</span> <span class="p">{</span>
+  <span class="kt">bytes</span> <span class="na">image</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="kt">int32</span> <span class="na">topk</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">message</span> <span class="nc">Prediction</span> <span class="p">{</span>
+  <span class="kt">string</span> <span class="na">label</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="kt">float</span> <span class="na">prob</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">message</span> <span class="nc">PredictionResponse</span> <span class="p">{</span>
+  <span class="k">repeated</span> <span class="n">Prediction</span> <span class="na">topk</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="inference-logic-grpc_appinferpy">Inference Logic (<code class="language-plaintext highlighter-rouge">grpc_app/infer.py</code>)</h3>
+
+<p><em>Same model loading logic as FastAPI, using local weights</em></p>
+
+<h3 id="grpc-server-grpc_appserverpy">gRPC Server (<code class="language-plaintext highlighter-rouge">grpc_app/server.py</code>)</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">grpc</span>
+<span class="kn">from</span> <span class="n">concurrent</span> <span class="kn">import</span> <span class="n">futures</span>
+<span class="kn">import</span> <span class="n">classify_pb2</span><span class="p">,</span> <span class="n">classify_pb2_grpc</span>
+<span class="kn">from</span> <span class="n">infer</span> <span class="kn">import</span> <span class="n">predict_bytes</span>
+
+<span class="k">class</span> <span class="nc">ClassifierServicer</span><span class="p">(</span><span class="n">classify_pb2_grpc</span><span class="p">.</span><span class="n">ClassifierServicer</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">Predict</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="n">preds</span> <span class="o">=</span> <span class="nf">predict_bytes</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="n">image</span><span class="p">,</span> <span class="n">topk</span><span class="o">=</span><span class="n">request</span><span class="p">.</span><span class="n">topk</span> <span class="ow">or</span> <span class="mi">5</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">classify_pb2</span><span class="p">.</span><span class="nc">PredictionResponse</span><span class="p">(</span>
+            <span class="n">topk</span><span class="o">=</span><span class="p">[</span><span class="n">classify_pb2</span><span class="p">.</span><span class="nc">Prediction</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="n">prob</span><span class="o">=</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">preds</span><span class="p">]</span>
+        <span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">serve</span><span class="p">():</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">grpc</span><span class="p">.</span><span class="nf">server</span><span class="p">(</span><span class="n">futures</span><span class="p">.</span><span class="nc">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+    <span class="n">classify_pb2_grpc</span><span class="p">.</span><span class="nf">add_ClassifierServicer_to_server</span><span class="p">(</span><span class="nc">ClassifierServicer</span><span class="p">(),</span> <span class="n">server</span><span class="p">)</span>
+    <span class="n">server</span><span class="p">.</span><span class="nf">add_insecure_port</span><span class="p">(</span><span class="sh">"</span><span class="s">[::]:50051</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">server</span><span class="p">.</span><span class="nf">start</span><span class="p">()</span>
+    <span class="n">server</span><span class="p">.</span><span class="nf">wait_for_termination</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="sh">"</span><span class="s">__main__</span><span class="sh">"</span><span class="p">:</span>
+    <span class="nf">serve</span><span class="p">()</span>
+</code></pre></div></div>
+
+<h3 id="testing-grpc-client">Testing gRPC Client</h3>
+<p>For testing, we implement a gRPC client.</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">grpc</span><span class="p">,</span> <span class="n">classify_pb2</span><span class="p">,</span> <span class="n">classify_pb2_grpc</span>
+
+<span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="sh">"</span><span class="s">image.jpg</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">rb</span><span class="sh">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="nf">read</span><span class="p">()</span>
+
+<span class="n">channel</span> <span class="o">=</span> <span class="n">grpc</span><span class="p">.</span><span class="nf">insecure_channel</span><span class="p">(</span><span class="sh">"</span><span class="s">127.0.0.1:50051</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">stub</span> <span class="o">=</span> <span class="n">classify_pb2_grpc</span><span class="p">.</span><span class="nc">ClassifierStub</span><span class="p">(</span><span class="n">channel</span><span class="p">)</span>
+<span class="n">resp</span> <span class="o">=</span> <span class="n">stub</span><span class="p">.</span><span class="nc">Predict</span><span class="p">(</span><span class="n">classify_pb2</span><span class="p">.</span><span class="nc">ImageRequest</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">topk</span><span class="o">=</span><span class="mi">5</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="http-vs-grpc-performance-comparison-and-deployment-takeaways">HTTP vs gRPC Performance Comparison and Deployment Takeaways</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>HTTP (FastAPI)</th>
+      <th>gRPC</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Protocol</td>
+      <td>JSON / multipart</td>
+      <td>Protobuf (binary)</td>
+    </tr>
+    <tr>
+      <td>Performance</td>
+      <td>Slower (text encoding, larger payloads)</td>
+      <td>Faster (compact binary, HTTP/2)</td>
+    </tr>
+    <tr>
+      <td>Debugging</td>
+      <td>Easier (curl, Postman)</td>
+      <td>Harder (need generated stubs)</td>
+    </tr>
+    <tr>
+      <td>Cross-language</td>
+      <td>Excellent</td>
+      <td>Excellent</td>
+    </tr>
+    <tr>
+      <td>Complexity</td>
+      <td>Low</td>
+      <td>Medium (requires .proto, codegen)</td>
+    </tr>
+  </tbody>
+</table>
+
+<ul>
+  <li><strong>HTTP</strong> is ideal for quick integration, easy debugging, and scenarios where clients can easily send JSON or form-data.</li>
+  <li><strong>gRPC</strong> is better for low-latency, high-throughput systems where performance matters.</li>
+</ul>
+
+<p>Using local weights avoids external dependencies, improves startup time, and makes deployments more stable.</p>
+
+<p>In production, the choice depends on the trade-off between <strong>ease of integration</strong> and <strong>performance requirements</strong>.</p>
+
+<hr />
+
+<h2 id="related-resources">Related Resources</h2>
+
+<ul>
+  <li>
+    <p>Related post: <a href="/ai/2025/08/14/deploy-resnet-java-djl-tutorial.html">Deploying ResNet Models with Java DJL – From Zero to Hero</a>
+Learn how to integrate and deploy deep learning models in <strong>Java</strong> using DJL.</p>
+  </li>
+  <li>
+    <p>Related post: <a href="/ai/2025/08/07/pytorch-housing-price-prediction-multi-feature.html">PyTorch Housing Price Prediction Demo (Multi-feature)</a>
+Hands-on guide to applying linear regression in PyTorch with multiple features.</p>
+  </li>
+  <li>
+    <p><a href="https://fastapi.tiangolo.com/">FastAPI Official Documentation</a><br />
+Comprehensive docs for building high-performance Python APIs.</p>
+  </li>
+  <li>
+    <p><a href="https://grpc.io/docs/">gRPC Documentation</a>
+Learn more about gRPC core concepts, Protocol Buffers, and API design best practices.</p>
+  </li>
+</ul>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

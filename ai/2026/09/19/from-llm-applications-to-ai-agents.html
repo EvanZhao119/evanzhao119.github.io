@@ -1,0 +1,70 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="from-llm-applications-to-ai-agents">From LLM Applications to AI Agents</h1>
+
+<p>RAG gives an LLM access to relevant external knowledge, while tools allow it to interact with other systems. An AI application starts to become agent-like when the model can use the result of one step to decide <strong>what to do next</strong>.</p>
+
+<p>Instead of following only a single question-and-answer step, an agent-style system can work through a task over multiple steps. At each stage, the LLM evaluates the previous result and determines the next action.</p>
+
+<h2 id="what-the-article-covers">What the Article Covers</h2>
+
+<ul>
+  <li>How agent-style systems differ from basic chatbots</li>
+  <li>Why some user requests require multiple steps</li>
+  <li>How an LLM can choose the next action based on an earlier result</li>
+  <li>The relationship between goals, reasoning, tools, actions, and observations</li>
+  <li>How prompts, RAG, tools, and the LLM work together</li>
+  <li>Why modern LLM engineering involves building a complete system around the model</li>
+</ul>
+
+<p>A basic agent process can be represented like this:</p>
+
+<pre>
+Start with a Goal
+        ↓
+Reason About What to Do
+        ↓
+Choose a Tool
+        ↓
+Take an Action
+        ↓
+Observe the Result
+        ↓
+Reason Again
+        ↓
+Continue Until the Task Is Complete
+</pre>
+
+<p>The important distinction is that an agent’s workflow does not always need to be completely defined in advance. The model can use the information it receives at each step to determine what should happen next.</p>
+
+<p>In the larger system, the <strong>prompt</strong> describes what is needed, <strong>RAG</strong> supplies relevant knowledge, <strong>tools</strong> provide capabilities, the <strong>LLM</strong> reasons about the available information, and <strong>agent-style orchestration</strong> repeats the process until the task is complete.</p>
+
+<p><a href="https://macstuforum.top/d/24-from-llm-applications-to-ai-agents">Read the full article and join the discussion →</a></p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
