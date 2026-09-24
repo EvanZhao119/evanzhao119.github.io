@@ -1,0 +1,62 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="ai-agents-from-answering-questions-to-getting-things-done">AI Agents: From Answering Questions to Getting Things Done</h1>
+
+<p>Large Language Models are good at answering questions, generating text, and reasoning about information. But many real-world tasks require more than generating an answer. An AI system may need to remember what happened earlier, decide what to do next, use external tools, and complete a task through multiple steps.</p>
+
+<p>This is where <strong>AI Agents</strong> come in. A simple way to think about an AI Agent is <code class="language-plaintext highlighter-rouge">AI Agent = LLM + Memory + Planning Skills + Tools</code> The LLM provides the reasoning capability, while the other components allow the system to interact with the real world and work toward a goal.</p>
+
+<h2 id="from-llms-to-agents">From LLMs to Agents</h2>
+
+<p>For example, when asking what the weather is in Toronto today, the model itself does not necessarily know the current weather. It needs access to an external weather service. With <strong>function calling</strong>, the model can decide to call a weather API and use the returned data to answer the question.</p>
+
+<p>An Agent goes one step further. When asked to plan a weekend trip to Toronto based on the weather, the agent completing this task may require several actions, including <code class="language-plaintext highlighter-rouge">checking the weather</code>, <code class="language-plaintext highlighter-rouge">deciding what activities are suitable</code>, <code class="language-plaintext highlighter-rouge">searching for places to visit</code>, <code class="language-plaintext highlighter-rouge">building an itinerary</code> and <code class="language-plaintext highlighter-rouge">adjusting the plan if conditions change</code>. The system is no longer making a single tool call. It is deciding <strong>what needs to happen, in what order, and which tools should be used</strong>. That is the key idea behind an Agent.</p>
+
+<h2 id="the-main-components-of-an-ai-agent">The Main Components of an AI Agent</h2>
+
+<p>An Agent usually combines several capabilities.</p>
+
+<ul>
+  <li><strong>LLM</strong>: The language model acts as the reasoning engine. It understands instructions, interprets information, and decides what to do next.</li>
+  <li><strong>Memory</strong>: Memory allows the Agent to keep useful information from previous interactions or previous steps.</li>
+  <li><strong>Planning Skills</strong>: Many tasks cannot be completed in one step. Planning allows the Agent to break a larger goal into smaller actions and determine their order.</li>
+  <li><strong>Tools</strong>: Tools allow the Agent to interact with systems outside the LLM. Without tools, an LLM mostly produces information. With tools, an Agent can begin to <strong>take actions based on that information</strong>.</li>
+</ul>
+
+<h2 id="how-agents-fit-with-other-llm-techniques">How Agents Fit with Other LLM Techniques</h2>
+
+<p>Prompt Engineering, RAG, Function Calling, Fine-Tuning, and Agents are not competing technologies. They solve different problems. Prompt Engineering tells model what to do; RAG gives the model external knowledge; Function Calling connects the model to tools; Fine-Tuning teaches the model a specialized pattern; AI Agent coordinates multiple steps toward a goal. An Agent can actually use several of these techniques together. For example, an Agent might use RAG to retrieve information, function calling to access an API, memory to retain context, and an LLM to decide what should happen next.</p>
+
+<h2 id="agents-are-already-moving-beyond-chatbots">Agents Are Already Moving Beyond Chatbots</h2>
+
+<p>AI Agents are increasingly being explored for practical engineering and business workflows. Frameworks such as <strong>AutoGen</strong> focus on building systems where multiple AI Agents can collaborate. Other projects apply Agent-style systems to web testing, mobile testing, and software development. This changes how we think about building AI applications. Instead of asking only how to make an LLM produce a better answer, we can also ask how to build a system that can <strong>understand a goal, choose the right tools, execute multiple steps, and adapt based on the results</strong>. That is the foundation of AI Agent engineering.</p>
+
+<p><a href="https://macstuforum.top/d/29-ai-agents-from-answering-questions-to-getting-things-done">Read the full article and join the discussion →</a></p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

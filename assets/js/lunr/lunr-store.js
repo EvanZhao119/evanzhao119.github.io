@@ -544,4 +544,10 @@ var store = [{
         "tags": ["LLM","RAG","Fine-Tuning","Prompt Engineering","AI Engineering"],
         "url": "/ai/2026/09/23/when-should-you-use-rag-fine-tuning-or-both.html",
         "teaser": null
+      },{
+        "title": "AI Agents: From Answering Questions to Getting Things Done",
+        "excerpt":"AI Agents: From Answering Questions to Getting Things Done Large Language Models are good at answering questions, generating text, and reasoning about information. But many real-world tasks require more than generating an answer. An AI system may need to remember what happened earlier, decide what to do next, use external...","categories": ["ai"],
+        "tags": ["LLM","AI Agent","Function Calling","RAG","Fine-Tuning","AI Engineering"],
+        "url": "/ai/2026/09/24/ai-agents-from-answering-questions-to-getting-things-done.html",
+        "teaser": null
       }]
