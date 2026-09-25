@@ -1,0 +1,42 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="fine-tuning-llms-how-models-learn-specialized-behavior">Fine-Tuning LLMs: How Models Learn Specialized Behavior</h1>
+
+<p>Large Language Models are trained on enormous amounts of general-purpose data. This gives them broad knowledge and allows them to handle many different tasks. But a general-purpose model may not always behave the way we need. For example, imagine building an AI system for healthcare, finance, legal services, or another specialized domain. The model may already understand the language, but we may want it to follow domain-specific instructions, produce answers in a particular format, or behave consistently for a specific task. This is where <strong>fine-tuning</strong> comes in. Fine-tuning takes an existing pretrained model and continues training it with carefully prepared data. Instead of building a model from scratch, we adapt what the model has already learned.</p>
+
+<h2 id="supervised-fine-tuning">Supervised Fine-Tuning</h2>
+<p>One common approach is <strong>Supervised Fine-Tuning</strong>, or <strong>SFT</strong>. The idea is straightforward. We prepare examples showing the model what a good response should look like. The goal is not simply to give the model more information. It is also to teach the model the <strong>behavior and response patterns</strong> we want.</p>
+
+<h2 id="learning-from-human-preferences">Learning from Human Preferences</h2>
+<p>Sometimes there is no single perfect answer. Two responses may both be correct, but one may be clearer, safer, or more useful. In this case, human preference data can provide another training signal.</p>
+
+<h2 id="a-typical-workflow-can-include-three-stages">A typical workflow can include three stages</h2>
+<p>First, <strong>SFT</strong> teaches the model from demonstrations of desired responses. Next, people compare different model outputs and rank them. These preferences are used to train a <strong>reward model</strong> that learns which responses humans tend to prefer. Finally, an algorithm such as <strong>PPO</strong>, or Proximal Policy Optimization, can use that reward signal to further optimize the model’s behavior. This is one way a general language model can gradually become better aligned with the behavior expected for a particular application.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

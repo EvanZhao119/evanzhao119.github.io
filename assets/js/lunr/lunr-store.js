@@ -550,4 +550,10 @@ var store = [{
         "tags": ["LLM","AI Agent","Function Calling","RAG","Fine-Tuning","AI Engineering"],
         "url": "/ai/2026/09/24/ai-agents-from-answering-questions-to-getting-things-done.html",
         "teaser": null
+      },{
+        "title": "Fine-Tuning LLMs: How Models Learn Specialized Behavior",
+        "excerpt":"Fine-Tuning LLMs: How Models Learn Specialized Behavior Large Language Models are trained on enormous amounts of general-purpose data. This gives them broad knowledge and allows them to handle many different tasks. But a general-purpose model may not always behave the way we need. For example, imagine building an AI system...","categories": ["ai"],
+        "tags": ["LLM","Fine-Tuning","SFT","Reward Model","PPO","AI Engineering"],
+        "url": "/ai/2026/09/25/fine-tuning-llms-how-models-learn-specialized-behavior.html",
+        "teaser": null
       }]
