@@ -556,4 +556,10 @@ var store = [{
         "tags": ["LLM","Fine-Tuning","SFT","Reward Model","PPO","AI Engineering"],
         "url": "/ai/2026/09/25/fine-tuning-llms-how-models-learn-specialized-behavior.html",
         "teaser": null
+      },{
+        "title": "Catastrophic Forgetting: What Happens When LLMs Become Specialized",
+        "excerpt":"Catastrophic Forgetting: What Happens When LLMs Become Specialized The Problem of Catastrophic Forgetting Fine-tuning a model on specialized data may improve its performance in a specific domain while reducing some of its original general capabilities. This is known as catastrophic forgetting. There are several ways to deal with this problem....","categories": ["ai"],
+        "tags": ["LLM","Fine-Tuning","Catastrophic Forgetting","LoRA","AI Engineering"],
+        "url": "/ai/2026/09/26/catastrophic-forgetting-what-happens-when-llms-become-specialized.html",
+        "teaser": null
       }]

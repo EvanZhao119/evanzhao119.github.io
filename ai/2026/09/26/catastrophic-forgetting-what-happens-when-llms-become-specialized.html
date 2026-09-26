@@ -1,0 +1,51 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="catastrophic-forgetting-what-happens-when-llms-become-specialized">Catastrophic Forgetting: What Happens When LLMs Become Specialized</h1>
+
+<h2 id="the-problem-of-catastrophic-forgetting">The Problem of Catastrophic Forgetting</h2>
+
+<p>Fine-tuning a model on specialized data may improve its performance in a specific domain while reducing some of its original general capabilities. This is known as <strong>catastrophic forgetting</strong>.</p>
+
+<p>There are several ways to deal with this problem. The first option is simply to <strong>accept it</strong>. If the goal is to build a highly specialized model, losing some unrelated general capabilities may not matter. For example, a model designed for a specific professional task does not necessarily need to remain equally good at every general-purpose task.</p>
+
+<p>The second approach is to include <strong>general-purpose data</strong> in the fine-tuning dataset. Instead of training only on specialized examples, we mix general and domain-specific data together. The proportion between the two types of data becomes an important consideration because it affects the balance between general and specialized capabilities.</p>
+
+<p>The third approach is to use <strong>Adapters</strong>. Instead of updating the entire model, we can introduce a small number of trainable parameters while keeping the original model parameters largely frozen. <strong>LoRA</strong> is a widely used technique based on this idea.</p>
+
+<p>These strategies reflect different choices. We can accept some loss of general capability, preserve it through a balanced training dataset, or adapt the model using techniques such as LoRA.</p>
+
+<h2 id="fine-tuning-is-about-adaptation">Fine-Tuning Is About Adaptation</h2>
+
+<p>The key idea behind fine-tuning is simple. We usually do not need to teach a Large Language Model everything again. The pretrained model already provides a strong foundation.</p>
+
+<p>Fine-tuning allows us to <strong>adapt that foundation to a particular task, behavior, or domain</strong>. SFT teaches from examples, preference learning helps the model understand which outputs are preferred, and techniques such as LoRA make adaptation possible without retraining the entire model.</p>
+
+<p>That is how a general-purpose LLM can gradually become a more specialized model for real-world applications.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
