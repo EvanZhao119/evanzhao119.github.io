@@ -562,4 +562,10 @@ var store = [{
         "tags": ["LLM","Fine-Tuning","Catastrophic Forgetting","LoRA","AI Engineering"],
         "url": "/ai/2026/09/26/catastrophic-forgetting-what-happens-when-llms-become-specialized.html",
         "teaser": null
+      },{
+        "title": "How AI Agents Work: Memory, Planning, Tools, and Actions",
+        "excerpt":"How AI Agents Work: Memory, Planning, Tools, and Actions Large Language Models are good at understanding questions, generating text, and reasoning about information. But an AI Agent needs to do more than simply generate an answer. An Agent may need to remember what happened earlier, decide what to do next,...","categories": ["ai"],
+        "tags": ["AI Agents","LLM","Memory","Planning","Tool Use","AI Engineering"],
+        "url": "/ai/2026/09/28/how-ai-agents-work-memory-planning-tools-and-actions.html",
+        "teaser": null
       }]

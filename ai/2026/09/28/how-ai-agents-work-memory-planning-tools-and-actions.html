@@ -1,0 +1,67 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="how-ai-agents-work-memory-planning-tools-and-actions">How AI Agents Work: Memory, Planning, Tools, and Actions</h1>
+
+<p>Large Language Models are good at understanding questions, generating text, and reasoning about information. But an AI Agent needs to do more than simply generate an answer. An Agent may need to remember what happened earlier, decide what to do next, use external tools, and take actions based on the results.</p>
+
+<p>A simple way to understand an AI Agent is <code class="language-plaintext highlighter-rouge">AI Agent = LLM + Memory + Planning + Tools + Actions</code>. These components work together to turn a language model into a system that can complete tasks.</p>
+
+<h2 id="memory">Memory</h2>
+
+<p><strong>Memory</strong> allows an Agent to keep track of information from previous steps. Imagine an Agent helping you plan a trip. It may first search for flights, then check hotels, and finally build an itinerary. When choosing a hotel, the Agent should still remember the destination, dates, budget, and other information collected earlier. Without memory, every step would be treated almost like a new conversation. Memory gives the Agent context about what has already happened.</p>
+
+<h2 id="planning">Planning</h2>
+
+<p>Many real-world tasks cannot be completed with a single action. Suppose you ask “Plan a three-day trip to Toronto within a $600 budget”. The Agent may need to break this goal into smaller tasks:</p>
+
+<ol>
+  <li>Check transportation options.</li>
+  <li>Find accommodation.</li>
+  <li>Estimate transportation and hotel costs.</li>
+  <li>Search for activities.</li>
+  <li>Build the final itinerary.</li>
+</ol>
+
+<p>This is the role of <strong>planning</strong>. Instead of immediately taking an action, the Agent can reason about the goal and decide what needs to happen first.</p>
+
+<h2 id="tools">Tools</h2>
+
+<p>An LLM does not have direct access to everything in the outside world. For example, it may need external tools to search the web, check an order, query a database, perform calculations and call an API. Tools connect the Agent’s reasoning ability with external systems. The model decides which tool may help, provides the required inputs, and then uses the returned result to continue the task.</p>
+
+<h2 id="actions">Actions</h2>
+
+<p>Planning decides <strong>what should happen</strong>. Actions actually <strong>make it happen</strong>. An action could be searching for information, calling an API, running a calculation, or sending a request to another system. This creates an important difference between a normal LLM application and an Agent. A normal LLM mainly produces a response. An Agent can work through a sequence of decisions and actions to achieve a goal.</p>
+
+<h2 id="putting-everything-together">Putting Everything Together</h2>
+
+<p>The real power of an Agent does not come from any single component. The LLM provides reasoning. Memory keeps useful context. Planning organizes the task. Tools provide access to external capabilities. Actions allow the system to execute the plan. Together, these components allow AI systems to move from simply <strong>answering questions</strong> towards <strong>completing tasks</strong>.</p>
+
+<p>But there is another important question: <strong>How should an Agent decide when to think and when to act?</strong> One common approach is called <strong>ReAct</strong>, which we will explore next.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
