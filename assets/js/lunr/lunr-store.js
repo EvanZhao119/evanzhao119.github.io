@@ -569,8 +569,8 @@ var store = [{
         "url": "/ai/2026/09/28/how-ai-agents-work-memory-planning-tools-and-actions.html",
         "teaser": null
       },{
-        "title": "Part 2 — ReAct vs. Plan-and-Solve: Two Ways AI Agents Handle Tasks",
-        "excerpt":"Part 2 — ReAct vs. Plan-and-Solve: Two Ways AI Agents Handle Tasks Once an Agent has access to tools, it still needs a strategy for using them. Should it plan the entire task first? Or should it think, take one action, observe the result, and then decide what to do...","categories": ["ai"],
+        "title": "ReAct vs. Plan-and-Solve: Two Ways AI Agents Handle Tasks",
+        "excerpt":"ReAct vs. Plan-and-Solve: Two Ways AI Agents Handle Tasks Once an Agent has access to tools, it still needs a strategy for using them. Should it plan the entire task first? Or should it think, take one action, observe the result, and then decide what to do next? Two useful...","categories": ["ai"],
         "tags": ["AI Agents","LLM","ReAct","Plan-and-Solve","Planning","AI Engineering"],
         "url": "/ai/2026/09/29/react-vs-plan-and-solve-two-ways-ai-agents-handle-tasks.html",
         "teaser": null
