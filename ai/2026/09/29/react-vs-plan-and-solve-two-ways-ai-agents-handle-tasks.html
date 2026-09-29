@@ -1,0 +1,55 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="part-2--react-vs-plan-and-solve-two-ways-ai-agents-handle-tasks">Part 2 — ReAct vs. Plan-and-Solve: Two Ways AI Agents Handle Tasks</h1>
+
+<p>Once an Agent has access to tools, it still needs a strategy for using them. Should it plan the entire task first? Or should it think, take one action, observe the result, and then decide what to do next? Two useful approaches for understanding this difference are <strong>ReAct</strong> and <strong>Plan-and-Solve</strong>.</p>
+
+<h2 id="react-think-act-observe">ReAct: Think, Act, Observe</h2>
+
+<p>ReAct combines <strong>reasoning and action</strong> in a repeating loop. The basic pattern looks like this: <code class="language-plaintext highlighter-rouge">Thought → Action → Observation → Thought → Action → Observation</code>.</p>
+
+<p>Imagine asking an Agent: What is the weather in Toronto today, and should I bring an umbrella? The Agent may first think that it needs current weather information. It then takes an <strong>action</strong> by calling a weather tool. The tool returns an <strong>observation</strong>, such as a forecast showing rain in the afternoon. The Agent can then reason again using this new information and produce an answer. The important idea is that the Agent does not need to know the entire solution in advance. It can make one decision, observe what happens, and adjust its next step.</p>
+
+<h2 id="why-the-observation-matters">Why the Observation Matters</h2>
+
+<p>External tools can return information the model did not have before. Because of this, the result of one action may change what the Agent should do next. Consider a shopping Agent. It searches for a product and discovers that the first option is out of stock. Instead of continuing with the original assumption, it can use that observation to search for another option. This feedback loop makes <strong>ReAct</strong> useful when the next step depends heavily on what happened in the previous step.</p>
+
+<h2 id="plan-and-solve-plan-first-execute-second">Plan-and-Solve: Plan First, Execute Second</h2>
+
+<p>Another approach is <strong>Plan-and-Solve</strong>. Instead of immediately switching between reasoning and actions, the Agent first creates a plan for the whole task. The process looks more like: <code class="language-plaintext highlighter-rouge">User Request → Create Plan → Execute Step 1 → Execute Step 2 → Execute Step 3 → ...</code>. For example, suppose the user asks: Help me research three laptops and compare them based on price, battery life, and performance. The Agent could first create a plan, including <code class="language-plaintext highlighter-rouge">Identify three suitable laptops</code>, <code class="language-plaintext highlighter-rouge">Collect pricing information</code>, <code class="language-plaintext highlighter-rouge">Collect battery specifications</code>, <code class="language-plaintext highlighter-rouge">Collect performance information</code>, <code class="language-plaintext highlighter-rouge">Compare the results</code> and <code class="language-plaintext highlighter-rouge">Produce a final summary</code>. Once the plan is created, the Agent works through the steps. This separates <strong>planning the task</strong> from <strong>executing the task</strong>.</p>
+
+<h2 id="react-and-plan-and-solve-are-different-patterns">ReAct and Plan-and-Solve Are Different Patterns</h2>
+
+<p>The main difference is where planning happens. With <strong>ReAct</strong>, planning is more dynamic. The Agent repeatedly decides what to do based on the latest observation. With <strong>Plan-and-Solve</strong>, more planning happens at the beginning. The Agent first breaks the problem into steps and then executes them. Neither pattern means that the Agent blindly follows a fixed script. Both use the LLM’s reasoning ability, but they organize that reasoning differently.</p>
+
+<h2 id="from-llms-to-agent-workflows">From LLMs to Agent Workflows</h2>
+
+<p>This is one of the key ideas behind AI Agents. Giving an LLM access to tools is only part of the problem. The system also needs a way to decide <strong>which action to take, when to take it, and what to do with the result</strong>. ReAct handles this through a continuous reasoning and feedback loop. Plan-and-Solve handles it by separating planning from execution. Once we understand these patterns, Agent systems become much easier to reason about. Instead of treating an Agent as a mysterious AI that somehow “does things,” we can see it as a structured workflow built around <strong>reasoning, planning, tools, observations, and actions</strong>.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
