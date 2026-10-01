@@ -1,0 +1,62 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="how-rag-works-from-documents-to-better-llm-answers">How RAG Works: From Documents to Better LLM Answers</h1>
+
+<p>Large Language Models know a lot, but they do not automatically know everything inside your private documents, company files, or newly updated data. For example, imagine that your company has hundreds of internal PDF, TXT, and Excel files. You ask an LLM a question about one of those documents. If the information was never included in the model’s training data, the model may not know the answer. One common solution is <strong>Retrieval-Augmented Generation</strong>, usually called <strong>RAG</strong>.</p>
+
+<p>Instead of asking the LLM to answer only from its own knowledge, RAG first searches an external knowledge source for relevant information. It then gives that information to the LLM as additional context. A simple RAG pipeline looks like this: <code class="language-plaintext highlighter-rouge">Documents → Chunks → Embeddings → Vector Database → Retrieval → Reranking → Context → LLM → Response</code></p>
+
+<h2 id="step-1-split-documents-into-chunks">Step 1: Split Documents into Chunks</h2>
+
+<p>The first step is preparing the knowledge base. Suppose we have PDF, TXT, or Excel files containing useful information. Instead of storing each entire document as one large piece of text, we
+usually <strong>split the documents into smaller chunks</strong>. When a user asks a question, we usually do not need the entire document. We only need the small sections that are relevant to the question. Chunking makes retrieval more focused and efficient.</p>
+
+<h2 id="step-2-convert-chunks-into-embeddings">Step 2: Convert Chunks into Embeddings</h2>
+
+<p>Computers cannot directly compare the meaning of two pieces of text in the same way humans do. This is where <strong>embeddings</strong> help. An embedding model converts each chunk into a numerical representation called a <strong>vector</strong>. Texts with similar meanings should have vectors that are closer together in the embedding space. These vectors are then stored in a <strong>vector database</strong>.</p>
+
+<h2 id="step-3-embed-the-users-question">Step 3: Embed the User’s Question</h2>
+
+<p>When the user asks a question, the system uses the same embedding model to convert the question into a vector. Now both the documents and the user’s question are represented as vectors. The system can compare them mathematically.</p>
+
+<h2 id="step-4-retrieve-relevant-chunks">Step 4: Retrieve Relevant Chunks</h2>
+
+<p>The vector database searches for document chunks whose vectors are similar to the query vector. Suppose the database contains thousands of chunks. Instead of sending all of them to the LLM, the retrieval system may return only the most relevant ones. This process is called <strong>retrieval</strong>. The goal is simple to find the information that is most likely to help answer the user’s question.</p>
+
+<h2 id="step-5-rerank-the-results">Step 5: Rerank the Results</h2>
+
+<p>Vector similarity is useful, but the first search results are not always in the best order. A RAG system can therefore add another step called <strong>reranking</strong>. The retriever may first return several candidate chunks. A reranking model then evaluates them more carefully and moves the most relevant information to the top. This can improve the quality of the information eventually given to the LLM.</p>
+
+<h2 id="step-6-give-the-context-to-the-llm">Step 6: Give the Context to the LLM</h2>
+
+<p>Finally, the retrieved information is added to the prompt as <strong>context</strong>. The LLM can now generate its response using both its language capabilities and the external information retrieved by the RAG system.</p>
+
+<p>That is the main idea behind RAG. Instead of expecting the LLM to remember everything, we give it a way to <strong>search for the right information before answering</strong>. But vector search also has limitations. Sometimes a question is not about finding one similar paragraph. It may require understanding relationships across many documents. That is where approaches such as <strong>GraphRAG</strong> become interesting.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

@@ -574,4 +574,10 @@ var store = [{
         "tags": ["AI Agents","LLM","ReAct","Plan-and-Solve","Planning","AI Engineering"],
         "url": "/ai/2026/09/29/react-vs-plan-and-solve-two-ways-ai-agents-handle-tasks.html",
         "teaser": null
+      },{
+        "title": "How RAG Works: From Documents to Better LLM Answers",
+        "excerpt":"How RAG Works: From Documents to Better LLM Answers Large Language Models know a lot, but they do not automatically know everything inside your private documents, company files, or newly updated data. For example, imagine that your company has hundreds of internal PDF, TXT, and Excel files. You ask an...","categories": ["ai"],
+        "tags": ["RAG","LLM","Embeddings","Vector Database","Retrieval","Reranking","AI Engineering"],
+        "url": "/ai/2026/10/01/how-rag-works-from-documents-to-better-llm-answers.html",
+        "teaser": null
       }]
