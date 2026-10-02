@@ -580,4 +580,10 @@ var store = [{
         "tags": ["RAG","LLM","Embeddings","Vector Database","Retrieval","Reranking","AI Engineering"],
         "url": "/ai/2026/10/01/how-rag-works-from-documents-to-better-llm-answers.html",
         "teaser": null
+      },{
+        "title": "Vector RAG vs. GraphRAG: When Similarity Search Is Not Enough",
+        "excerpt":"Vector RAG vs. GraphRAG: When Similarity Search Is Not Enough Traditional RAG usually relies on vector search. A user asks a question, the system converts it into an embedding, searches a vector database, retrieves several similar chunks, and gives them to the LLM. This works well for many questions. But...","categories": ["ai"],
+        "tags": ["RAG","GraphRAG","Vector Search","Knowledge Graph","Community Detection","Retrieval","LLM","AI Engineering"],
+        "url": "/ai/2026/10/02/vector-rag-vs-graphrag-when-similarity-search-is-not-enough.html",
+        "teaser": null
       }]

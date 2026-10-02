@@ -1,0 +1,53 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="vector-rag-vs-graphrag-when-similarity-search-is-not-enough">Vector RAG vs. GraphRAG: When Similarity Search Is Not Enough</h1>
+
+<p>Traditional RAG usually relies on <strong>vector search</strong>. A user asks a question, the system converts it into an embedding, searches a vector database, retrieves several similar chunks, and gives them to the LLM. This works well for many questions. But consider a different type of question: <strong>What products does company XX have?</strong> The answer may not exist in one paragraph. One document may mention Product A. Another may describe Product B. A third may discuss a business unit that owns Product C. Retrieving only the chunks that are most similar to the question may not capture the complete picture. This shows an important limitation of traditional RAG: <strong>semantic similarity is not the same as understanding relationships</strong>.</p>
+
+<h2 id="documents-often-contain-relationships">Documents Often Contain Relationships</h2>
+
+<p>Real-world knowledge is usually connected. For example, documents may contain relationships such as <code class="language-plaintext highlighter-rouge">Company → owns → Product</code>, <code class="language-plaintext highlighter-rouge">Employee → works for → Department</code>, <code class="language-plaintext highlighter-rouge">Technology → used by → Product</code> and <code class="language-plaintext highlighter-rouge">Product → belongs to → Category</code>. Traditional vector databases mainly organize information based on similarity between embeddings. A <strong>knowledge graph</strong> organizes information differently. It represents knowledge using <strong>nodes and edges</strong>. Instead of only asking, “Which chunks look similar to this question?”, the system can also ask, “Which entities are connected, and how are they related?”</p>
+
+<h2 id="from-documents-to-a-knowledge-graph">From Documents to a Knowledge Graph</h2>
+
+<p>A GraphRAG-style system can first extract information from the original documents and build a graph. The graph may contain people, companies, products, technologies, departments, or other important entities. Relationships between those entities become edges. This creates a more structured representation of the information hidden inside the documents.</p>
+
+<h2 id="finding-communities-in-the-graph">Finding Communities in the Graph</h2>
+
+<p>A large knowledge graph can contain thousands or even millions of connected entities. Searching the entire graph directly would be difficult. One approach is <strong>community detection</strong>. The system identifies groups of nodes that are strongly related to each other. For example, one community might represent a product team, while another represents a research department. These communities can then be organized into a <strong>hierarchical structure</strong>. Instead of treating knowledge as a flat collection of independent chunks, the system can understand information at different levels. This becomes especially useful for questions that require a broader view of the data.</p>
+
+<h2 id="local-questions-and-global-questions">Local Questions and Global Questions</h2>
+
+<p>This difference helps explain where GraphRAG can be useful. A traditional vector search works naturally for a <strong>local question</strong>, such as <code class="language-plaintext highlighter-rouge">What is the warranty period for Product X?</code> The answer may exist in one or two chunks, so retrieving the most similar text can work very well. But consider a <strong>global question</strong>: <code class="language-plaintext highlighter-rouge">What products does this company offer?</code> Answering this may require collecting information from many parts of the knowledge base and understanding how those pieces are connected. A graph-based representation can make this kind of relationship-heavy question easier to handle.</p>
+
+<h2 id="graphrag-does-not-simply-replace-rag">GraphRAG Does Not Simply Replace RAG</h2>
+
+<p>It is tempting to think Vector RAG is old and GraphRAG is better. But that is too simple. Vector retrieval is relatively straightforward and works well when relevant information can be found through semantic similarity. Graph-based retrieval adds additional structure, but building and maintaining a knowledge graph also introduces more complexity. The better question is <strong>what kind of retrieval the problem requires</strong>. If the task mainly requires finding relevant passages, vector retrieval may be enough. If the task requires understanding entities, relationships, communities, or information distributed across many documents, graph-based retrieval may provide another useful approach. The important idea is that RAG is not only about connecting an LLM to a database. The real challenge is <strong>retrieving the right context for the question</strong>. And as the questions become more complex, the way we organize and retrieve knowledge becomes just as important as the LLM itself.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
