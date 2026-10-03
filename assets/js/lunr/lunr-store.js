@@ -586,4 +586,10 @@ var store = [{
         "tags": ["RAG","GraphRAG","Vector Search","Knowledge Graph","Community Detection","Retrieval","LLM","AI Engineering"],
         "url": "/ai/2026/10/02/vector-rag-vs-graphrag-when-similarity-search-is-not-enough.html",
         "teaser": null
+      },{
+        "title": "RAG vs. Fine-Tuning: How Do You Choose?",
+        "excerpt":"RAG vs. Fine-Tuning: How Do You Choose? When building an LLM application, one common question is: Should I use RAG or fine-tuning? They can both improve an AI system, but they solve different types of problems. A simple way to understand the difference is to ask: Does the model need...","categories": ["ai"],
+        "tags": ["RAG","Fine-Tuning","LLM","Retrieval-Augmented Generation","AI Engineering"],
+        "url": "/ai/2026/10/03/rag-vs-fine-tuning-how-do-you-choose.html",
+        "teaser": null
       }]

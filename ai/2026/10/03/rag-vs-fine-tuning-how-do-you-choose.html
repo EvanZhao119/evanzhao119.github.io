@@ -1,0 +1,45 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="rag-vs-fine-tuning-how-do-you-choose">RAG vs. Fine-Tuning: How Do You Choose?</h1>
+
+<p>When building an LLM application, one common question is: <strong>Should I use RAG or fine-tuning?</strong> They can both improve an AI system, but they solve different types of problems. A simple way to understand the difference is to ask: <strong>Does the model need new knowledge, or does it need a new capability?</strong></p>
+
+<h2 id="when-rag-makes-more-sense">When RAG Makes More Sense</h2>
+
+<p>RAG is useful when the main problem is <strong>knowledge</strong>. Imagine that your application needs information that changes frequently. Product information, internal documents, business data, or other dynamic content may be updated every day. Instead of trying to put all of this information inside the model, RAG allows the system to retrieve relevant information when a user asks a question. This makes RAG especially useful when the system depends on <strong>dynamic data</strong>. There are also several other situations where RAG can be useful, including <strong>reliability, cost, and dependence on the model’s general capabilities</strong>. In these cases, the model itself may already be capable enough. What it needs is access to the right information.</p>
+
+<h2 id="when-fine-tuning-makes-more-sense">When Fine-Tuning Makes More Sense</h2>
+
+<p>Fine-tuning solves a different problem. Instead of retrieving external knowledge, fine-tuning changes the model itself. This becomes useful when you want to <strong>customize the model’s capabilities</strong>. For example, you may want the model to become better at a specific type of task rather than simply giving it more information. In addition, there are also situations, such as <strong>latency and intelligent-device scenarios</strong>, where fine-tuning may be more appropriate. So the question is no longer what information the model needs, but what I want the model itself to become better at doing.</p>
+
+<h2 id="sometimes-you-need-both">Sometimes You Need Both</h2>
+
+<p>RAG and fine-tuning are not always competing choices. Some applications may need both. For example, RAG can provide current or specialized information, while fine-tuning can customize how the model performs a particular task. The key is to separate <strong>knowledge problems</strong> from <strong>capability problems</strong>. If the information changes and needs to be retrieved, think about RAG. If the model itself needs to behave differently or become better at a specialized task, think about fine-tuning. And if your application has both problems, using both may make sense.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
