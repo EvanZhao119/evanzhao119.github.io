@@ -1,0 +1,49 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="rag-or-fine-tuning-three-practical-ai-examples">RAG or Fine-Tuning? Three Practical AI Examples</h1>
+
+<p>The difference between RAG and fine-tuning becomes much clearer when we look at real applications. Instead of asking which technology is “better,” we can break an AI product into individual capabilities and decide what each capability actually needs.</p>
+
+<h2 id="example-1-ai-product-manager">Example 1: AI Product Manager</h2>
+
+<p>Imagine an AI Product Manager. Some of its tasks depend heavily on information that changes over time. It may need to understand <strong>dynamic process data</strong>, work with changing business information, or answer questions based on existing business knowledge. These are mainly knowledge problems. That makes <strong>RAG</strong> a natural choice. The model can retrieve the latest relevant information and use it when generating its answer. The important point is that we do not necessarily need to retrain the model every time the business data changes.</p>
+
+<h2 id="example-2-ai-programmer">Example 2: AI Programmer</h2>
+
+<p>Now consider an AI Programmer. Its core value may come from capabilities such as <strong>reading and understanding code</strong> or <strong>writing and analyzing code</strong>. This is different from simply looking up information. Here, we want the model itself to become better at performing a specialized task. That makes <strong>fine-tuning</strong> more relevant. The knowledge is not the only thing that matters. The capability of the model itself matters.</p>
+
+<h2 id="example-3-ai-sales-robot">Example 3: AI Sales Robot</h2>
+
+<p>An AI Sales Robot shows why RAG and fine-tuning can work together. The robot may need access to <strong>product information and dynamic business data</strong>. Those parts fit RAG because the information can change and should be retrieved when needed. But selling is not only about knowing product information. The AI may also need specific <strong>sales skills, communication patterns, or tone</strong>. Those are closer to model behavior and capability, so fine-tuning may be useful. The result could be a hybrid system. Product knowledge can be provided through RAG, while sales skills and communication tone can be improved through fine-tuning. By combining RAG with a fine-tuned model, the system can use accurate product information and respond to customers in the right sales style.</p>
+
+<h2 id="think-about-the-requirement-first">Think About the Requirement First</h2>
+
+<p>The most useful lesson is that choosing between RAG and fine-tuning should start with the <strong>application requirement</strong>, not the technology. For every capability in your AI product, ask two questions: <strong>Does the system need access to changing or external knowledge?</strong> If yes, RAG may be the better choice. <strong>Does the model itself need a specialized capability or behavior?</strong> If yes, fine-tuning may be more appropriate. Many real AI products will not use only one approach. They may use RAG for knowledge and fine-tuning for capability. The goal is not to choose one technology for the entire system. The goal is to understand <strong>what each part of the system actually needs</strong>.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

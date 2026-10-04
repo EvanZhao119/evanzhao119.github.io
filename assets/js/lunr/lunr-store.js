@@ -592,4 +592,10 @@ var store = [{
         "tags": ["RAG","Fine-Tuning","LLM","Retrieval-Augmented Generation","AI Engineering"],
         "url": "/ai/2026/10/03/rag-vs-fine-tuning-how-do-you-choose.html",
         "teaser": null
+      },{
+        "title": "RAG or Fine-Tuning? Three Practical AI Examples",
+        "excerpt":"RAG or Fine-Tuning? Three Practical AI Examples The difference between RAG and fine-tuning becomes much clearer when we look at real applications. Instead of asking which technology is “better,” we can break an AI product into individual capabilities and decide what each capability actually needs. Example 1: AI Product Manager...","categories": ["ai"],
+        "tags": ["RAG","Fine-Tuning","LLM","AI Applications","AI Engineering"],
+        "url": "/ai/2026/10/04/rag-or-fine-tuning-three-practical-ai-examples.html",
+        "teaser": null
       }]
