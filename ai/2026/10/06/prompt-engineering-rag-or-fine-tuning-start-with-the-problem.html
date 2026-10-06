@@ -1,0 +1,58 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="prompt-engineering-rag-or-fine-tuning-start-with-the-problem">Prompt Engineering, RAG, or Fine-Tuning? Start With the Problem</h1>
+
+<p>When an LLM gives you a bad answer, it is easy to assume that the model is simply not good enough. But that is not always the case. Before changing the model, we should first understand <strong>why the answer is bad</strong>. <strong>In many LLM applications, the problem usually comes down to one of three things: the model does not understand what you want, does not have the information it needs, or is not capable enough to perform the task well.</strong> These three problems lead to three different solutions: <strong>Prompt Engineering, RAG, and Fine-Tuning.</strong></p>
+
+<h2 id="problem-1-the-model-does-not-understand-your-request">Problem 1: The Model Does Not Understand Your Request</h2>
+
+<p>Imagine you ask an LLM: Help me analyze this product. The request is very broad. What should the model analyze? Price? Customer reviews? Competition? Profitability? Market demand? Even a powerful model may give you a weak answer because your instructions are not clear enough. This is where <strong>Prompt Engineering</strong> helps. Instead of changing the model, you can improve the instructions you give it. For example, you can ask it to analyze a product based on customer demand, competition, price, and potential risks, then summarize the results in four sections and provide a final recommendation. Now the model has a much clearer understanding of the task. In this case, the problem was not missing knowledge or weak model capabilities. The problem was simply <strong>unclear communication</strong>. So a useful rule is that <strong>if the model does not understand what you want, improve the prompt
+first.</strong></p>
+
+<h2 id="problem-2-the-model-does-not-have-the-knowledge">Problem 2: The Model Does Not Have the Knowledge</h2>
+
+<p>Now imagine your company has hundreds of internal documents, including PDF files, Word documents, TXT files, and spreadsheets. You ask the LLM: What is our company’s policy for approving a new supplier? The model may understand the question perfectly, but it may not know your company’s internal policy. Making the prompt longer will not solve this problem. The model needs access to information that is outside its existing knowledge. This is where <strong>RAG</strong>, or Retrieval-Augmented Generation, becomes useful. With RAG, the system first searches your documents for relevant information. It then provides that information to the LLM as context so the model can generate an answer based on the retrieved content. The important point is that <strong>RAG does not primarily change the model itself</strong>. Instead, it gives the model access to the information it needs when answering a question. So another useful rule is that <strong>if the model understands the task but does not have the required knowledge, consider RAG.</strong></p>
+
+<h2 id="problem-3-the-model-cannot-perform-the-task-well-enough">Problem 3: The Model Cannot Perform the Task Well Enough</h2>
+
+<p>There is another situation. The model understands your instructions. It also has access to the necessary information. But its performance is still not good enough. For example, you may want the model to consistently classify customer messages into a specialized set of business categories. You provide clear instructions and examples, but the model still makes too many mistakes. At this point, the problem may no longer be about the prompt or external knowledge. You may need to improve how the model performs the task itself. This is where <strong>Fine-Tuning</strong> can help. Fine-tuning trains a model using examples that demonstrate the behavior or capability you want. Instead of repeatedly explaining everything through prompts, you adjust the model so that it becomes better suited to a particular task or pattern. So the third rule is that <strong>if the model has the information and understands the task but still cannot perform it well enough, fine-tuning may be worth considering.</strong></p>
+
+<h2 id="start-with-diagnosis-not-technology">Start With Diagnosis, Not Technology</h2>
+
+<p>Prompt Engineering, RAG, and Fine-Tuning are not three competing technologies where you simply choose the “best” one. They solve different problems.</p>
+
+<ul>
+  <li>If the instructions are unclear, improve the prompt.</li>
+  <li>If important knowledge is missing, use RAG to provide that knowledge.</li>
+  <li>If the model itself needs to become better at a specialized task or behavior, consider fine-tuning.</li>
+</ul>
+
+<p>In real applications, you may also combine them. For example, a fine-tuned model can still use RAG to access company documents, while carefully designed prompts control how it responds to the user. In practice, you can combine prompt engineering, RAG, and a fine-tuned model to build a better LLM application. The key is to avoid starting with a technology. Do not begin by asking: <strong>Should we use RAG or fine-tuning?</strong> Instead, start by asking: <strong>Why is the model giving us a bad answer?</strong> Once you understand the problem, choosing the right technique becomes much easier.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

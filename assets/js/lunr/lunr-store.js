@@ -604,4 +604,10 @@ var store = [{
         "tags": ["Fine-Tuning","LLM","GPU","Training Data","Model Evaluation","AI Engineering"],
         "url": "/ai/2026/10/05/why-gpu-cost-should-not-be-your-first-concern-in-llm-fine-tuning.html",
         "teaser": null
+      },{
+        "title": "Prompt Engineering, RAG, or Fine-Tuning? Start With the Problem",
+        "excerpt":"Prompt Engineering, RAG, or Fine-Tuning? Start With the Problem When an LLM gives you a bad answer, it is easy to assume that the model is simply not good enough. But that is not always the case. Before changing the model, we should first understand why the answer is bad....","categories": ["ai"],
+        "tags": ["Prompt Engineering","RAG","Fine-Tuning","LLM","AI Engineering"],
+        "url": "/ai/2026/10/06/prompt-engineering-rag-or-fine-tuning-start-with-the-problem.html",
+        "teaser": null
       }]
