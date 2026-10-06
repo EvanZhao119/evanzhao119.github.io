@@ -1,0 +1,53 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="why-gpu-cost-should-not-be-your-first-concern-in-llm-fine-tuning">Why GPU Cost Should Not Be Your First Concern in LLM Fine-Tuning</h1>
+
+<p>When people first think about fine-tuning a Large Language Model, one question often comes up immediately: <strong>How many GPUs do I need?</strong> It sounds like an important question. Large models require powerful hardware, and GPUs are expensive. But in a real fine-tuning project, GPU cost may not be the first thing you should worry about. The bigger challenge is everything around the GPU.</p>
+
+<h2 id="start-with-the-business-problem">Start with the Business Problem</h2>
+
+<p>Before choosing a model or renting GPUs, start with the business. What are you actually trying to improve? Maybe you want an AI assistant to classify customer requests more accurately. Maybe you want a model to generate responses in a specific style. Or perhaps you need better performance on a specialized domain task. This business requirement should lead to a clearly defined AI problem. Only then should you ask whether fine-tuning is actually the right solution. If the problem can be solved with prompting, RAG, tool calling, or a simpler model, fine-tuning may add unnecessary complexity.</p>
+
+<h2 id="data-comes-before-training">Data Comes Before Training</h2>
+
+<p>Suppose you decide that fine-tuning is necessary. The next question should not be: <strong>Which GPU should I use?</strong> A better question is: <strong>What data will I use?</strong> The quality of the training data directly affects what the model learns. You may need to collect examples, clean the data, remove bad samples, define labels, create instruction-response pairs, and review the dataset. This can require significant human effort. A powerful GPU can make training faster, but it cannot fix poor training data. If your examples are inconsistent or do not represent the real task, spending more money on compute will not solve the problem.</p>
+
+<h2 id="training-is-only-one-step">Training Is Only One Step</h2>
+
+<p>Fine-tuning is not just about using a model and GPUs; it is a process that starts with a business need, defines the problem, prepares the data, trains the model, and tests the results. Each stage creates its own work and cost. You need to understand the business problem, prepare the dataset, run the training process, evaluate the results, identify failures, and possibly repeat the entire cycle. That means GPU usage is only one part of the project.</p>
+
+<h2 id="look-at-the-total-cost">Look at the Total Cost</h2>
+
+<p>When evaluating a fine-tuning project, it is useful to think beyond training cost. Fine-tuning involves several costs, including GPUs for training, people for preparing and reviewing data, inference after deployment, and collecting and maintaining training data. GPU cost is easy to notice because it has a clear price. The other costs are less visible, but they can be just as important. For example, a training job may only run for several hours or days. But preparing a high-quality dataset and evaluating the model may require much more human time. The cheapest training setup does not necessarily produce the cheapest AI project.</p>
+
+<h2 id="optimize-the-whole-system-not-just-the-gpu">Optimize the Whole System, Not Just the GPU</h2>
+
+<p>This changes how we should approach fine-tuning. Instead of focusing on which GPU to use, start by clearly defining the problem you want to solve. Then ask whether you have the right data, how you will evaluate success, and what the complete workflow will cost. GPU selection still matters. You need enough compute to train the model efficiently. But it comes later. In many real AI projects, the hardest part is defining the right problem, building the right dataset, and proving that the fine-tuned model actually creates value. <strong>Fine-tuning is not primarily a GPU problem. It is a data, evaluation, and business problem that happens to require GPUs.</strong></p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

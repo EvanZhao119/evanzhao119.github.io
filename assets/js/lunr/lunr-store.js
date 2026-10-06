@@ -598,4 +598,10 @@ var store = [{
         "tags": ["RAG","Fine-Tuning","LLM","AI Applications","AI Engineering"],
         "url": "/ai/2026/10/04/rag-or-fine-tuning-three-practical-ai-examples.html",
         "teaser": null
+      },{
+        "title": "Why GPU Cost Should Not Be Your First Concern in LLM Fine-Tuning",
+        "excerpt":"Why GPU Cost Should Not Be Your First Concern in LLM Fine-Tuning When people first think about fine-tuning a Large Language Model, one question often comes up immediately: How many GPUs do I need? It sounds like an important question. Large models require powerful hardware, and GPUs are expensive. But...","categories": ["ai"],
+        "tags": ["Fine-Tuning","LLM","GPU","Training Data","Model Evaluation","AI Engineering"],
+        "url": "/ai/2026/10/05/why-gpu-cost-should-not-be-your-first-concern-in-llm-fine-tuning.html",
+        "teaser": null
       }]
