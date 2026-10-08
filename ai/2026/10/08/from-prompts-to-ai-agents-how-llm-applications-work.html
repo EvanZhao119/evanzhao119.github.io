@@ -1,0 +1,66 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="from-prompts-to-ai-agents-how-llm-applications-work">From Prompts to AI Agents: How LLM Applications Work</h1>
+
+<p>When people first start using Large Language Models (LLMs), they usually begin with a simple prompt. They ask a question, provide some instructions, and wait for an answer. But modern AI applications can do much more than generate text. They can use tools, retrieve information, and complete tasks that involve multiple steps. To understand how these applications work, we can start with two basic concepts: <strong>prompts and AI agents</strong>.</p>
+
+<h2 id="1-what-is-a-prompt">1. What Is a Prompt?</h2>
+
+<p>A prompt is the information we give an AI model to guide its response. In many LLM applications, prompts are organized into different roles. Two common ones are the system prompt and the user prompt. A <strong>system prompt</strong> defines the model’s general behavior. It may describe the model’s role, responsibilities, communication style, and rules. For example, a system prompt might tell an AI model to act as a data analyst, explain technical concepts in simple English, and avoid making recommendations without enough evidence. A <strong>user prompt</strong> describes what the user wants the model to do. For example: “Analyze this product’s market demand, competition, and potential risks. Summarize your findings and provide a recommendation.” The system prompt establishes the general instructions, while the user prompt provides the specific task. However, a prompt does not give the model new capabilities by itself. If the model needs current market data, it may still need an external data source or tool.</p>
+
+<h2 id="2-what-is-an-ai-agent">2. What Is an AI Agent?</h2>
+
+<p>A traditional LLM application often follows a simple process. The user sends a request, the model generates a response, and the interaction ends. An AI agent goes further. <strong>An AI agent is a system that uses an AI model to decide what actions to take, interact with tools, and work toward a goal.</strong> For example, imagine asking an AI assistant to research a product. Instead of immediately generating an answer, the agent might search for product information, collect relevant data, analyze the results, and prepare a report. The important difference is that the agent can perform actions rather than only generate text. Some agents can also evaluate intermediate results and decide what to do next.</p>
+
+<h2 id="3-how-does-an-ai-agent-work">3. How Does an AI Agent Work?</h2>
+
+<p>Consider a robot vacuum cleaner. A traditional robot might follow predefined cleaning patterns. A more intelligent system can use sensor information to detect obstacles, adjust its route, and decide where to clean next. An AI software agent follows a similar general idea. It receives a goal, observes available information, chooses an action, and uses the result to decide what happens next.</p>
+
+<p>For example, an AI research agent might follow this process:</p>
+
+<ol>
+  <li>Understand the user’s research question.</li>
+  <li>Choose an appropriate search tool.</li>
+  <li>Retrieve relevant information.</li>
+  <li>Evaluate whether the information is sufficient.</li>
+  <li>Search again if necessary.</li>
+  <li>Generate a final report.</li>
+</ol>
+
+<p>This does not mean every agent is fully autonomous. Developers can still define which tools the agent may use, what decisions require approval, and when the process should stop.</p>
+
+<h2 id="4-where-are-ai-agents-used">4. Where Are AI Agents Used?</h2>
+
+<p>AI agents can support many different applications. A customer support agent might retrieve order information and help customers resolve problems. A coding agent might inspect source code, run tests, and suggest fixes. A research agent might collect information from multiple sources and organize it into a report. AI agents can also support recommendation systems, although not every recommendation system is an agent. Many traditional systems use machine learning models without autonomous tool use or multi-step planning. The key question is whether the system can <strong>make decisions about actions and interact with its environment to complete a task</strong>.</p>
+
+<h2 id="final-thoughts">Final Thoughts</h2>
+
+<p>Prompts and agents solve different problems. A prompt tells an AI model what we want. An agent provides a system for deciding what actions to take and how to use tools to achieve a goal. A good prompt can improve an AI model’s response, but building a useful agent also requires tools, workflow design, error handling, and evaluation. Understanding this difference is an important first step toward building real AI applications.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

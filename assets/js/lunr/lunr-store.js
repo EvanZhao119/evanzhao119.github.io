@@ -610,4 +610,10 @@ var store = [{
         "tags": ["Prompt Engineering","RAG","Fine-Tuning","LLM","AI Engineering"],
         "url": "/ai/2026/10/06/prompt-engineering-rag-or-fine-tuning-start-with-the-problem.html",
         "teaser": null
+      },{
+        "title": "From Prompts to AI Agents: How LLM Applications Work",
+        "excerpt":"From Prompts to AI Agents: How LLM Applications Work When people first start using Large Language Models (LLMs), they usually begin with a simple prompt. They ask a question, provide some instructions, and wait for an answer. But modern AI applications can do much more than generate text. They can...","categories": ["ai"],
+        "tags": ["LLM","Prompt Engineering","AI Agents","Tool Use","AI Engineering"],
+        "url": "/ai/2026/10/08/from-prompts-to-ai-agents-how-llm-applications-work.html",
+        "teaser": null
       }]
