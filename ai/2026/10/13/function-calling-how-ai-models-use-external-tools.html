@@ -1,0 +1,63 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="function-calling-how-ai-models-use-external-tools">Function Calling: How AI Models Use External Tools</h1>
+
+<p>Large Language Models are good at understanding language and generating responses. However, they cannot automatically access every external system or perform every action a user requests. For example, an LLM may understand a request to check the weather, search a database, or calculate a shipping cost. But understanding the request is not the same as executing it. This is where <strong>Function Calling</strong>, also known as Tool Calling, becomes useful.</p>
+
+<h2 id="1-what-is-function-calling">1. What Is Function Calling?</h2>
+
+<p>Function Calling allows an AI model to request the use of a function or external tool through a structured interface. Instead of simply answering a question, the model can identify which function is needed and provide the arguments required to call it. For example, imagine that a user asks: “What is the weather in Toronto today?” The application has a function called <code class="language-plaintext highlighter-rouge">get_weather</code> that accepts a city name. The model might generate a tool call like this:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"get_weather"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"city"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Toronto"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>This structured output tells the application which function the model wants to use. <strong>The model does not normally execute the function itself.</strong> The application receives the tool call, runs the function, and returns the result to the model. The model can then use that information to generate a response.</p>
+
+<h2 id="2-how-does-function-calling-work">2. How Does Function Calling Work?</h2>
+
+<p>A typical Function Calling process includes several steps. First, the developer defines a function and describes what it does, including the parameters it accepts. For example, a shipping calculator might accept a package weight and destination. Next, the user asks a question that requires this function. The model examines the request and decides whether the function is useful. If it is, the model generates a structured tool call containing the required arguments. The application then executes the function and sends the result back to the model. Finally, the model uses that result to answer the user. <strong>The user makes a request, the model selects a tool, the application executes it, and the model uses the result to generate an answer.</strong> The developer remains responsible for validating arguments, handling errors, and controlling which operations are allowed.</p>
+
+<h2 id="3-why-is-function-calling-useful">3. Why Is Function Calling Useful?</h2>
+
+<p>One major benefit is that it connects language understanding with actual software capabilities. Without Function Calling, an LLM might explain how to calculate a shipping cost. With Function Calling, it can request a calculation using a function that contains the actual shipping rules. Function Calling also makes it easier to reuse existing code. Developers do not need to rewrite business logic inside prompts. They can expose existing functions to the AI application through structured definitions. Another benefit is modularity. A complex application can provide different tools for searching databases, calculating costs, retrieving documents, or updating records. The model can select the appropriate tool based on the user’s request.</p>
+
+<h2 id="4-function-calling-is-not-the-same-as-an-ai-agent">4. Function Calling Is Not the Same as an AI Agent</h2>
+
+<p>Function Calling and AI agents are closely related, but they are not the same thing. Function Calling is a mechanism for requesting external operations. An AI agent is a broader system that may use Function Calling to complete tasks involving multiple steps. For example, an agent might call a product search function, analyze the results, calculate profitability, and decide whether more information is needed. Function Calling makes these operations possible, while the agent’s workflow determines how they are combined.</p>
+
+<h2 id="final-thoughts">Final Thoughts</h2>
+
+<p>Function Calling is one of the most important building blocks of modern LLM applications. It allows an AI model to move beyond generating text and interact with real software functions. However, Function Calling does not automatically make an application intelligent or autonomous. Developers still need to design reliable tools, manage permissions, validate results, and handle failures. Once we understand Function Calling, the next question is how to connect AI applications to many different tools without building a separate integration for each one. That leads us to MCP.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

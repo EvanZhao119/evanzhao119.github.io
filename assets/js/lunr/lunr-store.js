@@ -616,4 +616,10 @@ var store = [{
         "tags": ["LLM","Prompt Engineering","AI Agents","Tool Use","AI Engineering"],
         "url": "/ai/2026/10/08/from-prompts-to-ai-agents-how-llm-applications-work.html",
         "teaser": null
+      },{
+        "title": "Function Calling: How AI Models Use External Tools",
+        "excerpt":"Function Calling: How AI Models Use External Tools Large Language Models are good at understanding language and generating responses. However, they cannot automatically access every external system or perform every action a user requests. For example, an LLM may understand a request to check the weather, search a database, or...","categories": ["ai"],
+        "tags": ["Function Calling","Tool Calling","LLM","AI Agents","AI Engineering"],
+        "url": "/ai/2026/10/13/function-calling-how-ai-models-use-external-tools.html",
+        "teaser": null
       }]
