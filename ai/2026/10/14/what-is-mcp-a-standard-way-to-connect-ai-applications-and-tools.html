@@ -1,0 +1,61 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="what-is-mcp-a-standard-way-to-connect-ai-applications-and-tools">What Is MCP? A Standard Way to Connect AI Applications and Tools</h1>
+
+<p>Function Calling allows AI applications to use external tools. But as an application grows, managing tool integrations can become complicated. Imagine building an AI assistant that needs to access files, search databases, browse websites, and communicate with different services. Each service may have its own API, authentication method, and data format. Developers often need to write custom integration code for every service. <strong>Model Context Protocol (MCP) is designed to make these connections more standardized.</strong></p>
+
+<h2 id="1-what-is-mcp">1. What Is MCP?</h2>
+
+<p>MCP stands for Model Context Protocol. It is an open protocol that defines how AI applications can connect to external tools and data sources through a common interface. Instead of creating a completely different integration for every AI application, developers can build an MCP server that exposes capabilities in a standardized way. Compatible AI applications can then connect to that server. For example, a company might create an MCP server that provides access to its internal product database. Different AI applications could use the same server without each application having to implement the database integration from scratch. This makes integrations easier to reuse.</p>
+
+<h2 id="2-mcp-client-and-mcp-server">2. MCP Client and MCP Server</h2>
+
+<p>Two important components in MCP are the client and the server. An <strong>MCP server</strong> exposes capabilities that an AI application can use. These capabilities can include tools, resources, and prompts. For example, an MCP server might provide a tool for searching product information or retrieving order details. An <strong>MCP client</strong> connects to an MCP server and communicates with it using the protocol. In a typical MCP architecture, an AI application acts as the host. The host manages one or more MCP clients, and each client communicates with an MCP server. The language model itself is not necessarily the MCP client. This distinction matters because MCP describes communication between software components, not simply communication between an AI model and a tool.</p>
+
+<h2 id="3-how-does-mcp-work">3. How Does MCP Work?</h2>
+
+<p>Imagine an AI assistant connected to a web search MCP server. When a user asks a question, the AI application determines that it needs external information. The application can use the MCP client to discover available tools from the connected server. If the server provides a suitable search tool, the model can request that tool through the application’s tool-calling mechanism. The application then sends the request through the MCP client to the MCP server. The server performs the operation and returns the result. Finally, the application provides the result to the model, which can use it to answer the user. The MCP server does not need to know how the AI model makes its decisions. It only needs to expose its capabilities through the agreed protocol.</p>
+
+<h2 id="4-mcp-vs-function-calling">4. MCP vs. Function Calling</h2>
+
+<p>MCP and Function Calling are often discussed together because both help AI applications use external tools. However, they solve different problems. <strong>Function Calling defines how a model requests a tool operation. MCP standardizes how applications discover and communicate with external tools and data sources.</strong> For example, an AI model might request a function called <code class="language-plaintext highlighter-rouge">search_products</code>. Without MCP, the application could execute that function through its own custom integration. With MCP, the application could access the same capability through an MCP server. The model may still use Function Calling to request the operation, while MCP handles communication between the application and the external server. This means MCP does not replace Function Calling. They can work together.</p>
+
+<h2 id="5-why-does-mcp-matter">5. Why Does MCP Matter?</h2>
+
+<p>One of MCP’s biggest advantages is reusability. Without a common protocol, developers may need to build separate integrations for every combination of AI application and external service. MCP provides a shared interface that can reduce this duplicated work. It also makes it easier to expand an AI application. For example, a research assistant might initially connect to a document search server. Later, developers could add another MCP server for database queries or business analytics. The application can discover the capabilities exposed by these servers instead of relying entirely on custom tool definitions. However, standardization does not remove security risks. Developers still need to manage authentication, permissions, untrusted tool outputs, and potentially dangerous operations. A standardized connection does not automatically make an external tool safe.</p>
+
+<h2 id="6-putting-everything-together">6. Putting Everything Together</h2>
+
+<p>Now we can connect the concepts introduced in this series. A user begins by giving an AI application a prompt. The application uses an LLM to understand the request and determine what information or actions are needed. If the application supports agent-style workflows, it may decide to use several tools and evaluate the results between steps. Function Calling allows the model to request specific tool operations. MCP can provide a standardized connection between the application and external tools or data sources. The application executes the requested operations, returns the results to the model, and eventually generates a response for the user. Each component has a different responsibility, but they can work together in the same AI system.</p>
+
+<h2 id="final-thoughts">Final Thoughts</h2>
+
+<p>MCP is not another AI model, and it is not a replacement for AI agents. It is a protocol that helps AI applications communicate with external capabilities through a common interface. Function Calling helps a model request actions. MCP helps applications connect to the systems that provide those actions. AI agents can combine these capabilities to complete more complex tasks. <strong>The important part of AI engineering is not simply giving an LLM more tools. It is designing a system that knows when to use those tools, how to handle their results, and how to complete tasks reliably.</strong></p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

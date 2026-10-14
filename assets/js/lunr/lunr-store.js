@@ -622,4 +622,10 @@ var store = [{
         "tags": ["Function Calling","Tool Calling","LLM","AI Agents","AI Engineering"],
         "url": "/ai/2026/10/13/function-calling-how-ai-models-use-external-tools.html",
         "teaser": null
+      },{
+        "title": "What Is MCP? A Standard Way to Connect AI Applications and Tools",
+        "excerpt":"What Is MCP? A Standard Way to Connect AI Applications and Tools Function Calling allows AI applications to use external tools. But as an application grows, managing tool integrations can become complicated. Imagine building an AI assistant that needs to access files, search databases, browse websites, and communicate with different...","categories": ["ai"],
+        "tags": ["MCP","Model Context Protocol","Function Calling","AI Agents","Tool Integration","AI Engineering"],
+        "url": "/ai/2026/10/14/what-is-mcp-a-standard-way-to-connect-ai-applications-and-tools.html",
+        "teaser": null
       }]
