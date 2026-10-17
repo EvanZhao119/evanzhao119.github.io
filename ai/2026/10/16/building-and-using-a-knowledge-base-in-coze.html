@@ -1,0 +1,68 @@
+<head>
+    <!-- 其他现有的 head 内容 -->
+    <link rel="stylesheet" href="/assets/css/post.css">
+</head> 
+
+<div class="home-button-container">
+  <a href="/" class="home-button">Return to Home</a>
+</div>
+
+<article class="post-content">
+    <h1 id="building-and-using-a-knowledge-base-in-coze">Building and Using a Knowledge Base in Coze</h1>
+
+<p>Understanding what a knowledge base does is useful, but how do we actually build one? Platforms such as <strong>Coze</strong> simplify the process by providing tools for importing documents, organizing content, and connecting knowledge bases to AI applications. Although the interface may vary between platforms, the general workflow is similar.</p>
+
+<h2 id="step-1-prepare-your-data">Step 1: Prepare Your Data</h2>
+
+<p>Before creating a knowledge base, we need to decide what information the AI application should use. For example, imagine building an AI assistant for an online store. The knowledge base might include product descriptions, shipping policies, return instructions, and frequently asked questions. The first step is to collect this information and make sure it is accurate and relevant. Poorly organized or outdated documents can lead to confusing answers, even when the AI model itself is powerful.</p>
+
+<h2 id="step-2-create-a-knowledge-base">Step 2: Create a Knowledge Base</h2>
+
+<p>In Coze, users can create a knowledge base and choose the type of information they want to manage. A text knowledge base can contain information imported from supported sources such as local documents, online data, or manually entered text. The system then processes the imported content so that it can be retrieved later. This is different from simply attaching a document to a single conversation. A knowledge base is designed to support information retrieval across questions and interactions.</p>
+
+<h2 id="step-3-divide-documents-into-smaller-sections">Step 3: Divide Documents into Smaller Sections</h2>
+
+<p>Large documents often contain many different topics. For example, a 100-page product manual might include installation instructions, maintenance procedures, troubleshooting steps, and warranty information. If a user asks about a specific error message, the application does not need the entire manual. It only needs the relevant sections. To make retrieval more efficient, knowledge base systems often divide documents into smaller pieces called <strong>chunks</strong>. The size and structure of these chunks can affect retrieval quality. If chunks are too small, important context may be lost. If they are too large, the retrieved content may contain unnecessary information.</p>
+
+<h2 id="step-4-configure-retrieval">Step 4: Configure Retrieval</h2>
+
+<p>After importing the data, we need to decide how the application will find relevant information. Common retrieval methods include:</p>
+<ul>
+  <li><strong>Keyword search:</strong> Finds content based on matching words or phrases.</li>
+  <li><strong>Semantic search:</strong> Finds content based on meaning, often using vector embeddings.</li>
+  <li><strong>Hybrid search:</strong> Combines keyword and semantic search.</li>
+</ul>
+
+<p>For example, a user might ask: “Can I send this item back after two weeks?” The return policy might use the phrase “14-day return window.” A semantic search system can potentially recognize that these expressions have similar meanings, even though they use different words. Retrieval settings help determine which information is selected and passed to the model.</p>
+
+<h2 id="step-5-connect-the-knowledge-base-to-an-ai-application">Step 5: Connect the Knowledge Base to an AI Application</h2>
+
+<p>Once the knowledge base is ready, it can be connected to an AI assistant or workflow. When a user asks a question, the application can retrieve relevant information and include it in the model’s context. For example, a customer asks whether a particular product supports international shipping. The application searches the shipping policy and retrieves the relevant information. The LLM then uses that information to answer the question.</p>
+
+<h2 id="step-6-test-and-maintain-the-knowledge-base">Step 6: Test and Maintain the Knowledge Base</h2>
+
+<p>Creating a knowledge base is not the end of the process. We still need to test whether the application retrieves the correct information and produces useful answers. For example, we can ask questions that have clear answers in the documents, questions that use different wording, and questions that cannot be answered from the available information. The application should also handle missing information appropriately rather than inventing an answer. Over time, documents may change. Product information, policies, and internal procedures need to be updated to keep the knowledge base useful.</p>
+
+<h2 id="key-takeaway">Key Takeaway</h2>
+
+<p>Building a knowledge base is more than uploading documents. It involves preparing data, organizing content, configuring retrieval, connecting the information to an AI application, and testing the results. <strong>A useful knowledge base depends not only on how much information it contains, but also on how easily the application can find the right information.</strong> Now it’s your turn! Start building your first knowledge base with <strong>Coze</strong> and see how it works in practice.</p>
+
+</article> 
+
+<div id="giscus-container" style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <script src="https://giscus.app/client.js"
+    data-repo="EvanZhao119/evanzhao119.github.io"
+    data-repo-id="R_kgDOOGyKOQ"
+    data-category="Comments"
+    data-category-id="DIC_kwDOOGyKOc4CttGi"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="github-light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>

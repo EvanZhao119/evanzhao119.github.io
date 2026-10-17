@@ -628,4 +628,10 @@ var store = [{
         "tags": ["MCP","Model Context Protocol","Function Calling","AI Agents","Tool Integration","AI Engineering"],
         "url": "/ai/2026/10/14/what-is-mcp-a-standard-way-to-connect-ai-applications-and-tools.html",
         "teaser": null
+      },{
+        "title": "Building and Using a Knowledge Base in Coze",
+        "excerpt":"Building and Using a Knowledge Base in Coze Understanding what a knowledge base does is useful, but how do we actually build one? Platforms such as Coze simplify the process by providing tools for importing documents, organizing content, and connecting knowledge bases to AI applications. Although the interface may vary...","categories": ["ai"],
+        "tags": ["Coze","Knowledge Base","RAG","Retrieval","Chunking","AI Applications","AI Engineering"],
+        "url": "/ai/2026/10/16/building-and-using-a-knowledge-base-in-coze.html",
+        "teaser": null
       }]
